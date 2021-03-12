@@ -1,274 +1,278 @@
-module fgui {
+namespace fgui {
+
+    export const enum TransitionActionType {
+        XY = 0,
+        Size = 1,
+        Scale = 2,
+        Pivot = 3,
+        Alpha = 4,
+        Rotation = 5,
+        Color = 6,
+        Animation = 7,
+        Visible = 8,
+        Sound = 9,
+        Transition = 10,
+        Shake = 11,
+        ColorFilter = 12,
+        Skew = 13,
+        Unknown = 14
+    }
+
+    export interface TransitionPlaySetting {
+        onComplete?: (...args: any[]) => void,
+        onCompleteObj?: any,
+        onCompleteParam?: any,
+        times: number,
+        delay: number
+    };
+
     export class Transition {
 
         public name: string;
+        public autoPlayRepeat: number = 1;
+        public autoPlayDelay: number = 0;
 
-        private _owner: GComponent;
-        private _ownerBaseX: number = 0;
-        private _ownerBaseY: number = 0;
-        private _items: Array<TransitionItem>;
-        private _totalTimes: number = 0;
-        private _totalTasks: number = 0;
-        private _playing: boolean = false;
-        private _paused: boolean = false;
-        private _onComplete: Function;
-        private _onCompleteCaller: any;
-        private _onCompleteParam: any;
-        private _options: number = 0;
-        private _reversed: boolean = false;
-        private _totalDuration: number = 0;
-        private _autoPlay: boolean = false;
-        private _autoPlayTimes: number = 1;
-        private _autoPlayDelay: number = 0;
-        private _timeScale: number = 1;
-        private _startTime: number = 0;
-        private _endTime: number = 0;
+        private $owner: GComponent;
+        private $ownerBaseX: number = 0;
+        private $ownerBaseY: number = 0;
+        private $items: TransitionItem[];
+        private $totalTimes: number = 0;
+        private $totalTasks: number = 0;
+        private $playing: boolean = false;
+        private $onComplete: (...args: any[]) => void;
+        private $onCompleteObj: any;
+        private $onCompleteParam: any;
+        private $options: number = 0;
+        private $reversed: boolean;
+        private $maxTime: number = 0;
+        private $autoPlay: boolean;
 
         public static OPTION_IGNORE_DISPLAY_CONTROLLER: number = 1;
-        public static OPTION_AUTO_STOP_DISABLED: number = 2;
-        public static OPTION_AUTO_STOP_AT_END: number = 4;
+        public static OPTION_AUTO_STOP_DISABLED:number = 1 >> 1;
+        public static OPTION_AUTO_STOP_AT_END:number = 1 >> 2;
+        
+        private static FRAME_RATE: number = 24;
 
         public constructor(owner: GComponent) {
-            this._owner = owner;
-            this._items = new Array<TransitionItem>();
+            this.$owner = owner;
+            this.$items = [];
+            this.$owner.on(DisplayObjectEvent.VISIBLE_CHANGED, this.$ownerVisibleChanged, this);
         }
 
-        public play(onComplete: Function = null, onCompleteObj: any = null, onCompleteParam: any = null,
-            times: number = 1, delay: number = 0, startTime: number = 0, endTime: number = -1) {
-            this._play(onComplete, onCompleteObj, onCompleteParam, times, delay, startTime, endTime, false);
+        private $ownerVisibleChanged(vis:boolean, owner:GComponent):void
+        {
+            if ((this.$options & Transition.OPTION_AUTO_STOP_DISABLED) == 0 && vis === false)
+                this.stop((this.$options & Transition.OPTION_AUTO_STOP_AT_END) != 0 ? true : false, false);
         }
 
-        public playReverse(onComplete: Function = null, onCompleteObj: any = null, onCompleteParam: any = null,
-            times: number = 1, delay: number = 0) {
-            this._play(onComplete, onCompleteObj, onCompleteParam, times, delay, 0, -1, true);
+        public get autoPlay(): boolean {
+            return this.$autoPlay;
         }
 
-        public changePlayTimes(value: number): void {
-            this._totalTimes = value;
-        }
-
-        public setAutoPlay(value: boolean, times: number = -1, delay: number = 0) {
-            if (this._autoPlay != value) {
-                this._autoPlay = value;
-                this._autoPlayTimes = times;
-                this._autoPlayDelay = delay;
-
-                if (this._autoPlay) {
-                    if (this._owner.onStage)
-                        this.play(null, null, this._autoPlayTimes, this._autoPlayDelay);
+        public set autoPlay(value: boolean) {
+            if (this.$autoPlay != value) {
+                this.$autoPlay = value;
+                if (this.$autoPlay) {
+                    if (this.$owner.onStage)
+                        this.play({
+                            times: this.autoPlayRepeat,
+                            delay: this.autoPlayDelay
+                        });
                 }
                 else {
-                    if (!this._owner.onStage)
+                    if (!this.$owner.onStage)
                         this.stop(false, true);
                 }
             }
         }
 
-        private _play(onComplete: Function = null, onCompleteCaller: any = null, onCompleteParam: any = null,
-            times: number = 1, delay: number = 0, startTime: number = 0, endTime: number = -1, reversed: boolean = false) {
-            this.stop(true, true);
-
-            this._totalTimes = times;
-            this._reversed = reversed;
-            this._startTime = startTime;
-            this._endTime = endTime;
-            this._playing = true;
-            this._paused = false;
-            this._onComplete = onComplete;
-            this._onCompleteParam = onCompleteParam;
-            this._onCompleteCaller = onCompleteCaller;
-
-            var cnt: number = this._items.length;
-            for (var i: number = 0; i < cnt; i++) {
-                var item: TransitionItem = this._items[i];
-                if (item.target == null) {
-                    if (item.targetId)
-                        item.target = this._owner.getChildById(item.targetId);
-                    else
-                        item.target = this._owner;
-                }
-                else if (item.target != this._owner && item.target.parent != this._owner)
-                    item.target = null;
-
-                if (item.target != null && item.type == TransitionActionType.Transition) {
-                    var trans: Transition = (item.target as GComponent).getTransition(item.value.transName);
-                    if (trans == this)
-                        trans = null;
-                    if (trans != null) {
-                        if (item.value.playTimes == 0) //stop
-                        {
-                            var j: number;
-                            for (j = i - 1; j >= 0; j--) {
-                                var item2: TransitionItem = this._items[j];
-                                if (item2.type == TransitionActionType.Transition) {
-                                    if (item2.value.trans == trans) {
-                                        item2.value.stopTime = item.time - item2.time;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (j < 0)
-                                item.value.stopTime = 0;
-                            else
-                                trans = null;//no need to handle stop anymore
-                        }
-                        else
-                            item.value.stopTime = -1;
-                    }
-                    item.value.trans = trans;
-                }
-            }
-
-            if (delay == 0)
-                this.onDelayedPlay();
-            else
-                GTween.delayedCall(delay).onComplete(this.onDelayedPlay, this);
+        public changeRepeat(value: number): void {
+            this.$totalTimes = value | 0;
         }
 
-        public stop(setToComplete: boolean = true, processCallback: boolean = false): void {
-            if (!this._playing)
-                return;
-
-            this._playing = false;
-            this._totalTasks = 0;
-            this._totalTimes = 0;
-            var func: Function = this._onComplete;
-            var param: any = this._onCompleteParam;
-            var thisObj: any = this._onCompleteCaller;
-            this._onComplete = null;
-            this._onCompleteParam = null;
-            this._onCompleteCaller = null;
-
-            GTween.kill(this);//delay start
-
-            var cnt: number = this._items.length;
-            if (this._reversed) {
-                for (var i: number = cnt - 1; i >= 0; i--) {
-                    var item: TransitionItem = this._items[i];
-                    if (item.target == null)
-                        continue;
-
-                    this.stopItem(item, setToComplete);
-                }
+        /**
+         * Play transition by specified settings:
+         * 1) pass whole parameters:
+                onComplete?: (...args:any[]) => void,
+                onCompleteObj?: any,
+                onCompleteParam?: any,
+                times: number,
+                delay: number
+         * 2) just pass 1 object which implements TransitionPlaySetting (recommended)
+         */
+        public play(...args: any[]): void {
+            if (args.length && typeof (args[0]) == "object") {
+                let obj = args[0] as TransitionPlaySetting;
+                this.$play(obj.onComplete, obj.onCompleteObj, obj.onCompleteParam, obj.times || 1, obj.delay || 0, false);
             }
-            else {
-                for (i = 0; i < cnt; i++) {
-                    item = this._items[i];
-                    if (item.target == null)
-                        continue;
+            else
+                this.$play(args[0], args[1], args[2], args[3] || 1, args[4] || 0, false);
+        }
 
-                    this.stopItem(item, setToComplete);
-                }
+        /**
+         * Play transition by specified settings:
+         * 1) pass whole parameters:
+                onComplete?: (...args:any[]) => void,
+                onCompleteObj?: any,
+                onCompleteParam?: any,
+                times: number,
+                delay: number
+         * 2) just pass 1 object which implements TransitionPlaySetting (recommended)
+         */
+        public playReverse(...args: any[]):void {
+            if (args.length && typeof (args[0]) == "object") {
+                let obj = args[0] as TransitionPlaySetting;
+                this.$play(obj.onComplete, obj.onCompleteObj, obj.onCompleteParam, obj.times || 1, obj.delay || 0, true);
             }
+            else
+                this.$play(args[0], args[1], args[2], args[3] || 1, args[4] || 0, true);
+        }
 
-            if (processCallback && func != null) {
-                func.call(thisObj, param);
+        private $play(onComplete?: (...args: any[]) => void, onCompleteObj?: any, onCompleteParam?: any, times?: number, delay?: number, reversed: boolean = false) {
+            this.stop();
+            if (times == 0) times = 1;
+            else if (times == -1) times = Number.MAX_VALUE;
+            this.$totalTimes = times;
+            this.$reversed = reversed;
+            this.internalPlay(delay);
+            this.$playing = this.$totalTasks > 0;
+            if (this.$playing) {
+                this.$onComplete = onComplete;
+                this.$onCompleteParam = onCompleteParam;
+                this.$onCompleteObj = onCompleteObj;
+
+                if ((this.$options & Transition.OPTION_IGNORE_DISPLAY_CONTROLLER) != 0) {
+                    this.$items.forEach(item => {
+                        if (item.target != null && item.target != this.$owner)
+                            item.lockToken = item.target.lockGearDisplay();
+                    }, this);
+				}
+            }
+            else if (onComplete != null) {
+                onCompleteParam && onCompleteParam.length ? onComplete.apply(onCompleteObj, onCompleteParam) :
+                    onComplete.call(onCompleteObj, onCompleteParam);
+            }
+        }
+
+        public stop(setToComplete: boolean = true, processCallback: boolean = false) {
+            if (this.$playing) {
+                this.$playing = false;
+                this.$totalTasks = 0;
+                this.$totalTimes = 0;
+                let func: Function = this.$onComplete;
+                let param: any = this.$onCompleteParam;
+                let thisObj: any = this.$onCompleteObj;
+                this.$onComplete = null;
+                this.$onCompleteParam = null;
+                this.$onCompleteObj = null;
+
+                let cnt: number = this.$items.length;
+                let item: TransitionItem;
+                if (this.$reversed) {
+                    for (let i = cnt - 1; i >= 0; i--) {
+                        item = this.$items[i];
+                        if (item.target == null)
+                            continue;
+
+                        this.stopItem(item, setToComplete);
+                    }
+                }
+                else {
+                    for (let i = 0; i < cnt; i++) {
+                        item = this.$items[i];
+                        if (item.target == null)
+                            continue;
+
+                        this.stopItem(item, setToComplete);
+                    }
+                }
+
+                if (processCallback && func != null)
+                    param && param.length > 0 ? func.apply(thisObj, param) : func.call(thisObj, param);
             }
         }
 
         private stopItem(item: TransitionItem, setToComplete: boolean): void {
-            if (item.displayLockToken != 0) {
-                item.target.releaseDisplayLock(item.displayLockToken);
-                item.displayLockToken = 0;
+            if (item.lockToken != 0) {
+				item.target.releaseGearDisplay(item.lockToken);
+				item.lockToken = 0;
             }
+            
+            if (item.type == TransitionActionType.ColorFilter && item.filterCreated)
+                item.target.filters = null;
 
-            if (item.tweener != null) {
-                item.tweener.kill(setToComplete);
-                item.tweener = null;
+            if (item.completed)
+                return;
 
-                if (item.type == TransitionActionType.Shake && !setToComplete) //震动必须归位，否则下次就越震越远了。
-                {
-                    item.target._gearLocked = true;
-                    item.target.setXY(item.target.x - item.value.lastOffsetX, item.target.y - item.value.lastOffsetY);
-                    item.target._gearLocked = false;
-                }
-            }
+            this.disposeTween(item);
 
             if (item.type == TransitionActionType.Transition) {
-                var trans: Transition = item.value.trans;
+                let trans: Transition = (item.target as GComponent).getTransition(item.value.s);
                 if (trans != null)
                     trans.stop(setToComplete, false);
             }
-        }
-
-        public setPaused(paused: boolean): void {
-            if (!this._playing || this._paused == paused)
-                return;
-
-            this._paused = paused;
-            var tweener: GTweener = GTween.getTween(this);
-            if (tweener != null)
-                tweener.setPaused(paused);
-
-            var cnt: number = this._items.length;
-            for (var i: number = 0; i < cnt; i++) {
-                var item: TransitionItem = this._items[i];
-                if (item.target == null)
-                    continue;
-
-                if (item.type == TransitionActionType.Transition) {
-                    if (item.value.trans != null)
-                        item.value.trans.setPaused(paused);
-                }
-                else if (item.type == TransitionActionType.Animation) {
-                    if (paused) {
-                        item.value.flag = item.target.getProp(ObjectPropID.Playing);
-                        item.target.setProp(ObjectPropID.Playing, false);
+            else if (item.type == TransitionActionType.Shake) {
+                GTimer.inst.remove(item.$shake, item);
+                item.target.$gearLocked = true;
+                item.target.setXY(item.target.x - item.startValue.f1, item.target.y - item.startValue.f2);
+                item.target.$gearLocked = false;
+            }
+            else {
+                if (setToComplete) {
+                    if (item.tween) {
+                        if (!item.yoyo || item.repeat % 2 == 0)
+                            this.applyValue(item, this.$reversed ? item.startValue : item.endValue);
+                        else
+                            this.applyValue(item, this.$reversed ? item.endValue : item.startValue);
                     }
-                    else
-                        item.target.setProp(ObjectPropID.Playing, item.value.flag);
+                    else if (item.type != TransitionActionType.Sound)
+                        this.applyValue(item, item.value);
                 }
-
-                if (item.tweener != null)
-                    item.tweener.setPaused(paused);
             }
         }
 
         public dispose(): void {
-            if (this._playing)
-                GTween.kill(this);//delay start
+            GTimer.inst.remove(this.internalPlay, this);
+            this.$owner.off(DisplayObjectEvent.VISIBLE_CHANGED, this.$ownerVisibleChanged, this);
+            
+            this.$playing = false;
+            this.$items.forEach(item => {
+                if (item.target == null || item.completed)
+                    return;
 
-            var cnt: number = this._items.length;
-            for (var i: number = 0; i < cnt; i++) {
-                var item: TransitionItem = this._items[i];
-                if (item.tweener != null) {
-                    item.tweener.kill();
-                    item.tweener = null;
+                this.disposeTween(item);
+
+                if (item.type == TransitionActionType.Transition) {
+                    let trans: Transition = (item.target as GComponent).getTransition(item.value.s);
+                    if (trans != null)
+                        trans.dispose();
                 }
-
-                item.target = null;
-                item.hook = null;
-                if (item.tweenConfig != null)
-                    item.tweenConfig.endHook = null;
-            }
-
-            this._items.length = 0;
-            this._playing = false;
-            this._onComplete = null;
-            this._onCompleteCaller = null;
-            this._onCompleteParam = null;
+                else if (item.type == TransitionActionType.Shake)
+                    GTimer.inst.remove(item.$shake, item);
+            }, this);
         }
 
         public get playing(): boolean {
-            return this._playing;
+            return this.$playing;
         }
 
-        public setValue(label: string, ...args): void {
-            var cnt: number = this._items.length;
-            var value: any;
-            for (var i: number = 0; i < cnt; i++) {
-                var item: TransitionItem = this._items[i];
+        public setValue(label: string, ...args: any[]) {
+            this.$items.forEach(item => {
+                if (item.label == null && item.label2 == null)
+                    return;
+
+                let value: TransitionValue;
+
                 if (item.label == label) {
-                    if (item.tweenConfig != null)
-                        value = item.tweenConfig.startValue;
+                    if (item.tween)
+                        value = item.startValue;
                     else
                         value = item.value;
                 }
-                else if (item.tweenConfig != null && item.tweenConfig.endLabel == label) {
-                    value = item.tweenConfig.endValue;
-                }
+                else if (item.label2 == label)
+                    value = item.endValue;
                 else
-                    continue;
+                    return;
 
                 switch (item.type) {
                     case TransitionActionType.XY:
@@ -281,642 +285,399 @@ module fgui {
                         value.f1 = parseFloat(args[0]);
                         value.f2 = parseFloat(args[1]);
                         break;
-
                     case TransitionActionType.Alpha:
                         value.f1 = parseFloat(args[0]);
                         break;
-
                     case TransitionActionType.Rotation:
-                        value.f1 = parseFloat(args[0]);
+                        value.i = parseInt(args[0]);
                         break;
-
                     case TransitionActionType.Color:
-                        value.f1 = parseFloat(args[0]);
+                        value.c = parseFloat(args[0]);
                         break;
-
                     case TransitionActionType.Animation:
-                        value.frame = parseInt(args[0]);
+                        value.i = parseInt(args[0]);
                         if (args.length > 1)
-                            value.playing = args[1];
+                            value.b = args[1];
                         break;
-
                     case TransitionActionType.Visible:
-                        value.visible = args[0];
+                        value.b = args[0];
                         break;
-
                     case TransitionActionType.Sound:
-                        value.sound = args[0];
+                        value.s = args[0];
                         if (args.length > 1)
-                            value.volume = parseFloat(args[1]);
+                            value.f1 = parseFloat(args[1]);
                         break;
-
                     case TransitionActionType.Transition:
-                        value.transName = args[0];
+                        value.s = args[0];
                         if (args.length > 1)
-                            value.playTimes = parseInt(args[1]);
+                            value.i = parseInt(args[1]);
                         break;
-
                     case TransitionActionType.Shake:
-                        value.amplitude = parseFloat(args[0]);
+                        value.f1 = parseFloat(args[0]);
                         if (args.length > 1)
-                            value.duration = parseFloat(args[1]);
+                            value.f2 = parseFloat(args[1]);
                         break;
-
                     case TransitionActionType.ColorFilter:
                         value.f1 = parseFloat(args[0]);
                         value.f2 = parseFloat(args[1]);
                         value.f3 = parseFloat(args[2]);
                         value.f4 = parseFloat(args[3]);
                         break;
-
-                    case TransitionActionType.Text:
-                    case TransitionActionType.Icon:
-                        value.text = args[0];
-                        break;
                 }
-            }
+            }, this);
         }
 
-        public setHook(label: string, callback: Function, caller: any): void {
-            var cnt: number = this._items.length;
-            for (var i: number = 0; i < cnt; i++) {
-                var item: TransitionItem = this._items[i];
+        public setHook(label: string, callback: () => void, thisObj?: any): void {
+            let cnt: number = this.$items.length;
+            for (let i: number = 0; i < cnt; i++) {
+                let item: TransitionItem = this.$items[i];
                 if (item.label == label) {
                     item.hook = callback;
-                    item.hookCaller = caller;
+                    item.hookObj = thisObj;
                     break;
                 }
-                else if (item.tweenConfig != null && item.tweenConfig.endLabel == label) {
-                    item.tweenConfig.endHook = callback;
-                    item.tweenConfig.endHookCaller = caller;
+                else if (item.label2 == label) {
+                    item.hook2 = callback;
+                    item.hook2Obj = thisObj;
                     break;
                 }
             }
         }
 
-        public clearHooks(): void {
-            var cnt: number = this._items.length;
-            for (var i: number = 0; i < cnt; i++) {
-                var item: TransitionItem = this._items[i];
+        public clearHooks() {
+            this.$items.forEach(item => {
                 item.hook = null;
-                item.hookCaller = null;
-                if (item.tweenConfig != null) {
-                    item.tweenConfig.endHook = null;
-                    item.tweenConfig.endHookCaller = null;
-                }
-            }
+                item.hookObj = null;
+                item.hook2 = null;
+                item.hook2Obj = null;
+            }, this);
         }
 
-        public setTarget(label: string, newTarget: GObject): void {
-            var cnt: number = this._items.length;
-            for (var i: number = 0; i < cnt; i++) {
-                var item: TransitionItem = this._items[i];
-                if (item.label == label) {
-                    item.targetId = (newTarget == this._owner || newTarget == null) ? "" : newTarget.id;
-                    if (this._playing) {
-                        if (item.targetId.length > 0)
-                            item.target = this._owner.getChildById(item.targetId);
-                        else
-                            item.target = this._owner;
-                    }
-                    else
-                        item.target = null;
-                }
-            }
-        }
-
-        public setDuration(label: string, value: number): void {
-            var cnt: number = this._items.length;
-            for (var i: number = 0; i < cnt; i++) {
-                var item: TransitionItem = this._items[i];
-                if (item.tweenConfig != null && item.label == label)
-                    item.tweenConfig.duration = value;
-            }
-        }
-
-        public getLabelTime(label: string): number {
-            var cnt: number = this._items.length;
-            for (var i: number = 0; i < cnt; i++) {
-                var item: TransitionItem = this._items[i];
+        public setTarget(label: string, newTarget: GObject) {
+            this.$items.forEach(item => {
                 if (item.label == label)
-                    return item.time;
-                else if (item.tweenConfig != null && item.tweenConfig.endLabel == label)
-                    return item.time + item.tweenConfig.duration;
-            }
-
-            return Number.NaN;
+                    item.targetId = newTarget.id;
+            }, this);
         }
 
-        public get timeScale(): number {
-            return this._timeScale;
+        public setDuration(label: string, value: number) {
+            this.$items.forEach(item => {
+                if (item.tween && item.label == label)
+                    item.duration = value;
+            }, this);
         }
 
-        public set timeScale(value: number) {
-            if (this._timeScale != value) {
-                this._timeScale = value;
-                if (this._playing) {
-                    var cnt: number = this._items.length;
-                    for (var i: number = 0; i < cnt; i++) {
-                        var item: TransitionItem = this._items[i];
-                        if (item.tweener != null)
-                            item.tweener.setTimeScale(value);
-                        else if (item.type == TransitionActionType.Transition) {
-                            if (item.value.trans != null)
-                                item.value.trans.timeScale = value;
-                        }
-                        else if (item.type == TransitionActionType.Animation) {
-                            if (item.target != null)
-                                item.target.setProp(ObjectPropID.TimeScale, value);
-                        }
-                    }
-                }
-            }
-        }
-
-        public updateFromRelations(targetId: string, dx: number, dy: number): void {
-            var cnt: number = this._items.length;
-            if (cnt == 0)
-                return;
-
-            for (var i: number = 0; i < cnt; i++) {
-                var item: TransitionItem = this._items[i];
+        public updateFromRelations(targetId: string, dx: number, dy: number) {
+            this.$items.forEach(item => {
                 if (item.type == TransitionActionType.XY && item.targetId == targetId) {
-                    if (item.tweenConfig != null) {
-                        item.tweenConfig.startValue.f1 += dx;
-                        item.tweenConfig.startValue.f2 += dy;
-                        item.tweenConfig.endValue.f1 += dx;
-                        item.tweenConfig.endValue.f2 += dy;
+                    if (item.tween) {
+                        item.startValue.f1 += dx;
+                        item.startValue.f2 += dy;
+                        item.endValue.f1 += dx;
+                        item.endValue.f2 += dy;
                     }
                     else {
                         item.value.f1 += dx;
                         item.value.f2 += dy;
                     }
                 }
-            }
+            }, this);
         }
 
-        public onOwnerAddedToStage(): void {
-            if (this._autoPlay && !this._playing)
-                this.play(null, null, null, this._autoPlayTimes, this._autoPlayDelay);
-        }
+        private internalPlay(delay: number = 0): void {
+            this.$ownerBaseX = this.$owner.x;
+            this.$ownerBaseY = this.$owner.y;
+            this.$totalTasks = 0;
 
-        public onOwnerRemovedFromStage(): void {
-            if ((this._options & Transition.OPTION_AUTO_STOP_DISABLED) == 0)
-                this.stop((this._options & Transition.OPTION_AUTO_STOP_AT_END) != 0 ? true : false, false);
-        }
+            this.$items.forEach(item => {
+                if (item.targetId)
+                    item.target = this.$owner.getChildById(item.targetId);
+                else
+                    item.target = this.$owner;
+                if (item.target == null)
+                    return;
 
-        private onDelayedPlay(): void {
-            this.internalPlay();
+                let startTime: number;
 
-            this._playing = this._totalTasks > 0;
-            if (this._playing) {
-                if ((this._options & Transition.OPTION_IGNORE_DISPLAY_CONTROLLER) != 0) {
-                    var cnt: number = this._items.length;
-                    for (var i: number = 0; i < cnt; i++) {
-                        var item: TransitionItem = this._items[i];
-                        if (item.target != null && item.target != this._owner)
-                            item.displayLockToken = item.target.addDisplayLock();
-                    }
-                }
-            }
-            else if (this._onComplete != null) {
-                var func: Function = this._onComplete;
-                var param: any = this._onCompleteParam;
-                var thisObj: any = this._onCompleteCaller;
-                this._onComplete = null;
-                this._onCompleteParam = null;
-                this._onCompleteCaller = null;
-                func.call(thisObj, param);
-            }
-        }
-
-        private internalPlay(): void {
-            this._ownerBaseX = this._owner.x;
-            this._ownerBaseY = this._owner.y;
-
-            this._totalTasks = 0;
-
-            var cnt: number = this._items.length;
-            var item: TransitionItem;
-            var needSkipAnimations: boolean = false;
-            var i: number;
-
-            if (!this._reversed) {
-                for (i = 0; i < cnt; i++) {
-                    item = this._items[i];
-                    if (item.target == null)
-                        continue;
-
-                    if (item.type == TransitionActionType.Animation && this._startTime != 0 && item.time <= this._startTime) {
-                        needSkipAnimations = true;
-                        item.value.flag = false;
+                this.disposeTween(item);
+                if (item.tween) {
+                    if (this.$reversed)
+                        startTime = delay + this.$maxTime - item.time - item.duration;
+                    else
+                        startTime = delay + item.time;
+                    if (startTime > 0) {
+                        this.$totalTasks++;
+                        item.completed = false;
+                        item.tweener = createjs.Tween.get(item.value).wait(startTime * 1000).call(this.$delayCall, [item], this);
                     }
                     else
-                        this.playItem(item);
+                        this.startTween(item);
                 }
-            }
-            else {
-                for (i = cnt - 1; i >= 0; i--) {
-                    item = this._items[i];
-                    if (item.target == null)
-                        continue;
-
-                    this.playItem(item);
+                else {
+                    if (this.$reversed)
+                        startTime = delay + this.$maxTime - item.time;
+                    else
+                        startTime = delay + item.time;
+                    if (startTime <= 0)
+                        this.applyValue(item, item.value);
+                    else {
+                        this.$totalTasks++;
+                        item.completed = false;
+                        item.tweener = createjs.Tween.get(item.value).wait(startTime * 1000).call(this.$delayCall2, [item], this);
+                    }
                 }
-            }
-
-            if (needSkipAnimations)
-                this.skipAnimations();
+            }, this);
         }
 
-        private playItem(item: TransitionItem): void {
-            var time: number;
-            if (item.tweenConfig != null) {
-                if (this._reversed)
-                    time = (this._totalDuration - item.time - item.tweenConfig.duration);
-                else
-                    time = item.time;
-                if (this._endTime == -1 || time <= this._endTime) {
-                    var startValue: TValue;
-                    var endValue: TValue;
-                    if (this._reversed) {
-                        startValue = item.tweenConfig.endValue;
-                        endValue = item.tweenConfig.startValue;
+        private prepareValue(item: TransitionItem, toProps: TransitionValue, reversed: boolean = false): void {
+            let startValue: TransitionValue;
+            let endValue: TransitionValue;
+            if (reversed) {
+                startValue = item.endValue;
+                endValue = item.startValue;
+            }
+            else {
+                startValue = item.startValue;
+                endValue = item.endValue;
+            }
+
+            switch (item.type) {
+                case TransitionActionType.XY:
+                case TransitionActionType.Size:
+                    if (item.type == TransitionActionType.XY) {
+                        if (item.target == this.$owner) {
+                            if (!startValue.b1)
+                                startValue.f1 = 0;
+                            if (!startValue.b2)
+                                startValue.f2 = 0;
+                        }
+                        else {
+                            if (!startValue.b1)
+                                startValue.f1 = item.target.x;
+                            if (!startValue.b2)
+                                startValue.f2 = item.target.y;
+                        }
                     }
                     else {
-                        startValue = item.tweenConfig.startValue;
-                        endValue = item.tweenConfig.endValue;
+                        if (!startValue.b1)
+                            startValue.f1 = item.target.width;
+                        if (!startValue.b2)
+                            startValue.f2 = item.target.height;
                     }
+                    item.value.f1 = startValue.f1;
+                    item.value.f2 = startValue.f2;
+
+                    if (!endValue.b1)
+                        endValue.f1 = item.value.f1;
+                    if (!endValue.b2)
+                        endValue.f2 = item.value.f2;
 
                     item.value.b1 = startValue.b1 || endValue.b1;
                     item.value.b2 = startValue.b2 || endValue.b2;
 
-                    switch (item.type) {
-                        case TransitionActionType.XY:
-                        case TransitionActionType.Size:
-                        case TransitionActionType.Scale:
-                        case TransitionActionType.Skew:
-                            item.tweener = GTween.to2(startValue.f1, startValue.f2, endValue.f1, endValue.f2, item.tweenConfig.duration);
-                            break;
+                    toProps.f1 = endValue.f1;
+                    toProps.f2 = endValue.f2;
+                    break;
 
-                        case TransitionActionType.Alpha:
-                        case TransitionActionType.Rotation:
-                            item.tweener = GTween.to(startValue.f1, endValue.f1, item.tweenConfig.duration);
-                            break;
-
-                        case TransitionActionType.Color:
-                            item.tweener = GTween.toColor(startValue.f1, endValue.f1, item.tweenConfig.duration);
-                            break;
-
-                        case TransitionActionType.ColorFilter:
-                            item.tweener = GTween.to4(startValue.f1, startValue.f2, startValue.f3, startValue.f4,
-                                endValue.f1, endValue.f2, endValue.f3, endValue.f4, item.tweenConfig.duration);
-                            break;
-                    }
-
-                    item.tweener.setDelay(time)
-                        .setEase(item.tweenConfig.easeType)
-                        .setRepeat(item.tweenConfig.repeat, item.tweenConfig.yoyo)
-                        .setTimeScale(this._timeScale)
-                        .setTarget(item)
-                        .onStart(this.onTweenStart, this)
-                        .onUpdate(this.onTweenUpdate, this)
-                        .onComplete(this.onTweenComplete, this);
-
-                    if (this._endTime >= 0)
-                        item.tweener.setBreakpoint(this._endTime - time);
-
-                    this._totalTasks++;
-                }
-            }
-            else if (item.type == TransitionActionType.Shake) {
-                if (this._reversed)
-                    time = (this._totalDuration - item.time - item.value.duration);
-                else
-                    time = item.time;
-
-                item.value.offsetX = item.value.offsetY = 0;
-                item.value.lastOffsetX = item.value.lastOffsetY = 0;
-                item.tweener = GTween.shake(0, 0, item.value.amplitude, item.value.duration)
-                    .setDelay(time)
-                    .setTimeScale(this._timeScale)
-                    .setTarget(item)
-                    .onUpdate(this.onTweenUpdate, this)
-                    .onComplete(this.onTweenComplete, this);
-
-                if (this._endTime >= 0)
-                    item.tweener.setBreakpoint(this._endTime - item.time);
-
-                this._totalTasks++;
-            }
-            else {
-                if (this._reversed)
-                    time = (this._totalDuration - item.time);
-                else
-                    time = item.time;
-
-                if (time <= this._startTime) {
-                    this.applyValue(item);
-                    this.callHook(item, false);
-                }
-                else if (this._endTime == -1 || time <= this._endTime) {
-                    this._totalTasks++;
-                    item.tweener = GTween.delayedCall(time)
-                        .setTimeScale(this._timeScale)
-                        .setTarget(item)
-                        .onComplete(this.onDelayedPlayItem, this);
-                }
-            }
-
-            if (item.tweener != null)
-                item.tweener.seek(this._startTime);
-        }
-
-        private skipAnimations(): void {
-            var frame: number;
-            var playStartTime: number;
-            var playTotalTime: number;
-            var value: any;
-            var target: GObject;
-            var item: TransitionItem;
-
-            var cnt: number = this._items.length;
-            for (var i: number = 0; i < cnt; i++) {
-                item = this._items[i];
-                if (item.type != TransitionActionType.Animation || item.time > this._startTime)
-                    continue;
-
-                value = item.value;
-                if (value.flag)
-                    continue;
-
-                target = item.target;
-                frame = target.getProp(ObjectPropID.Frame);
-                playStartTime = target.getProp(ObjectPropID.Playing) ? 0 : -1;
-                playTotalTime = 0;
-
-                for (var j: number = i; j < cnt; j++) {
-                    item = this._items[j];
-                    if (item.type != TransitionActionType.Animation || item.target != target || item.time > this._startTime)
-                        continue;
-
-                    value = item.value;
-                    value.flag = true;
-
-                    if (value.frame != -1) {
-                        frame = value.frame;
-                        if (value.playing)
-                            playStartTime = item.time;
-                        else
-                            playStartTime = -1;
-                        playTotalTime = 0;
-                    }
-                    else {
-                        if (value.playing) {
-                            if (playStartTime < 0)
-                                playStartTime = item.time;
-                        }
-                        else {
-                            if (playStartTime >= 0)
-                                playTotalTime += (item.time - playStartTime);
-                            playStartTime = -1;
-                        }
-                    }
-
-                    this.callHook(item, false);
-                }
-
-                if (playStartTime >= 0)
-                    playTotalTime += (this._startTime - playStartTime);
-
-                target.setProp(ObjectPropID.Playing, playStartTime >= 0);
-                target.setProp(ObjectPropID.Frame, frame);
-                if (playTotalTime > 0)
-                    target.setProp(ObjectPropID.DeltaTime, playTotalTime * 1000);
-            }
-        }
-
-        private onDelayedPlayItem(tweener: GTweener): void {
-            var item: TransitionItem = tweener.target as TransitionItem;
-            item.tweener = null;
-            this._totalTasks--;
-
-            this.applyValue(item);
-            this.callHook(item, false);
-
-            this.checkAllComplete();
-        }
-
-        private onTweenStart(tweener: GTweener): void {
-            var item: TransitionItem = <TransitionItem>tweener.target;
-
-            if (item.type == TransitionActionType.XY || item.type == TransitionActionType.Size) //位置和大小要到start才最终确认起始值
-            {
-                var startValue: TValue;
-                var endValue: TValue;
-
-                if (this._reversed) {
-                    startValue = item.tweenConfig.endValue;
-                    endValue = item.tweenConfig.startValue;
-                }
-                else {
-                    startValue = item.tweenConfig.startValue;
-                    endValue = item.tweenConfig.endValue;
-                }
-
-                if (item.type == TransitionActionType.XY) {
-                    if (item.target != this._owner) {
-                        if (!startValue.b1)
-                            tweener.startValue.x = item.target.x;
-                        else if (startValue.b3) //percent
-                            tweener.startValue.x = startValue.f1 * this._owner.width;
-
-                        if (!startValue.b2)
-                            tweener.startValue.y = item.target.y;
-                        else if (startValue.b3) //percent
-                            tweener.startValue.y = startValue.f2 * this._owner.height;
-
-                        if (!endValue.b1)
-                            tweener.endValue.x = tweener.startValue.x;
-                        else if (endValue.b3)
-                            tweener.endValue.x = endValue.f1 * this._owner.width;
-
-                        if (!endValue.b2)
-                            tweener.endValue.y = tweener.startValue.y;
-                        else if (endValue.b3)
-                            tweener.endValue.y = endValue.f2 * this._owner.height;
-                    }
-                    else {
-                        if (!startValue.b1)
-                            tweener.startValue.x = item.target.x - this._ownerBaseX;
-                        if (!startValue.b2)
-                            tweener.startValue.y = item.target.y - this._ownerBaseY;
-
-                        if (!endValue.b1)
-                            tweener.endValue.x = tweener.startValue.x;
-                        if (!endValue.b2)
-                            tweener.endValue.y = tweener.startValue.y;
-                    }
-                }
-                else {
-                    if (!startValue.b1)
-                        tweener.startValue.x = item.target.width;
-                    if (!startValue.b2)
-                        tweener.startValue.y = item.target.height;
-
-                    if (!endValue.b1)
-                        tweener.endValue.x = tweener.startValue.x;
-                    if (!endValue.b2)
-                        tweener.endValue.y = tweener.startValue.y;
-                }
-
-                if (item.tweenConfig.path) {
-                    item.value.b1 = item.value.b2 = true;
-                    tweener.setPath(item.tweenConfig.path);
-                }
-            }
-
-            this.callHook(item, false);
-        }
-
-        private onTweenUpdate(tweener: GTweener): void {
-            var item: TransitionItem = tweener.target as TransitionItem;
-            switch (item.type) {
-                case TransitionActionType.XY:
-                case TransitionActionType.Size:
                 case TransitionActionType.Scale:
                 case TransitionActionType.Skew:
-                    item.value.f1 = tweener.value.x;
-                    item.value.f2 = tweener.value.y;
-                    if (item.tweenConfig.path) {
-                        item.value.f1 += tweener.startValue.x;
-                        item.value.f2 += tweener.startValue.y;
-                    }
+                    item.value.f1 = startValue.f1;
+                    item.value.f2 = startValue.f2;
+                    toProps.f1 = endValue.f1;
+                    toProps.f2 = endValue.f2;
                     break;
 
                 case TransitionActionType.Alpha:
-                case TransitionActionType.Rotation:
-                    item.value.f1 = tweener.value.x;
+                    item.value.f1 = startValue.f1;
+                    toProps.f1 = endValue.f1;
                     break;
 
-                case TransitionActionType.Color:
-                    item.value.f1 = tweener.value.color;
+                case TransitionActionType.Rotation:
+                    item.value.i = startValue.i;
+                    toProps.i = endValue.i;
                     break;
 
                 case TransitionActionType.ColorFilter:
-                    item.value.f1 = tweener.value.x;
-                    item.value.f2 = tweener.value.y;
-                    item.value.f3 = tweener.value.z;
-                    item.value.f4 = tweener.value.w;
-                    break;
-
-                case TransitionActionType.Shake:
-                    item.value.offsetX = tweener.deltaValue.x;
-                    item.value.offsetY = tweener.deltaValue.y;
+                    item.value.f1 = startValue.f1;
+                    item.value.f2 = startValue.f2;
+                    item.value.f3 = startValue.f3;
+                    item.value.f4 = startValue.f4;
+                    toProps.f1 = endValue.f1;
+                    toProps.f2 = endValue.f2;
+                    toProps.f3 = endValue.f3;
+                    toProps.f4 = endValue.f4;
                     break;
             }
-
-            this.applyValue(item);
         }
 
-        private onTweenComplete(tweener: GTweener): void {
-            var item: TransitionItem = tweener.target as TransitionItem;
-            item.tweener = null;
-            this._totalTasks--;
+        private startTween(item: TransitionItem) {
+            let toProps: TransitionValue = new TransitionValue();
 
-            if (tweener.allCompleted) //当整体播放结束时间在这个tween的中间时不应该调用结尾钩子
-                this.callHook(item, true);
+            this.prepareValue(item, toProps, this.$reversed);
+            this.applyValue(item, item.value);
+            
+            let completeHandler:(t:createjs.Tween) => any;
+			if(item.repeat != 0) {
+				item.tweenTimes = 0;
+				completeHandler = utils.Binder.create(this.$tweenRepeatComplete, this, item);
+			}
+			else
+				completeHandler = utils.Binder.create(this.$tweenComplete, this, item);
+
+            this.$totalTasks++;
+            item.completed = false;
+
+            this.prepareValue(item, toProps, this.$reversed);
+            
+            item.tweener = createjs.Tween.get(item.value, {
+                onChange: utils.Binder.create(this.$tweenUpdate, this, item)
+            }).to(toProps, item.duration * 1000, item.easeType).call(completeHandler);
+            
+            if (item.hook != null)
+                item.hook.call(item.hookObj);
+        }
+
+        private $delayCall(item: TransitionItem) {
+            this.disposeTween(item);
+            this.$totalTasks--;
+            this.startTween(item);
+        }
+
+        private $delayCall2(item: TransitionItem) {
+            this.disposeTween(item);
+            this.$totalTasks--;
+            item.completed = true;
+
+            this.applyValue(item, item.value);
+            if (item.hook != null)
+                item.hook.call(item.hookObj);
 
             this.checkAllComplete();
         }
 
-        private onPlayTransCompleted(item: TransitionItem): void {
-            this._totalTasks--;
+        private $tweenUpdate(event:any, item: TransitionItem): void {
+            this.applyValue(item, item.value);
+        }
 
+        private $tweenComplete(event:any, item: TransitionItem) {
+            this.disposeTween(item);
+            this.$totalTasks--;
+            item.completed = true;
+            if (item.hook2 != null)
+                item.hook2.call(item.hook2Obj);
             this.checkAllComplete();
         }
 
-        private callHook(item: TransitionItem, tweenEnd: boolean): void {
-            if (tweenEnd) {
-                if (item.tweenConfig != null && item.tweenConfig.endHook != null)
-                    item.tweenConfig.endHook.call(item.tweenConfig.endHookCaller);
+        private $tweenRepeatComplete(event:any, item: TransitionItem) {
+            item.tweenTimes++;
+            if (item.repeat == -1 || item.tweenTimes < item.repeat + 1) {
+                let toProps: TransitionValue = new TransitionValue;
+
+                let reversed: boolean;
+                if (item.yoyo) {
+                    if (this.$reversed)
+                        reversed = item.tweenTimes % 2 == 0;
+                    else
+                        reversed = item.tweenTimes % 2 == 1;
+                }
+                else
+                    reversed = this.$reversed;
+                this.prepareValue(item, toProps, reversed);
+                this.disposeTween(item);
+                item.tweener = createjs.Tween.get(item.value, {
+                    onChange: utils.Binder.create(this.$tweenUpdate, this, item)
+                }).to(toProps, item.duration * 1000, item.easeType).call(this.$tweenRepeatComplete, [null, item], this);
             }
-            else {
-                if (item.time >= this._startTime && item.hook != null)
-                    item.hook.call(item.hookCaller);
+            else
+                this.$tweenComplete(null, item);
+        }
+
+        private disposeTween(item:TransitionItem):void {
+            if(!item) return;
+            if(item.tweener) {
+                item.tweener.paused = true;
+                item.tweener.removeAllEventListeners();
+                createjs.Tween.removeTweens(item.value);
+                item.tweener = null;
             }
         }
 
-        private checkAllComplete(): void {
-            if (this._playing && this._totalTasks == 0) {
-                if (this._totalTimes < 0) {
-                    this.internalPlay();
+        private $playTransComplete(item: TransitionItem) {
+            this.disposeTween(item);
+            this.$totalTasks--;
+            item.completed = true;
+            this.checkAllComplete();
+        }
+
+        private checkAllComplete() {
+            if (this.$playing && this.$totalTasks == 0) {
+                if (this.$totalTimes < 0) {
+                    //the reason we don't call 'internalPlay' immediately here is because of the onChange handler issue, the handler's been calling all the time even the tween is in waiting/complete status.
+                    GTimer.inst.callLater(this.internalPlay, this, 0);
                 }
                 else {
-                    this._totalTimes--;
-                    if (this._totalTimes > 0)
-                        this.internalPlay();
+                    this.$totalTimes--;
+                    if (this.$totalTimes > 0)
+                        GTimer.inst.callLater(this.internalPlay, this, 0);
                     else {
-                        this._playing = false;
-
-                        var cnt: number = this._items.length;
-                        for (var i: number = 0; i < cnt; i++) {
-                            var item: TransitionItem = this._items[i];
-                            if (item.target != null && item.displayLockToken != 0) {
-                                item.target.releaseDisplayLock(item.displayLockToken);
-                                item.displayLockToken = 0;
-                            }
-                        }
-
-                        if (this._onComplete != null) {
-                            var func: Function = this._onComplete;
-                            var param: any = this._onCompleteParam;
-                            var thisObj: any = this._onCompleteCaller;
-                            this._onComplete = null;
-                            this._onCompleteParam = null;
-                            this._onCompleteCaller = null;
-                            func.call(thisObj, param);
+                        this.$playing = false;
+                        this.$items.forEach(item => {
+                            if (item.target != null)
+							{
+								if (item.lockToken != 0)
+								{
+									item.target.releaseGearDisplay(item.lockToken);
+									item.lockToken = 0;
+								}
+								
+								if (item.filterCreated)
+								{
+									item.filterCreated = false;
+									item.target.filters = null;
+                                }
+                                
+                                this.disposeTween(item);
+							}
+                        });
+                        
+						if (this.$onComplete != null) {
+                            let func: Function = this.$onComplete;
+                            let param: any = this.$onCompleteParam;
+                            let thisObj: any = this.$onCompleteObj;
+                            this.$onComplete = null;
+                            this.$onCompleteParam = null;
+                            this.$onCompleteObj = null;
+                            param && param.length ? func.apply(thisObj, param) : func.call(thisObj, param);
                         }
                     }
                 }
             }
         }
 
-        private applyValue(item: TransitionItem): void {
-            item.target._gearLocked = true;
-            var value: any = item.value;
-
+        private applyValue(item: TransitionItem, value: TransitionValue) {
+            item.target.$gearLocked = true;
             switch (item.type) {
                 case TransitionActionType.XY:
-                    if (item.target == this._owner) {
-                        if (value.b1 && value.b2)
-                            item.target.setXY(value.f1 + this._ownerBaseX, value.f2 + this._ownerBaseY);
-                        else if (value.b1)
-                            item.target.x = value.f1 + this._ownerBaseX;
+                    if (item.target == this.$owner) {
+                        let f1: number = 0, f2: number = 0;
+                        if (!value.b1)
+                            f1 = item.target.x;
                         else
-                            item.target.y = value.f2 + this._ownerBaseY;
+                            f1 = value.f1 + this.$ownerBaseX;
+                        if (!value.b2)
+                            f2 = item.target.y;
+                        else
+                            f2 = value.f2 + this.$ownerBaseY;
+                        item.target.setXY(f1, f2);
                     }
                     else {
-                        if (value.b3) //position in percent
-                        {
-                            if (value.b1 && value.b2)
-                                item.target.setXY(value.f1 * this._owner.width, value.f2 * this._owner.height);
-                            else if (value.b1)
-                                item.target.x = value.f1 * this._owner.width;
-                            else if (value.b2)
-                                item.target.y = value.f2 * this._owner.height;
-                        }
-                        else {
-                            if (value.b1 && value.b2)
-                                item.target.setXY(value.f1, value.f2);
-                            else if (value.b1)
-                                item.target.x = value.f1;
-                            else if (value.b2)
-                                item.target.y = value.f2;
-                        }
+                        if (!value.b1)
+                            value.f1 = item.target.x;
+                        if (!value.b2)
+                            value.f2 = item.target.y;
+                        item.target.setXY(value.f1, value.f2);
                     }
                     break;
-
                 case TransitionActionType.Size:
                     if (!value.b1)
                         value.f1 = item.target.width;
@@ -924,394 +685,339 @@ module fgui {
                         value.f2 = item.target.height;
                     item.target.setSize(value.f1, value.f2);
                     break;
-
                 case TransitionActionType.Pivot:
-                    item.target.setPivot(value.f1, value.f2, item.target.pivotAsAnchor);
+                    item.target.setPivot(value.f1, value.f2);
                     break;
-
                 case TransitionActionType.Alpha:
                     item.target.alpha = value.f1;
                     break;
-
                 case TransitionActionType.Rotation:
-                    item.target.rotation = value.f1;
+                    item.target.rotation = value.i;
                     break;
-
                 case TransitionActionType.Scale:
                     item.target.setScale(value.f1, value.f2);
                     break;
-
                 case TransitionActionType.Skew:
                     item.target.setSkew(value.f1, value.f2);
                     break;
-
                 case TransitionActionType.Color:
-                    item.target.setProp(ObjectPropID.Color, value.f1);
+                    if (fgui.isColorGear(item.target))
+                        item.target.color = value.c;
                     break;
-
                 case TransitionActionType.Animation:
-                    if (value.frame >= 0)
-                        item.target.setProp(ObjectPropID.Frame, value.frame);
-                    item.target.setProp(ObjectPropID.Playing, value.playing);
-                    item.target.setProp(ObjectPropID.TimeScale, this._timeScale);
+                    if (fgui.isAnimationGear(item.target)) {
+                        if (!value.b1)
+                            value.i = item.target.frame;
+                        item.target.frame = value.i;
+                        item.target.playing = value.b;
+                    }
                     break;
-
                 case TransitionActionType.Visible:
-                    item.target.visible = value.visible;
+                    item.target.visible = value.b;
                     break;
-
                 case TransitionActionType.Transition:
-                    if (this._playing) {
-                        var trans: Transition = value.trans;
-                        if (trans != null) {
-                            this._totalTasks++;
-                            var startTime: number = this._startTime > item.time ? (this._startTime - item.time) : 0;
-                            var endTime: number = this._endTime >= 0 ? (this._endTime - item.time) : -1;
-                            if (value.stopTime >= 0 && (endTime < 0 || endTime > value.stopTime))
-                                endTime = value.stopTime;
-                            trans.timeScale = this._timeScale;
-                            trans._play(this.onPlayTransCompleted, this, item, value.playTimes, 0, startTime, endTime, this._reversed);
+                    let trans: Transition = (item.target as GComponent).getTransition(value.s);
+                    if (trans != null) {
+                        if (value.i == 0)
+                            trans.stop(false, true);
+                        else if (trans.playing)
+                            trans.$totalTimes = value.i == -1 ? Number.MAX_VALUE : value.i;
+                        else {
+                            item.completed = false;
+                            this.$totalTasks++;
+                            if (this.$reversed)
+                                trans.playReverse(this.$playTransComplete, this, item, item.value.i);
+                            else
+                                trans.play(this.$playTransComplete, this, item, item.value.i);
                         }
                     }
                     break;
-
                 case TransitionActionType.Sound:
-                    if (this._playing && item.time >= this._startTime) {
-                        if (value.audioClip == null) {
-                            var pi: PackageItem = UIPackage.getItemByURL(value.sound);
-                            if (pi)
-                                value.audioClip = <egret.Sound>pi.owner.getItemAsset(pi);
-                        }
-                        if (value.audioClip)
-                            GRoot.inst.playOneShotSound(value.audioClip, value.volume);
-                    }
+                    //ignore
                     break;
-
                 case TransitionActionType.Shake:
-                    item.target.setXY(item.target.x - value.lastOffsetX + value.offsetX, item.target.y - value.lastOffsetY + value.offsetY);
-                    value.lastOffsetX = value.offsetX;
-                    value.lastOffsetY = value.offsetY;
+                    item.startValue.f1 = 0; //offsetX
+                    item.startValue.f2 = 0; //offsetY
+                    item.startValue.f3 = item.value.f2; //shakePeriod
+                    GTimer.inst.add(1, 0, item.$shake, item, [this]);
+                    this.$totalTasks++;
+                    item.completed = false;
                     break;
 
                 case TransitionActionType.ColorFilter:
-                    {
-                        ToolSet.setColorFilter(item.target.displayObject, [value.f1, value.f2, value.f3, value.f4]);
-                        break;
-                    }
-                case TransitionActionType.Text:
-                    item.target.text = value.text;
-                    break;
-
-                case TransitionActionType.Icon:
-                    item.target.icon = value.text;
+                    item.target.updateColorComponents(value.f1, value.f2, value.f3, value.f4);
                     break;
             }
-
-            item.target._gearLocked = false;
+            item.target.$gearLocked = false;
         }
 
-        public setup(buffer: ByteBuffer): void {
-            this.name = buffer.readS();
-            this._options = buffer.readInt();
-            this._autoPlay = buffer.readBool();
-            this._autoPlayTimes = buffer.readInt();
-            this._autoPlayDelay = buffer.readFloat();
+        /**@internal */
+        $shakeItem(item: TransitionItem, elapsedMS:number) {
+            let r: number = Math.ceil(item.value.f1 * item.startValue.f3 / item.value.f2);
+            let rx: number = (Math.random() * 2 - 1) * r;
+            let ry: number = (Math.random() * 2 - 1) * r;
+            rx = rx > 0 ? Math.ceil(rx) : Math.floor(rx);
+            ry = ry > 0 ? Math.ceil(ry) : Math.floor(ry);
+            item.target.$gearLocked = true;
+            item.target.setXY(item.target.x - item.startValue.f1 + rx, item.target.y - item.startValue.f2 + ry);
+            item.target.$gearLocked = false;
+            item.startValue.f1 = rx;
+            item.startValue.f2 = ry;
+            item.startValue.f3 -= elapsedMS / 1000;
+            if (item.startValue.f3 <= 0) {
+                item.target.$gearLocked = true;
+                item.target.setXY(item.target.x - item.startValue.f1, item.target.y - item.startValue.f2);
+                item.target.$gearLocked = false;
+                item.completed = true;
+                this.$totalTasks--;
+                GTimer.inst.remove(item.$shake, item);
+                this.checkAllComplete();
+            }
+        }
 
-            var cnt: number = buffer.readShort();
-            for (var i: number = 0; i < cnt; i++) {
-                var dataLen: number = buffer.readShort();
-                var curPos: number = buffer.position;
+        public setup(xml: utils.XmlNode) {
+            this.name = xml.attributes.name;
+            let str: string = xml.attributes.options;
+            if (str)
+                this.$options = parseInt(str);
+            this.$autoPlay = xml.attributes.autoPlay == "true";
+            if (this.$autoPlay) {
+                str = xml.attributes.autoPlayRepeat;
+                if (str)
+                    this.autoPlayRepeat = parseInt(str);
+                str = xml.attributes.autoPlayDelay;
+                if (str)
+                    this.autoPlayDelay = parseFloat(str);
+            }
 
-                buffer.seek(curPos, 0);
-
-                var item: TransitionItem = new TransitionItem(buffer.readByte());
-                this._items[i] = item;
-
-                item.time = buffer.readFloat();
-                var targetId: number = buffer.readShort();
-                if (targetId < 0)
-                    item.targetId = "";
-                else
-                    item.targetId = this._owner.getChildAt(targetId).id;
-                item.label = buffer.readS();
-
-                if (buffer.readBool()) {
-                    buffer.seek(curPos, 1);
-
-                    item.tweenConfig = new TweenConfig();
-                    item.tweenConfig.duration = buffer.readFloat();
-                    if (item.time + item.tweenConfig.duration > this._totalDuration)
-                        this._totalDuration = item.time + item.tweenConfig.duration;
-                    item.tweenConfig.easeType = buffer.readByte();
-                    item.tweenConfig.repeat = buffer.readInt();
-                    item.tweenConfig.yoyo = buffer.readBool();
-                    item.tweenConfig.endLabel = buffer.readS();
-
-                    buffer.seek(curPos, 2);
-
-                    this.decodeValue(item, buffer, item.tweenConfig.startValue);
-
-                    buffer.seek(curPos, 3);
-
-                    this.decodeValue(item, buffer, item.tweenConfig.endValue);
-
-                    if (buffer.version >= 2) {
-                        var pathLen: number = buffer.readInt();
-                        if (pathLen > 0) {
-                            item.tweenConfig.path = new GPath();
-                            var pts: Array<GPathPoint> = new Array<GPathPoint>();
-
-                            for (var j: number = 0; j < pathLen; j++) {
-                                var curveType: number = buffer.readByte();
-                                switch (curveType) {
-                                    case CurveType.Bezier:
-                                        pts.push(GPathPoint.newBezierPoint(buffer.readFloat(), buffer.readFloat(),
-                                            buffer.readFloat(), buffer.readFloat()));
-                                        break;
-
-                                    case CurveType.CubicBezier:
-                                        pts.push(GPathPoint.newCubicBezierPoint(buffer.readFloat(), buffer.readFloat(),
-                                            buffer.readFloat(), buffer.readFloat(),
-                                            buffer.readFloat(), buffer.readFloat()));
-                                        break;
-
-                                    default:
-                                        pts.push(GPathPoint.newPoint(buffer.readFloat(), buffer.readFloat(), curveType));
-                                        break;
-                                }
-                            }
-
-                            item.tweenConfig.path.create(pts);
-                        }
+            let col: utils.XmlNode[] = xml.children;
+            col.forEach(cxml => {
+                if (cxml.nodeName != "item")
+                    return;
+                let item: TransitionItem = new TransitionItem();
+                this.$items.push(item);
+                item.time = parseInt(cxml.attributes.time) / Transition.FRAME_RATE;
+                item.targetId = cxml.attributes.target;
+                str = cxml.attributes.type;
+                switch (str) {
+                    case "XY":
+                        item.type = TransitionActionType.XY;
+                        break;
+                    case "Size":
+                        item.type = TransitionActionType.Size;
+                        break;
+                    case "Scale":
+                        item.type = TransitionActionType.Scale;
+                        break;
+                    case "Pivot":
+                        item.type = TransitionActionType.Pivot;
+                        break;
+                    case "Alpha":
+                        item.type = TransitionActionType.Alpha;
+                        break;
+                    case "Rotation":
+                        item.type = TransitionActionType.Rotation;
+                        break;
+                    case "Color":
+                        item.type = TransitionActionType.Color;
+                        break;
+                    case "Animation":
+                        item.type = TransitionActionType.Animation;
+                        break;
+                    case "Visible":
+                        item.type = TransitionActionType.Visible;
+                        break;
+                    case "Sound":
+                        item.type = TransitionActionType.Sound;
+                        break;
+                    case "Transition":
+                        item.type = TransitionActionType.Transition;
+                        break;
+                    case "Shake":
+                        item.type = TransitionActionType.Shake;
+                        break;
+                    case "ColorFilter":
+                        item.type = TransitionActionType.ColorFilter;
+                        break;
+                    case "Skew":
+                        item.type = TransitionActionType.Skew;
+                        break;
+                    default:
+                        item.type = TransitionActionType.Unknown;
+                        break;
+                }
+                item.tween = cxml.attributes.tween == "true";
+                item.label = cxml.attributes.label;
+                if (item.tween) {
+                    item.duration = parseInt(cxml.attributes.duration) / Transition.FRAME_RATE;
+                    if (item.time + item.duration > this.$maxTime)
+                        this.$maxTime = item.time + item.duration;
+                    str = cxml.attributes.ease;
+                    if (str)
+                        item.easeType = ParseEaseType(str);
+                    str = cxml.attributes.repeat;
+                    if (str)
+                        item.repeat = parseInt(str);
+                    item.yoyo = cxml.attributes.yoyo == "true";
+                    item.label2 = cxml.attributes.label2;
+                    let v: string = cxml.attributes.endValue;
+                    if (v) {
+                        this.decodeValue(item.type, cxml.attributes.startValue, item.startValue);
+                        this.decodeValue(item.type, v, item.endValue);
+                    }
+                    else {
+                        item.tween = false;
+                        this.decodeValue(item.type, cxml.attributes.startValue, item.value);
                     }
                 }
                 else {
-                    if (item.time > this._totalDuration)
-                        this._totalDuration = item.time;
-
-                    buffer.seek(curPos, 2);
-
-                    this.decodeValue(item, buffer, item.value);
+                    if (item.time > this.$maxTime)
+                        this.$maxTime = item.time;
+                    this.decodeValue(item.type, cxml.attributes.value, item.value);
                 }
-
-                buffer.position = curPos + dataLen;
-            }
+            }, this);
         }
 
-        private decodeValue(item: TransitionItem, buffer: ByteBuffer, value: any): void {
-            switch (item.type) {
-                case TransitionActionType.XY:
-                case TransitionActionType.Size:
-                case TransitionActionType.Pivot:
-                case TransitionActionType.Skew:
-                    value.b1 = buffer.readBool();
-                    value.b2 = buffer.readBool();
-                    value.f1 = buffer.readFloat();
-                    value.f2 = buffer.readFloat();
-
-                    if (buffer.version >= 2 && item.type == TransitionActionType.XY)
-                        value.b3 = buffer.readBool(); //percent
-                    break;
-
-                case TransitionActionType.Alpha:
-                case TransitionActionType.Rotation:
-                    value.f1 = buffer.readFloat();
-                    break;
-
-                case TransitionActionType.Scale:
-                    value.f1 = buffer.readFloat();
-                    value.f2 = buffer.readFloat();
-                    break;
-
-                case TransitionActionType.Color:
-                    value.f1 = buffer.readColor();
-                    break;
-
-                case TransitionActionType.Animation:
-                    value.playing = buffer.readBool();
-                    value.frame = buffer.readInt();
-                    break;
-
-                case TransitionActionType.Visible:
-                    value.visible = buffer.readBool();
-                    break;
-
-                case TransitionActionType.Sound:
-                    value.sound = buffer.readS();
-                    value.volume = buffer.readFloat();
-                    break;
-
-                case TransitionActionType.Transition:
-                    value.transName = buffer.readS();
-                    value.playTimes = buffer.readInt();
-                    break;
-
-                case TransitionActionType.Shake:
-                    value.amplitude = buffer.readFloat();
-                    value.duration = buffer.readFloat();
-                    break;
-
-                case TransitionActionType.ColorFilter:
-                    value.f1 = buffer.readFloat();
-                    value.f2 = buffer.readFloat();
-                    value.f3 = buffer.readFloat();
-                    value.f4 = buffer.readFloat();
-                    break;
-
-                case TransitionActionType.Text:
-                case TransitionActionType.Icon:
-                    value.text = buffer.readS();
-                    break;
-            }
-        }
-    }
-
-    class TransitionActionType {
-        public static XY: number = 0;
-        public static Size: number = 1;
-        public static Scale: number = 2;
-        public static Pivot: number = 3;
-        public static Alpha: number = 4;
-        public static Rotation: number = 5;
-        public static Color: number = 6;
-        public static Animation: number = 7;
-        public static Visible: number = 8;
-        public static Sound: number = 9;
-        public static Transition: number = 10;
-        public static Shake: number = 11;
-        public static ColorFilter: number = 12;
-        public static Skew: number = 13;
-        public static Text: number = 14;
-        public static Icon: number = 15;
-        public static Unknown: number = 16;
-    }
-
-    class TransitionItem {
-        public time: number;
-        public targetId: string;
-        public type: number;
-        public tweenConfig: TweenConfig;
-        public label: string;
-        public value: any;
-        public hook: Function;
-        public hookCaller: any;
-
-        public tweener: GTweener;
-        public target: GObject;
-        public displayLockToken: number;
-
-        public constructor(type: number) {
-            this.type = type;
-
+        private decodeValue(type: number, str: string, value: TransitionValue) {
+            let arr: string[];
             switch (type) {
                 case TransitionActionType.XY:
                 case TransitionActionType.Size:
-                case TransitionActionType.Scale:
                 case TransitionActionType.Pivot:
                 case TransitionActionType.Skew:
+                    arr = str.split(",");
+                    if (arr[0] == "-") {
+                        value.b1 = false;
+                    }
+                    else {
+                        value.f1 = parseFloat(arr[0]);
+                        value.b1 = true;
+                    }
+                    if (arr[1] == "-") {
+                        value.b2 = false;
+                    }
+                    else {
+                        value.f2 = parseFloat(arr[1]);
+                        value.b2 = true;
+                    }
+                    break;
                 case TransitionActionType.Alpha:
+                    value.f1 = parseFloat(str);
+                    break;
                 case TransitionActionType.Rotation:
+                    value.i = parseInt(str);
+                    break;
+                case TransitionActionType.Scale:
+                    arr = str.split(",");
+                    value.f1 = parseFloat(arr[0]);
+                    value.f2 = parseFloat(arr[1]);
+                    break;
                 case TransitionActionType.Color:
-                case TransitionActionType.ColorFilter:
-                    this.value = new TValue();
+                    value.c = utils.StringUtil.convertFromHtmlColor(str);
                     break;
-
                 case TransitionActionType.Animation:
-                    this.value = new TValue_Animation();
+                    arr = str.split(",");
+                    if (arr[0] == "-") {
+                        value.b1 = false;
+                    }
+                    else {
+                        value.i = parseInt(arr[0]);
+                        value.b1 = true;
+                    }
+                    value.b = arr[1] == "p";
                     break;
-
-                case TransitionActionType.Shake:
-                    this.value = new TValue_Shake();
-                    break;
-
-                case TransitionActionType.Sound:
-                    this.value = new TValue_Sound();
-                    break;
-
-                case TransitionActionType.Transition:
-                    this.value = new TValue_Transition();
-                    break;
-
                 case TransitionActionType.Visible:
-                    this.value = new TValue_Visible();
+                    value.b = str == "true";
+                    break;
+                case TransitionActionType.Sound:
+                    arr = str.split(",");
+                    value.s = arr[0];
+                    if (arr.length > 1) {
+                        let intv: number = parseInt(arr[1]);
+                        if (intv == 0 || intv == 100)
+                            value.f1 = 1;
+                        else
+                            value.f1 = intv / 100;
+                    }
+                    else
+                        value.f1 = 1;
+                    break;
+                case TransitionActionType.Transition:
+                    arr = str.split(",");
+                    value.s = arr[0];
+                    if (arr.length > 1)
+                        value.i = parseInt(arr[1]);
+                    else
+                        value.i = 1;
+                    break;
+                case TransitionActionType.Shake:
+                    arr = str.split(",");
+                    value.f1 = parseFloat(arr[0]);
+                    value.f2 = parseFloat(arr[1]);
                     break;
 
-                case TransitionActionType.Text:
-                case TransitionActionType.Icon:
-                    this.value = new TValue_Text();
+                case TransitionActionType.ColorFilter:
+                    arr = str.split(",");
+                    value.f1 = parseFloat(arr[0]);
+                    value.f2 = parseFloat(arr[1]);
+                    value.f3 = parseFloat(arr[2]);
+                    value.f4 = parseFloat(arr[3]);
                     break;
             }
         }
+
     }
 
-    class TweenConfig {
+    class TransitionItem {
+        public time: number = 0;
+        public targetId: string;
+        public type: number = 0;
         public duration: number = 0;
-        public easeType: number;
+        public value: TransitionValue;
+        public startValue: TransitionValue;
+        public endValue: TransitionValue;
+        public easeType: (t: number) => number;
         public repeat: number = 0;
         public yoyo: boolean = false;
-        public startValue: TValue;
-        public endValue: TValue;
-        public endLabel: string;
-        public endHook: Function;
-        public endHookCaller: any;
-        public path: GPath;
+        public tween: boolean = false;
+        public label: string;
+        public label2: string;
+        public hook: () => void;
+        public hookObj: any;
+        public hook2: () => void;
+        public hook2Obj: any;
+        
+        public tweenTimes: number = 0;
+
+        public tweener: createjs.Tween;
+        public completed: boolean = false;
+        public target: GObject;
+        public filterCreated: boolean;
+        public lockToken:number = 0;
 
         public constructor() {
-            this.easeType = EaseType.QuadOut;
-            this.startValue = new TValue();
-            this.endValue = new TValue();
+            this.easeType = ParseEaseType("Quad.Out");
+            this.value = new TransitionValue();
+            this.startValue = new TransitionValue();
+            this.endValue = new TransitionValue();
+        }
+
+        /**@internal */
+        $shake(trans:Transition, elapsedMS:number):void {
+            trans.$shakeItem(this, elapsedMS);
         }
     }
 
-    class TValue_Visible {
-        public visible: boolean;
-    }
-
-    class TValue_Animation {
-        public frame: number;
-        public playing: boolean;
-        public flag: boolean;
-    }
-
-    class TValue_Sound {
-        public sound: string;
-        public volume: number;
-        public audioClip: egret.Sound;
-    }
-
-    class TValue_Transition {
-        public transName: string;
-        public playTimes: number;
-        public trans: Transition;
-        public stopTime: number;
-    }
-
-    class TValue_Shake {
-        public amplitude: number;
-        public duration: number;
-        public offsetX: number;
-        public offsetY: number;
-        public lastOffsetX: number;
-        public lastOffsetY: number;
-    }
-
-    class TValue_Text {
-        public text: string;
-    }
-
-    class TValue {
-        public f1: number;
-        public f2: number;
-        public f3: number;
-        public f4: number;
-
-        public b1: boolean;
-        public b2: boolean;
-        public b3: boolean;
-
-        public constructor() {
-            this.f1 = this.f2 = this.f3 = this.f4 = 0;
-            this.b1 = this.b2 = true;
-        }
+    class TransitionValue {
+        public f1: number = 0;
+        public f2: number = 0;
+        public f3: number = 0;
+        public f4: number = 0;
+        public i: number = 0;
+        public c: number = 0;
+        public b: boolean = false;
+        public s: string;
+        public b1: boolean = true;
+        public b2: boolean = true;
     }
 }

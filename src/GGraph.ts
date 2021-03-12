@@ -1,174 +1,100 @@
+/// <reference path="./GObject.ts" />
 
-module fgui {
+namespace fgui {
 
-    export class GGraph extends GObject {
-        private _graphics: egret.Graphics;
+    export class GGraph extends GObject implements IColorGear {
 
-        private _type: number = 0;
-        private _lineSize: number = 0;
-        private _lineColor: number = 0;
-        private _lineAlpha: number;
-        private _fillColor: number = 0;
-        private _fillAlpha: number;
-        private _cornerRadius: Array<number>;
-        private _sides: number;
-        private _startAngle: number;
-        private _polygonPoints: any[];
-        private _distances: number[];
+        private $type: number = 0;
+        private $lineSize: number = 0;
+        private $lineColor: number = 0;
+        private $lineAlpha: number;
+        private $fillColor: number = 0;
+        private $fillAlpha: number;
+        private $corner: number[];
 
         public constructor() {
             super();
 
-            this._lineSize = 1;
-            this._lineAlpha = 1;
-            this._fillAlpha = 1;
-            this._fillColor = 0xFFFFFF;
-            this._sides = 3;
-            this._startAngle = 0;
+            this.$lineSize = 1;
+            this.$lineAlpha = 1;
+            this.$fillAlpha = 1;
+            this.$fillColor = 0xFFFFFF;
         }
-
-        public get graphics(): egret.Graphics {
-            return this._graphics;
-        }
-
+        
         public drawRect(lineSize: number, lineColor: number, lineAlpha: number,
-            fillColor: number, fillAlpha: number, corner: Array<number> = null): void {
-            this._type = 1;
-            this._lineSize = lineSize;
-            this._lineColor = lineColor;
-            this._lineAlpha = lineAlpha;
-            this._fillColor = fillColor;
-            this._fillAlpha = fillAlpha;
-            this._cornerRadius = corner;
-            this.updateGraph();
+            fillColor: number, fillAlpha: number, corner: number[] = null): void {
+            this.$type = 1;
+            this.$lineSize = lineSize;
+            this.$lineColor = lineColor;
+            this.$lineAlpha = lineAlpha;
+            this.$fillColor = fillColor;
+            this.$fillAlpha = fillAlpha;
+            this.$corner = corner;
+            this.drawGraph();
         }
 
         public drawEllipse(lineSize: number, lineColor: number, lineAlpha: number,
             fillColor: number, fillAlpha: number): void {
-            this._type = 2;
-            this._lineSize = lineSize;
-            this._lineColor = lineColor;
-            this._lineAlpha = lineAlpha;
-            this._fillColor = fillColor;
-            this._fillAlpha = fillAlpha;
-            this._cornerRadius = null;
-            this.updateGraph();
-        }
-
-        public drawRegularPolygon(lineSize: number, lineColor: number, lineAlpha: number,
-            fillColor: number, fillAlpha: number, sides: number, startAngle: number = 0, distances: number[] = null): void {
-            this._type = 4;
-            this._lineSize = lineSize;
-            this._lineColor = lineColor;
-            this._lineAlpha = lineAlpha;
-            this._fillColor = fillColor;
-            this._fillAlpha = fillAlpha;
-            this._sides = sides;
-            this._startAngle = startAngle;
-            this._distances = distances;
-            this.updateGraph();
-        }
-
-        public drawPolygon(lineSize: number, lineColor: number, lineAlpha: number, fillColor: number, fillAlpha: number, points: any[]): void {
-            this._type = 3;
-            this._lineSize = lineSize;
-            this._lineColor = lineColor;
-            this._lineAlpha = lineAlpha;
-            this._fillColor = fillColor;
-            this._fillAlpha = fillAlpha;
-            this._polygonPoints = points;
-            this.updateGraph();
-        }
-
-        public get distances(): number[] {
-            return this._distances;
-        }
-
-        public set distances(value: number[]) {
-            this._distances = value;
-            if (this._type == 3)
-                this.updateGraph();
-        }
-
-        public clearGraphics(): void {
-            if (this._graphics) {
-                this._type = 0;
-                this._graphics.clear();
-            }
+            this.$type = 2;
+            this.$lineSize = lineSize;
+            this.$lineColor = lineColor;
+            this.$lineAlpha = lineAlpha;
+            this.$fillColor = fillColor;
+            this.$fillAlpha = fillAlpha;
+            this.$corner = null;
+            this.drawGraph();
         }
 
         public get color(): number {
-            return this._fillColor;
+            return this.$fillColor;
         }
 
         public set color(value: number) {
-            this._fillColor = value;
-            if (this._type != 0)
-                this.updateGraph();
+            this.$fillColor = value;
+            if (this.$type != 0)
+                this.drawGraph();
         }
 
-        private updateGraph(): void {
-            let ctx = this.graphics;
+        private drawGraph(): void {
 
-            ctx.clear();
+            let g:PIXI.Graphics = this.$displayObject as PIXI.Graphics;
+            g.interactive = this.touchable;
+            g.clear();
 
-            var w: number = this.width;
-            var h: number = this.height;
+            let w: number = this.width;
+            let h: number = this.height;
             if (w == 0 || h == 0)
                 return;
 
-            if (this._lineSize == 0)
-                ctx.lineStyle(0, 0, 0);
+            if (this.$lineSize == 0)
+                g.lineStyle(0, 0, 0);
             else
-                ctx.lineStyle(this._lineSize, this._lineColor, this._lineAlpha);
-            ctx.beginFill(this._fillColor, this._fillAlpha);
-            if (this._type == 1) {
-                if (this._cornerRadius) {
-                    if (this._cornerRadius.length == 1)
-                        ctx.drawRoundRect(0, 0, w, h, this._cornerRadius[0] * 2, this._cornerRadius[0] * 2);
-                    else
-                        ctx.drawRoundRect(0, 0, w, h, this._cornerRadius[0] * 2, this._cornerRadius[1] * 2);
+                g.lineStyle(this.$lineSize, this.$lineColor, this.$lineAlpha);
+            g.beginFill(this.$fillColor, this.$fillAlpha);
+            if (this.$type == 1) {
+                if (this.$corner && this.$corner.length >= 1) {
+                    //if (this.$corner.length == 1)
+                        g.drawRoundedRect(0, 0, w, h, this.$corner[0]);   //PIXI does not support 4 corners with different radius, so only apply the first number in this array
+                    //else
+                    //    g.drawRoundedRect(0, 0, w, h, this.$corner[0], this.$corner[1], this.$corner[2], this.$corner[3]);
                 }
                 else
-                    ctx.drawRect(0, 0, w, h);
+                    g.drawRect(0, 0, w, h);
             }
-            else if (this._type == 2)
-                ctx.drawEllipse(0, 0, w, h);
-            else if (this._type == 3) {
-                ToolSet.fillPath(ctx, this._polygonPoints, 0, 0);
+            else
+            {
+                let halfW:number = w * .5, halfH:number = h * .5;
+                if(w == h)
+                    g.drawCircle(halfW, halfW, halfW);
+                else
+                    g.drawEllipse(halfW, halfH, halfW, halfH);
             }
-            else if (this._type == 4) {
-                if (!this._polygonPoints)
-                    this._polygonPoints = [];
-                var radius: number = Math.min(this._width, this._height) / 2;
-                this._polygonPoints.length = 0;
-                var angle: number = this._startAngle * Math.PI / 180;
-                var deltaAngle: number = 2 * Math.PI / this._sides;
-                var dist: number;
-                for (var i: number = 0; i < this._sides; i++) {
-                    if (this._distances) {
-                        dist = this._distances[i];
-                        if (isNaN(dist))
-                            dist = 1;
-                    }
-                    else
-                        dist = 1;
-
-                    var xv: number = radius + radius * dist * Math.cos(angle);
-                    var yv: number = radius + radius * dist * Math.sin(angle);
-                    this._polygonPoints.push(xv, yv);
-
-                    angle += deltaAngle;
-                }
-
-                ToolSet.fillPath(ctx, this._polygonPoints, 0, 0);
-            }
-            ctx.endFill();
+            g.endFill();
         }
 
         public replaceMe(target: GObject): void {
-            if (!this._parent)
-                throw "parent not set";
+            if (!this.$parent)
+                throw new Error("parent not set");
 
             target.name = this.name;
             target.alpha = this.alpha;
@@ -179,114 +105,90 @@ module fgui {
             target.setXY(this.x, this.y);
             target.setSize(this.width, this.height);
 
-            var index: number = this._parent.getChildIndex(this);
-            this._parent.addChildAt(target, index);
+            let index: number = this.$parent.getChildIndex(this);
+            this.$parent.addChildAt(target, index);
             target.relations.copyFrom(this.relations);
 
-            this._parent.removeChild(this, true);
+            this.$parent.removeChild(this, true);
         }
 
         public addBeforeMe(target: GObject): void {
-            if (this._parent == null)
-                throw "parent not set";
+            if (this.$parent == null)
+                throw new Error("parent not set");
 
-            var index: number = this._parent.getChildIndex(this);
-            this._parent.addChildAt(target, index);
+            let index: number = this.$parent.getChildIndex(this);
+            this.$parent.addChildAt(target, index);
         }
 
         public addAfterMe(target: GObject): void {
-            if (this._parent == null)
-                throw "parent not set";
+            if (this.$parent == null)
+                throw new Error("parent not set");
 
-            var index: number = this._parent.getChildIndex(this);
+            let index: number = this.$parent.getChildIndex(this);
             index++;
-            this._parent.addChildAt(target, index);
+            this.$parent.addChildAt(target, index);
         }
 
-        public setNativeObject(obj: egret.DisplayObject): void {
-            var sprite: egret.Sprite = new egret.Sprite();
-            this.setDisplayObject(sprite);
-            if (this._parent)
-                this._parent.childStateChanged(this);
-            this.handleXYChanged();
-            sprite.alpha = this.alpha;
-            sprite.rotation = this.rotation;
-            sprite.visible = this.visible;
-            sprite.touchEnabled = this.touchable;
-            sprite.touchChildren = this.touchable;
-            sprite.addChild(obj);
+        public setNativeObject(obj: PIXI.DisplayObject): void {
+            this.$type = 0;
+            let g = this.$displayObject as PIXI.Graphics;
+            g.interactive = this.touchable;
+            g.clear();
+            g.removeChildren();  //clear old
+			g.addChild(obj);
         }
 
-        protected createDisplayObject(): void {
-            let sprite: egret.Sprite = new egret.Sprite();
-            sprite.touchEnabled = true;
-            this._graphics = sprite.graphics;
-            this.setDisplayObject(sprite);
-        }
+        protected createDisplayObject():void {
+            this.$displayObject = new UISprite(this);
+		}
 
-        public getProp(index: number): any {
-            if (index == ObjectPropID.Color)
-                return this.color;
-            else
-                return super.getProp(index);
-        }
-
-        public setProp(index: number, value: any): void {
-            if (index == ObjectPropID.Color)
-                this.color = value;
-            else
-                super.setProp(index, value);
-        }
-        
         protected handleSizeChanged(): void {
-            super.handleSizeChanged();
-            
-            if (this._type != 0)
-                this.updateGraph();
+            if (this.$type != 0)
+                this.drawGraph();
         }
 
-        public setup_beforeAdd(buffer: ByteBuffer, beginPos: number): void {
-            super.setup_beforeAdd(buffer, beginPos);
+        public setupBeforeAdd(xml: utils.XmlNode): void {
+            super.setupBeforeAdd(xml);
 
-            buffer.seek(beginPos, 5);
+            let type: string = xml.attributes.type;
+            if (type && type != "empty")
+            {
+                let str: string;
+                str = xml.attributes.lineSize;
+                if (str)
+                    this.$lineSize = parseInt(str);
 
-            this._type = buffer.readByte();
-            if (this._type != 0) {
-                var i: number;
-                var cnt: number;
-
-                this._lineSize = buffer.readInt();
-                var c: number = buffer.readColor(true);
-                this._lineColor = c & 0xFFFFFF;
-                this._lineAlpha = ((c >> 24) & 0xFF) / 0xFF;
-                c = buffer.readColor(true);
-                this._fillColor = c & 0xFFFFFF;
-                this._fillAlpha = ((c >> 24) & 0xFF) / 0xFF;
-                if (buffer.readBool()) {
-                    this._cornerRadius = new Array<number>(4);
-                    for (i = 0; i < 4; i++)
-                        this._cornerRadius[i] = buffer.readFloat();
+                let c:number;
+                str = xml.attributes.lineColor;
+                if (str) {
+                    c = utils.StringUtil.convertFromHtmlColor(str, true);
+                    this.$lineColor = c & 0xFFFFFF;
+                    this.$lineAlpha = ((c >> 24) & 0xFF) / 0xFF;
                 }
 
-                if (this._type == 3) {
-                    cnt = buffer.readShort();
-                    this._polygonPoints = [];
-                    this._polygonPoints.length = cnt;
-                    for (i = 0; i < cnt; i++)
-                        this._polygonPoints[i] = buffer.readFloat();
-                }
-                else if (this._type == 4) {
-                    this._sides = buffer.readShort();
-                    this._startAngle = buffer.readFloat();
-                    cnt = buffer.readShort();
-                    if (cnt > 0) {
-                        this._distances = [];
-                        for (i = 0; i < cnt; i++)
-                            this._distances[i] = buffer.readFloat();
-                    }
+                str = xml.attributes.fillColor;
+                if (str) {
+                    c = utils.StringUtil.convertFromHtmlColor(str, true);
+                    this.$fillColor = c & 0xFFFFFF;
+                    this.$fillAlpha = ((c >> 24) & 0xFF) / 0xFF;
                 }
 
-                this.updateGraph();
+                let arr: string[];
+                str = xml.attributes.corner;
+                if (str) {
+                    arr = str.split(",");
+                    if (arr.length > 1)
+                        this.$corner = [parseInt(arr[0]), parseInt(arr[1]),parseInt(arr[2]),parseInt(arr[3])];
+                    else
+                        this.$corner = [parseInt(arr[0])];
+                }
+
+                if (type == "rect")
+                    this.$type = 1;
+                else
+                    this.$type = 2;
+
+                this.drawGraph();
             }
         }
     }

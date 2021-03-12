@@ -1,84 +1,41 @@
+namespace fgui {
 
-module fgui {
+    export class UIContainer extends PIXI.Container implements IUIObject {
 
-    export class UIContainer extends egret.DisplayObjectContainer {
-        private _hitArea: PixelHitTest | egret.DisplayObject;
-        private _cachedMatrix: egret.Matrix;
-        private _cachedHitArea: boolean;
-        private _opaque: boolean;
+        protected $scrollRect: PIXI.Rectangle;
+        protected $rectMask: PIXI.Graphics;
 
-        public constructor() {
+        public UIOwner:GObject;
+
+        public constructor(owner?:GObject) {
             super();
-            this.touchEnabled = true;
-            this.touchChildren = true;
+            this.UIOwner = owner;
+            this.interactive = true;
+            this.interactiveChildren = true;
         }
 
-        public cacheHitArea(value: boolean) {
-            this._cachedHitArea = value;
-            if (value) {
-                if (!this._cachedMatrix)
-                    this._cachedMatrix = new egret.Matrix();
-                this._cachedMatrix.copyFrom(this.$getInvertedConcatenatedMatrix());
-            }
+        public get scrollRect(): PIXI.Rectangle {
+            return this.$scrollRect;
         }
 
-        public get hitArea(): PixelHitTest | egret.DisplayObject {
-            return this._hitArea;
-        }
-
-        public set hitArea(value: PixelHitTest | egret.DisplayObject) {
-            this._hitArea = value;
-        }
-
-        public get opaque(): boolean {
-            return this._opaque;
-        }
-
-        public set opaque(value: boolean) {
-            this._opaque = value;
-        }
-
-        public $hitTest(stageX: number, stageY: number): egret.DisplayObject {
-            if(!this.$visible)
-                return null;
-
-            if (this._hitArea) {
-                if (!this.touchEnabled)
-                    return null;
-
-                if ((<any>this._hitArea).$graphics) {
-                    if (!(<any>this._hitArea).$graphics.$hitTest(stageX, stageY))
-                        return null;
+        public set scrollRect(rect: PIXI.Rectangle) {
+            this.$scrollRect = rect;
+            if (rect != null) {
+                if (!this.$rectMask) {
+                    this.$rectMask = new PIXI.Graphics();
+                    this.$rectMask.isMask = true;
+                    this.addChild(this.$rectMask);
+                    this.mask = this.$rectMask;
                 }
-                else {
-                    let m: egret.Matrix = this._cachedHitArea ? this._cachedMatrix : this.$getInvertedConcatenatedMatrix();
-                    let localX: number = m.a * stageX + m.c * stageY + m.tx;
-                    let localY: number = m.b * stageX + m.d * stageY + m.ty;
-
-                    if (!(<PixelHitTest>this._hitArea).contains(localX, localY))
-                        return null;
+                this.$rectMask.clear();
+                if(rect.width > 0 && rect.height > 0) {
+                    this.$rectMask.beginFill(0x0, 1);
+                    this.$rectMask.drawRect(this.$scrollRect.x, this.$scrollRect.y, this.$scrollRect.width, this.$scrollRect.height);
+                    this.$rectMask.endFill();
                 }
-
-                return this;
             }
-
-            let ret: egret.DisplayObject = super.$hitTest(stageX, stageY);
-            if (ret == this && !this.touchEnabled)
-                return null;
-
-            if (ret == null && this._opaque) {
-                let m: egret.Matrix = this._cachedHitArea ? this._cachedMatrix : this.$getInvertedConcatenatedMatrix();
-                let localX: number = m.a * stageX + m.c * stageY + m.tx;
-                let localY: number = m.b * stageX + m.d * stageY + m.ty;
-                if (localX >= 0 && localY >= 0 && localX <= this.$explicitWidth && localY <= this.$explicitHeight)
-                    return this;
-                else
-                    return null;
-            }
-            else if (ret == this && !this._opaque)
-                return null;
             else
-                return ret;
+                this.mask = null;
         }
     }
 }

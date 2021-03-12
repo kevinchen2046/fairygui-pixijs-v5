@@ -1,207 +1,199 @@
-
-module fgui {
+namespace fgui {
 
     export class GProgressBar extends GComponent {
-        private _min: number = 0;
-        private _max: number = 0;
-        private _value: number = 0;
-        private _titleType: ProgressTitleType;
-        private _reverse: boolean;
+        private $max: number = 0;
+        private $value: number = 0;
+        private $titleType: ProgressTitleType;
+        private $reverse: boolean;
 
-        private _titleObject: GObject;
-        private _aniObject: GObject;
-        private _barObjectH: GObject;
-        private _barObjectV: GObject;
-        private _barMaxWidth: number = 0;
-        private _barMaxHeight: number = 0;
-        private _barMaxWidthDelta: number = 0;
-        private _barMaxHeightDelta: number = 0;
-        private _barStartX: number = 0;
-        private _barStartY: number = 0;
+        private $titleObject: GTextField;
+        private $aniObject: GObject;
+        private $barObjectH: GObject;
+        private $barObjectV: GObject;
+        private $barMaxWidth: number = 0;
+        private $barMaxHeight: number = 0;
+        private $barMaxWidthDelta: number = 0;
+        private $barMaxHeightDelta: number = 0;
+        private $barStartX: number = 0;
+        private $barStartY: number = 0;
+
+        private $tweener: createjs.Tween;
+        private $tweenValue: number = 0;
+
+        private static easeLinear: (amount: number) => number = ParseEaseType("linear"); // createjs.Ease.getPowIn(1);
 
         public constructor() {
             super();
 
-            this._titleType = ProgressTitleType.Percent;
-            this._value = 50;
-            this._max = 100;
+            this.$titleType = ProgressTitleType.Percent;
+            this.$value = 50;
+            this.$max = 100;
         }
 
         public get titleType(): ProgressTitleType {
-            return this._titleType;
+            return this.$titleType;
         }
 
         public set titleType(value: ProgressTitleType) {
-            if (this._titleType != value) {
-                this._titleType = value;
-                this.update(this._value);
-            }
-        }
-
-        public get min(): number {
-            return this._min;
-        }
-
-        public set min(value: number) {
-            if (this._min != value) {
-                this._min = value;
-                this.update(this._value);
+            if (this.$titleType != value) {
+                this.$titleType = value;
+                this.update(this.$value);
             }
         }
 
         public get max(): number {
-            return this._max;
+            return this.$max;
         }
 
         public set max(value: number) {
-            if (this._max != value) {
-                this._max = value;
-                this.update(this._value);
+            if (this.$max != value) {
+                this.$max = value;
+                this.update(this.$value);
             }
         }
 
         public get value(): number {
-            return this._value;
+            return this.$value;
         }
 
         public set value(value: number) {
-            if (this._value != value) {
-                GTween.kill(this, false, this.update);
+            if (this.$tweener != null) {
+                this.$tweener.paused = true;
+                this.$tweener = null;
+            }
 
-                this._value = value;
-                this.update(value);
+            if (this.$value != value) {
+                this.$value = value;
+                this.update(this.$value);
             }
         }
 
-        public tweenValue(value: number, duration: number): GTweener {
-            var oldValule: number;
+        public tweenValue(value: number, duration: number): createjs.Tween {
+            if (this.$value != value) {
+                if (this.$tweener) {
+                    this.$tweener.paused = true;
+                    this.$tweener.removeAllEventListeners();
+                    createjs.Tween.removeTweens(this);
+                }
 
-            var tweener: GTweener = GTween.getTween(this, this.update);
-            if (tweener != null) {
-                oldValule = tweener.value.x;
-                tweener.kill();
+                this.$tweenValue = this.$value;
+                this.$value = value;
+                this.$tweener = createjs.Tween.get(this, { onChange: utils.Binder.create(this.onUpdateTween, this) })
+                    .to({ $tweenValue: value }, duration * 1000, GProgressBar.easeLinear);
+                return this.$tweener;
             }
             else
-                oldValule = this._value;
-
-            this._value = value;
-            return GTween.to(oldValule, this._value, duration).setTarget(this, this.update).setEase(EaseType.Linear);
+                return null;
         }
 
-        public update(newValue: number): void {
-            var percent: number = ToolSet.clamp01((newValue - this._min) / (this._max - this._min));
-            if (this._titleObject) {
-                switch (this._titleType) {
+        private onUpdateTween(): void {
+            this.update(this.$tweenValue);
+        }
+
+        public update(val: number): void {
+            let percent: number = this.$max != 0 ? Math.min(val / this.$max, 1) : 0;
+            if (this.$titleObject) {
+                switch (this.$titleType) {
                     case ProgressTitleType.Percent:
-                        this._titleObject.text = Math.floor(percent * 100) + "%";
+                        this.$titleObject.text = `${Math.round(percent * 100)}%`;
                         break;
 
                     case ProgressTitleType.ValueAndMax:
-                        this._titleObject.text = Math.floor(newValue) + "/" + Math.floor(this._max);
+                        this.$titleObject.text = `${Math.round(val)}/${Math.round(this.$max)}`;
                         break;
 
                     case ProgressTitleType.Value:
-                        this._titleObject.text = "" + Math.floor(newValue);
+                        this.$titleObject.text = `${Math.round(val)}`;
                         break;
 
                     case ProgressTitleType.Max:
-                        this._titleObject.text = "" + Math.floor(this._max);
+                        this.$titleObject.text = `${Math.round(this.$max)}`;
                         break;
                 }
             }
 
-            var fullWidth: number = this.width - this._barMaxWidthDelta;
-            var fullHeight: number = this.height - this._barMaxHeightDelta;
-            if (!this._reverse) {
-                if (this._barObjectH) {
-                    if ((this._barObjectH instanceof GImage) && (<GImage>this._barObjectH).fillMethod != FillMethod.None)
-                        (<GImage>this._barObjectH).fillAmount = percent;
-                    else
-                        this._barObjectH.width = Math.floor(fullWidth * percent);
-                }
-                if (this._barObjectV) {
-                    if ((this._barObjectV instanceof GImage) && (<GImage>this._barObjectV).fillMethod != FillMethod.None)
-                        (<GImage>this._barObjectV).fillAmount = percent;
-                    else
-                        this._barObjectV.height = Math.floor(fullHeight * percent);
-                }
+            let fullWidth: number = this.width - this.$barMaxWidthDelta;
+            let fullHeight: number = this.height - this.$barMaxHeightDelta;
+            if (!this.$reverse) {
+                if (this.$barObjectH)
+                    this.$barObjectH.width = fullWidth * percent;
+                if (this.$barObjectV)
+                    this.$barObjectV.height = fullHeight * percent;
             }
             else {
-                if (this._barObjectH) {
-                    if ((this._barObjectH instanceof GImage) && (<GImage>this._barObjectH).fillMethod != FillMethod.None)
-                        (<GImage>this._barObjectH).fillAmount = 1 - percent;
-                    else {
-                        this._barObjectH.width = Math.floor(fullWidth * percent);
-                        this._barObjectH.x = this._barStartX + (fullWidth - this._barObjectH.width);
-                    }
+                if (this.$barObjectH) {
+                    this.$barObjectH.width = fullWidth * percent;
+                    this.$barObjectH.x = this.$barStartX + (fullWidth - this.$barObjectH.width);
 
                 }
-                if (this._barObjectV) {
-                    if ((this._barObjectV instanceof GImage) && (<GImage>this._barObjectV).fillMethod != FillMethod.None)
-                        (<GImage>this._barObjectV).fillAmount = 1 - percent;
-                    else {
-                        this._barObjectV.height = Math.floor(fullHeight * percent);
-                        this._barObjectV.y = this._barStartY + (fullHeight - this._barObjectV.height);
-                    }
+                if (this.$barObjectV) {
+                    this.$barObjectV.height = fullHeight * percent;
+                    this.$barObjectV.y = this.$barStartY + (fullHeight - this.$barObjectV.height);
                 }
             }
-            if (this._aniObject)
-                this._aniObject.setProp(ObjectPropID.Frame, Math.floor(percent * 100));
+            if (this.$aniObject instanceof GMovieClip)
+                (this.$aniObject as GMovieClip).frame = Math.round(percent * 100);
         }
 
-        protected constructExtension(buffer: ByteBuffer): void {
-            buffer.seek(0, 6);
+        protected constructFromXML(xml: utils.XmlNode): void {
+            super.constructFromXML(xml);
 
-            this._titleType = buffer.readByte();
-            this._reverse = buffer.readBool();
+            xml = utils.XmlParser.getChildNodes(xml, "ProgressBar")[0];
 
-            this._titleObject = <GTextField><any>(this.getChild("title"));
-            this._barObjectH = this.getChild("bar");
-            this._barObjectV = this.getChild("bar_v");
-            this._aniObject = this.getChild("ani");
+            let str: string;
+            str = xml.attributes.titleType;
+            if (str)
+                this.$titleType = ParseProgressTitleType(str);
 
-            if (this._barObjectH) {
-                this._barMaxWidth = this._barObjectH.width;
-                this._barMaxWidthDelta = this.width - this._barMaxWidth;
-                this._barStartX = this._barObjectH.x;
+            this.$reverse = xml.attributes.reverse == "true";
+
+            this.$titleObject = this.getChild("title") as GTextField;
+            this.$barObjectH = this.getChild("bar");
+            this.$barObjectV = this.getChild("bar_v");
+            this.$aniObject = this.getChild("ani");
+
+            if (this.$barObjectH) {
+                this.$barMaxWidth = this.$barObjectH.width;
+                this.$barMaxWidthDelta = this.width - this.$barMaxWidth;
+                this.$barStartX = this.$barObjectH.x;
             }
-            if (this._barObjectV) {
-                this._barMaxHeight = this._barObjectV.height;
-                this._barMaxHeightDelta = this.height - this._barMaxHeight;
-                this._barStartY = this._barObjectV.y;
+            if (this.$barObjectV) {
+                this.$barMaxHeight = this.$barObjectV.height;
+                this.$barMaxHeightDelta = this.height - this.$barMaxHeight;
+                this.$barStartY = this.$barObjectV.y;
             }
         }
 
         protected handleSizeChanged(): void {
             super.handleSizeChanged();
 
-            if (this._barObjectH)
-                this._barMaxWidth = this.width - this._barMaxWidthDelta;
-            if (this._barObjectV)
-                this._barMaxHeight = this.height - this._barMaxHeightDelta;
-            if (!this._underConstruct)
-                this.update(this._value);
+            if (this.$barObjectH)
+                this.$barMaxWidth = this.width - this.$barMaxWidthDelta;
+            if (this.$barObjectV)
+                this.$barMaxHeight = this.height - this.$barMaxHeightDelta;
+            if (!this.$inProgressBuilding)
+                this.update(this.$value);
         }
 
-        public setup_afterAdd(buffer: ByteBuffer, beginPos: number): void {
-            super.setup_afterAdd(buffer, beginPos);
+        public setupAfterAdd(xml: utils.XmlNode): void {
+            super.setupAfterAdd(xml);
 
-            if (!buffer.seek(beginPos, 6)) {
-                this.update(this._value);
-                return;
+            xml = utils.XmlParser.getChildNodes(xml, "ProgressBar")[0];
+            if (xml) {
+                this.$value = parseInt(xml.attributes.value) || 0;
+                this.$max = parseInt(xml.attributes.max) || 0;
             }
+            this.update(this.$value);
+        }
 
-            if (buffer.readByte() != this.packageItem.objectType) {
-                this.update(this._value);
-                return;
+        public dispose(): void {
+            if (this.$tweener) {
+                this.$tweener.paused = true;
+                this.$tweener.removeAllEventListeners();
             }
-
-            this._value = buffer.readInt();
-            this._max = buffer.readInt();
-            if (buffer.version >= 2)
-                this._min = buffer.readInt();
-
-            this.update(this._value);
+            createjs.Tween.removeTweens(this);
+            this.$tweener = null;
+            super.dispose();
         }
     }
 }

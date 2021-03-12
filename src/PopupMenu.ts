@@ -1,84 +1,88 @@
-module fgui {
+namespace fgui {
+
     export class PopupMenu {
 
-        protected _contentPane: GComponent;
-        protected _list: GList;
+        protected $contentPane: GComponent;
+        protected $list: GList;
 
         public constructor(resourceURL: string = null) {
             if (!resourceURL) {
                 resourceURL = UIConfig.popupMenu;
                 if (!resourceURL)
-                    throw "UIConfig.popupMenu not defined";
+                    throw new Error("UIConfig.popupMenu not defined");
             }
-            this._contentPane = UIPackage.createObjectFromURL(resourceURL).asCom;
-            this._contentPane.addEventListener(egret.Event.ADDED_TO_STAGE, this.__addedToStage, this);
-            this._list = <GList>(this._contentPane.getChild("list"));
-            this._list.removeChildrenToPool();
-            this._list.addRelation(this._contentPane, RelationType.Width);
-            this._list.removeRelation(this._contentPane, RelationType.Height);
-            this._contentPane.addRelation(this._list, RelationType.Height);
-            this._list.addEventListener(ItemEvent.CLICK, this.__clickItem, this);
+            this.$contentPane = UIPackage.createObjectFromURL(resourceURL) as GComponent;
+            this.$contentPane.on("added", this.$addedToStage, this);
+            this.$list = this.$contentPane.getChild("list") as GList;
+            this.$list.removeChildrenToPool();
+            this.$list.addRelation(this.$contentPane, RelationType.Width);
+            this.$list.removeRelation(this.$contentPane, RelationType.Height);
+            this.$contentPane.addRelation(this.$list, RelationType.Height);
+            this.$list.on(ListEvent.ItemClick, this.$clickItem, this);
         }
 
         public dispose(): void {
-            this._contentPane.dispose();
+            GTimer.inst.remove(this.$delayClickItem, this);
+            this.$list.off(ListEvent.ItemClick, this.$clickItem, this);
+            this.$contentPane.off("added", this.$addedToStage, this);
+            this.$contentPane.dispose();
         }
 
-        public addItem(caption: string, callback: Function = null): GButton {
-            var item: GButton = this._list.addItemFromPool().asButton;
+        public addItem(caption: string, handler?: Function): GButton {
+            let item: GButton = this.$list.addItemFromPool() as GButton;
             item.title = caption;
-            item.data = callback;
+            item.data = handler;
             item.grayed = false;
-            var c: Controller = item.getController("checked");
+            let c: controller.Controller = item.getController("checked");
             if (c != null)
                 c.selectedIndex = 0;
             return item;
         }
 
-        public addItemAt(caption: string, index: number, callback: Function = null): GButton {
-            var item: GButton = this._list.getFromPool().asButton;
-            this._list.addChildAt(item, index);
+        public addItemAt(caption: string, index: number, handler?: Function): GButton {
+            let item: GButton = this.$list.getFromPool() as GButton;
+            this.$list.addChildAt(item, index);
             item.title = caption;
-            item.data = callback;
+            item.data = handler;
             item.grayed = false;
-            var c: Controller = item.getController("checked");
+            let c: controller.Controller = item.getController("checked");
             if (c != null)
                 c.selectedIndex = 0;
             return item;
         }
 
-        public addSeperator() {
-            if (UIConfig.popupMenu_seperator == null)
-                throw "UIConfig.popupMenu_seperator not defined";
-            this.list.addItemFromPool(UIConfig.popupMenu_seperator);
+        public addSeperator(): void {
+            if (UIConfig.popupMenuSeperator == null)
+                throw new Error("UIConfig.popupMenuSeperator not defined");
+            this.$list.addItemFromPool(UIConfig.popupMenuSeperator);
         }
 
         public getItemName(index: number): string {
-            var item: GObject = this._list.getChildAt(index);
+            let item: GObject = this.$list.getChildAt(index);
             return item.name;
         }
 
-        public setItemText(name: string, caption: string) {
-            var item: GButton = this._list.getChild(name).asButton;
+        public setItemText(name: string, caption: string): void {
+            let item: GButton = this.$list.getChild(name) as GButton;
             item.title = caption;
         }
 
-        public setItemVisible(name: string, visible: boolean) {
-            var item: GButton = this._list.getChild(name).asButton;
+        public setItemVisible(name: string, visible: boolean): void {
+            let item: GButton = this.$list.getChild(name) as GButton;
             if (item.visible != visible) {
                 item.visible = visible;
-                this._list.setBoundsChangedFlag();
+                this.$list.setBoundsChangedFlag();
             }
         }
 
-        public setItemGrayed(name: string, grayed: boolean) {
-            var item: GButton = this._list.getChild(name).asButton;
+        public setItemGrayed(name: string, grayed: boolean): void {
+            let item: GButton = this.$list.getChild(name) as GButton;
             item.grayed = grayed;
         }
 
-        public setItemCheckable(name: string, checkable: boolean) {
-            var item: GButton = this._list.getChild(name).asButton;
-            var c: Controller = item.getController("checked");
+        public setItemCheckable(name: string, checkable: boolean): void {
+            let item: GButton = this.$list.getChild(name) as GButton;
+            let c: controller.Controller = item.getController("checked");
             if (c != null) {
                 if (checkable) {
                     if (c.selectedIndex == 0)
@@ -89,16 +93,16 @@ module fgui {
             }
         }
 
-        public setItemChecked(name: string, checked: boolean) {
-            var item: GButton = this._list.getChild(name).asButton;
-            var c: Controller = item.getController("checked");
+        public setItemChecked(name: string, checked: boolean): void {
+            let item: GButton = this.$list.getChild(name) as GButton;
+            let c: controller.Controller = item.getController("checked");
             if (c != null)
                 c.selectedIndex = checked ? 2 : 1;
         }
 
         public isItemChecked(name: string): boolean {
-            var item: GButton = this._list.getChild(name).asButton;
-            var c: Controller = item.getController("checked");
+            let item: GButton = this.$list.getChild(name) as GButton;
+            let c: controller.Controller = item.getController("checked");
             if (c != null)
                 return c.selectedIndex == 2;
             else
@@ -106,71 +110,68 @@ module fgui {
         }
 
         public removeItem(name: string): boolean {
-            var item: GButton = <GButton>this._list.getChild(name);
+            let item: GButton = this.$list.getChild(name) as GButton;
             if (item != null) {
-                var index: number = this._list.getChildIndex(item);
-                this._list.removeChildToPoolAt(index);
+                let index: number = this.$list.getChildIndex(item);
+                this.$list.removeChildToPoolAt(index);
                 return true;
             }
             else
                 return false;
         }
 
-        public clearItems() {
-            this._list.removeChildrenToPool();
+        public clearItems(): void {
+            this.$list.removeChildrenToPool();
         }
 
-        public get itemCount(): number {
-            return this._list.numChildren;
+        public get itemCount(): Number {
+            return this.$list.numChildren;
         }
 
         public get contentPane(): GComponent {
-            return this._contentPane;
+            return this.$contentPane;
         }
 
         public get list(): GList {
-            return this._list;
+            return this.$list;
         }
 
-        public show(target: GObject = null, downward: any = null) {
-            var r: GRoot = target != null ? target.root : GRoot.inst;
-            r.showPopup(this.contentPane, (target instanceof GRoot) ? null : target, downward);
+        public show(target: GObject = null, dir?: PopupDirection): void {
+            let r: GRoot = target != null ? target.root : GRoot.inst;
+            r.showPopup(this.contentPane, (target instanceof GRoot) ? null : target, dir);
         }
 
-        private __clickItem(evt: ItemEvent): void {
-            GTimers.inst.add(100, 1, this.__clickItem2, this, evt);
+        private $clickItem(evt:PIXI.InteractionEvent, itemObject: GObject): void {
+            GTimer.inst.add(100, 1, this.$delayClickItem, this, itemObject);
         }
 
-        private __clickItem2(evt: ItemEvent): void {
-            var item: GButton = evt.itemObject.asButton;
-            if (item == null)
+        private $delayClickItem(itemObject: GObject): void {
+            if (!(itemObject instanceof GButton))
                 return;
-            if (item.grayed) {
-                this._list.selectedIndex = -1;
+            if (itemObject.grayed) {
+                this.$list.selectedIndex = -1;
                 return;
             }
-            var c: Controller = item.getController("checked");
+            let c: controller.Controller = itemObject.getController("checked");
             if (c != null && c.selectedIndex != 0) {
                 if (c.selectedIndex == 1)
                     c.selectedIndex = 2;
                 else
                     c.selectedIndex = 1;
             }
-            var r: GRoot = <GRoot>(this._contentPane.parent);
-            r.hidePopup(this.contentPane);
-            if (item.data != null) {
-                if (item.data.length == 1)
-                    item.data(evt);
-                else
-                    item.data();
-            }
+            let r: GRoot = this.$contentPane.parent as GRoot;
+            if(r)
+                r.hidePopup(this.contentPane);
+            if (itemObject.data != null)
+                (itemObject.data as Function).call(null);
+            
+            GTimer.inst.remove(this.$delayClickItem, this);
         }
 
-        private __addedToStage(evt: egret.Event) {
-            this._list.selectedIndex = -1;
-            this._list.resizeToFit(100000, 10);
+        private $addedToStage(): void {
+            this.$list.selectedIndex = -1;
+            this.$list.resizeToFit(100000, 10);
         }
 
     }
 }
-

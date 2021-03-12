@@ -1,268 +1,197 @@
-
-module fgui {
+namespace fgui {
 
     export class GSlider extends GComponent {
-        private _min: number = 0;
-        private _max: number = 0;
-        private _value: number = 0;
-        private _titleType: ProgressTitleType;
-        private _reverse: boolean;
-        private _wholeNumbers: boolean;
+        protected $max: number = 0;
+        protected $value: number = 0;
+        protected $titleType: ProgressTitleType;
 
-        private _titleObject: GTextField;
-        private _barObjectH: GObject;
-        private _barObjectV: GObject;
-        private _barMaxWidth: number = 0;
-        private _barMaxHeight: number = 0;
-        private _barMaxWidthDelta: number = 0;
-        private _barMaxHeightDelta: number = 0;
-        private _gripObject: GObject;
-        private _clickPos: egret.Point;
-        private _clickPercent: number = 0;
-        private _barStartX: number = 0;
-        private _barStartY: number = 0;
+        protected $titleObject: GTextField;
+        protected $aniObject: GObject;
+        protected $barObjectH: GObject;
+        protected $barObjectV: GObject;
 
-        public changeOnClick: boolean = true;
-        public canDrag: boolean = true;
+        protected $barMaxWidth: number = 0;
+        protected $barMaxHeight: number = 0;
+        protected $barMaxWidthDelta: number = 0;
+        protected $barMaxHeightDelta: number = 0;
+        protected $gripObject: GObject;
+
+        private $clickPos: PIXI.Point;
+        private $clickPercent: number;
 
         public constructor() {
             super();
 
-            this._titleType = ProgressTitleType.Percent;
-            this._value = 50;
-            this._max = 100;
-            this._clickPos = new egret.Point();
+            this.$titleType = ProgressTitleType.Percent;
+            this.$value = 50;
+            this.$max = 100;
+            this.$clickPos = new PIXI.Point();
         }
 
         public get titleType(): ProgressTitleType {
-            return this._titleType;
+            return this.$titleType;
         }
 
         public set titleType(value: ProgressTitleType) {
-            this._titleType = value;
-        }
-
-        public get wholeNumbers(): boolean {
-            return this._wholeNumbers;
-        }
-
-        public set wholeNumbers(value: boolean) {
-            if (this._wholeNumbers != value) {
-                this._wholeNumbers = value;
-                this.update();
-            }
-        }
-
-        public get min(): number {
-            return this._min;
-        }
-
-        public set min(value: number) {
-            if (this._min != value) {
-                this._min = value;
-                this.update();
-            }
+            this.$titleType = value;
         }
 
         public get max(): number {
-            return this._max;
+            return this.$max;
         }
 
         public set max(value: number) {
-            if (this._max != value) {
-                this._max = value;
+            if (this.$max != value) {
+                this.$max = value;
                 this.update();
             }
         }
 
         public get value(): number {
-            return this._value;
+            return this.$value;
         }
 
         public set value(value: number) {
-            if (this._value != value) {
-                this._value = value;
+            if (this.$value != value) {
+                this.$value = value;
                 this.update();
             }
         }
 
         public update(): void {
-            this.updateWithPercent((this._value - this._min) / (this._max - this._min));
+            let percent: number = Math.min(this.$value / this.$max, 1);
+            this.updateWidthPercent(percent);
         }
 
-        private updateWithPercent(percent: number, manual?: boolean): void {
-            percent = ToolSet.clamp01(percent);
-            if (manual) {
-                var newValue: number = ToolSet.clamp(this._min + (this._max - this._min) * percent, this._min, this._max);
-                if (this._wholeNumbers) {
-                    newValue = Math.round(newValue);
-                    percent = ToolSet.clamp01((newValue - this._min) / (this._max - this._min));
-                }
-
-                if (newValue != this._value) {
-                    this._value = newValue;
-                    this.dispatchEvent(new StateChangeEvent(StateChangeEvent.CHANGED));
-                }
-            }
-
-            if (this._titleObject) {
-                switch (this._titleType) {
+        private updateWidthPercent(percent: number): void {
+            if (this.$titleObject) {
+                switch (this.$titleType) {
                     case ProgressTitleType.Percent:
-                        this._titleObject.text = Math.floor(percent * 100) + "%";
+                        this.$titleObject.text = `${Math.round(percent * 100)}%`;
                         break;
 
                     case ProgressTitleType.ValueAndMax:
-                        this._titleObject.text = this._value + "/" + this._max;
+                        this.$titleObject.text = `${this.$value}/${this.$max}`;
                         break;
 
                     case ProgressTitleType.Value:
-                        this._titleObject.text = "" + this._value;
+                        this.$titleObject.text = `${this.$value}`;
                         break;
 
                     case ProgressTitleType.Max:
-                        this._titleObject.text = "" + this._max;
+                        this.$titleObject.text = `${this.$max}`;
                         break;
                 }
             }
 
-            var fullWidth: number = this.width - this._barMaxWidthDelta;
-            var fullHeight: number = this.height - this._barMaxHeightDelta;
-            if (!this._reverse) {
-                if (this._barObjectH)
-                    this._barObjectH.width = Math.round(fullWidth * percent);
-                if (this._barObjectV)
-                    this._barObjectV.height = Math.round(fullHeight * percent);
-            }
-            else {
-                if (this._barObjectH) {
-                    this._barObjectH.width = Math.round(fullWidth * percent);
-                    this._barObjectH.x = this._barStartX + (fullWidth - this._barObjectH.width);
-                }
-                if (this._barObjectV) {
-                    this._barObjectV.height = Math.round(fullHeight * percent);
-                    this._barObjectV.y = this._barStartY + (fullHeight - this._barObjectV.height);
-                }
-            }
-        }
+            if (this.$barObjectH)
+                this.$barObjectH.width = (this.width - this.$barMaxWidthDelta) * percent;
+            if (this.$barObjectV)
+                this.$barObjectV.height = (this.height - this.$barMaxHeightDelta) * percent;
 
-        protected constructExtension(buffer: ByteBuffer): void {
-            buffer.seek(0, 6);
-
-            this._titleType = buffer.readByte();
-            this._reverse = buffer.readBool();
-            if (buffer.version >= 2) {
-                this._wholeNumbers = buffer.readBool();
-                this.changeOnClick = buffer.readBool();
-            }
-
-            this._titleObject = <GTextField><any>(this.getChild("title"));
-            this._barObjectH = this.getChild("bar");
-            this._barObjectV = this.getChild("bar_v");
-            this._gripObject = this.getChild("grip");
-
-            if (this._barObjectH) {
-                this._barMaxWidth = this._barObjectH.width;
-                this._barMaxWidthDelta = this.width - this._barMaxWidth;
-                this._barStartX = this._barObjectH.x;
-            }
-            if (this._barObjectV) {
-                this._barMaxHeight = this._barObjectV.height;
-                this._barMaxHeightDelta = this.height - this._barMaxHeight;
-                this._barStartY = this._barObjectV.y;
-            }
-            if (this._gripObject) {
-                this._gripObject.addEventListener(egret.TouchEvent.TOUCH_BEGIN, this.__gripMouseDown, this);
-            }
-
-            this.displayObject.addEventListener(egret.TouchEvent.TOUCH_BEGIN, this.__barMouseDown, this);
+            if (this.$aniObject instanceof GMovieClip)
+                (this.$aniObject as GMovieClip).frame = Math.round(percent * 100);
         }
 
         protected handleSizeChanged(): void {
             super.handleSizeChanged();
 
-            if (this._barObjectH)
-                this._barMaxWidth = this.width - this._barMaxWidthDelta;
-            if (this._barObjectV)
-                this._barMaxHeight = this.height - this._barMaxHeightDelta;
-            if (!this._underConstruct)
+            if (this.$barObjectH)
+                this.$barMaxWidth = this.width - this.$barMaxWidthDelta;
+            if (this.$barObjectV)
+                this.$barMaxHeight = this.height - this.$barMaxHeightDelta;
+            if (!this.$inProgressBuilding)
                 this.update();
         }
 
-        public setup_afterAdd(buffer: ByteBuffer, beginPos: number): void {
-            super.setup_afterAdd(buffer, beginPos);
+        public setupAfterAdd(xml: utils.XmlNode): void {
+            super.setupAfterAdd(xml);
 
-            if (!buffer.seek(beginPos, 6)) {
-                this.update();
-                return;
+            xml = utils.XmlParser.getChildNodes(xml, "Slider")[0];
+            if (xml) {
+                this.$value = parseInt(xml.attributes.value);
+                this.$max = parseInt(xml.attributes.max);
             }
-
-            if (buffer.readByte() != this.packageItem.objectType) {
-                this.update();
-                return;
-            }
-
-            this._value = buffer.readInt();
-            this._max = buffer.readInt();
-            if (buffer.version >= 2)
-                this._min = buffer.readInt();
 
             this.update();
         }
 
-        private __gripMouseDown(evt: egret.TouchEvent): void {
-            this.canDrag = true;
-            evt.stopPropagation();
+        protected constructFromXML(xml: utils.XmlNode): void {
+            super.constructFromXML(xml);
 
-            this._clickPos = this.globalToLocal(evt.stageX, evt.stageY);
-            this._clickPercent = ToolSet.clamp01((this._value - this._min) / (this._max - this._min));
+            xml = utils.XmlParser.getChildNodes(xml, "Slider")[0];
 
-            this._gripObject.displayObject.stage.addEventListener(egret.TouchEvent.TOUCH_MOVE, this.__gripMouseMove, this);
-            this._gripObject.displayObject.stage.addEventListener(egret.TouchEvent.TOUCH_END, this.__gripMouseUp, this);
-        }
-
-        private static sSilderHelperPoint: egret.Point = new egret.Point();
-        private __gripMouseMove(evt: egret.TouchEvent): void {
-            if (!this.canDrag) {
-                return;
+            let str: string;
+            if (xml) {
+                str = xml.attributes.titleType;
+                if (str)
+                    this.$titleType = ParseProgressTitleType(str);
             }
 
-            var pt: egret.Point = this.globalToLocal(evt.stageX, evt.stageY, GSlider.sSilderHelperPoint);
-            var deltaX: number = pt.x - this._clickPos.x;
-            var deltaY: number = pt.y - this._clickPos.y;
-            if (this._reverse) {
-                deltaX = -deltaX;
-                deltaY = -deltaY;
+            this.$titleObject = this.getChild("title") as GTextField;
+            this.$barObjectH = this.getChild("bar");
+            this.$barObjectV = this.getChild("bar_v");
+            this.$aniObject = this.getChild("ani");
+            this.$gripObject = this.getChild("grip");
+
+            if (this.$barObjectH) {
+                this.$barMaxWidth = this.$barObjectH.width;
+                this.$barMaxWidthDelta = this.width - this.$barMaxWidth;
             }
-
-            var percent: number;
-            if (this._barObjectH)
-                percent = this._clickPercent + deltaX / this._barMaxWidth;
-            else
-                percent = this._clickPercent + deltaY / this._barMaxHeight;
-            this.updateWithPercent(percent, true);
+            if (this.$barObjectV) {
+                this.$barMaxHeight = this.$barObjectV.height;
+                this.$barMaxHeightDelta = this.height - this.$barMaxHeight;
+            }
+            if (this.$gripObject)
+                this.$gripObject.on(InteractiveEvents.Down, this.$gripMouseDown, this);
         }
 
-        private __gripMouseUp(evt: egret.TouchEvent): void {
-            evt.currentTarget.removeEventListener(egret.TouchEvent.TOUCH_MOVE, this.__gripMouseMove, this);
-            evt.currentTarget.removeEventListener(egret.TouchEvent.TOUCH_END, this.__gripMouseUp, this);
+        private $gripMouseDown(evt: PIXI.InteractionEvent): void {
+            this.$clickPos = this.globalToLocal(evt.data.global.x, evt.data.global.y);
+            this.$clickPercent = this.$value / this.$max;
+
+            GRoot.inst.nativeStage.on(InteractiveEvents.Move, this.$gripMouseMove, this);
+            GRoot.inst.nativeStage.on(InteractiveEvents.Up, this.$gripMouseUp, this);
         }
 
-        private __barMouseDown(evt: egret.TouchEvent): void {
-            if (!this.changeOnClick)
-                return;
+        private static sSilderHelperPoint: PIXI.Point = new PIXI.Point();
 
-            var pt: egret.Point = this._gripObject.globalToLocal(evt.stageX, evt.stageY, GSlider.sSilderHelperPoint);
-            var percent: number = ToolSet.clamp01((this._value - this._min) / (this._max - this._min));
-            var delta: number;
-            if (this._barObjectH)
-                delta = pt.x / this._barMaxWidth;
-            if (this._barObjectV)
-                delta = pt.y / this._barMaxHeight;
-            if (this._reverse)
-                percent -= delta;
+        private $gripMouseMove(evt: PIXI.InteractionEvent): void {
+            let pt: PIXI.Point = this.globalToLocal(evt.data.global.x, evt.data.global.y, GSlider.sSilderHelperPoint);
+            let deltaX: number = pt.x - this.$clickPos.x;
+            let deltaY: number = pt.y - this.$clickPos.y;
+
+            let percent: number;
+            if (this.$barObjectH)
+                percent = this.$clickPercent + deltaX / this.$barMaxWidth;
             else
-                percent += delta;
-            this.updateWithPercent(percent, true);
+                percent = this.$clickPercent + deltaY / this.$barMaxHeight;
+            if (percent > 1)
+                percent = 1;
+            else if (percent < 0)
+                percent = 0;
+            let newValue: number = Math.round(this.$max * percent);
+            if (newValue != this.$value) {
+                this.$value = newValue;
+                this.emit(StateChangeEvent.CHANGED, this);
+            }
+            this.updateWidthPercent(percent);
+        }
+
+        private $gripMouseUp(evt: PIXI.InteractionEvent): void {
+            let percent: number = this.$value / this.$max;
+            this.updateWidthPercent(percent);
+
+            GRoot.inst.nativeStage.off(InteractiveEvents.Move, this.$gripMouseMove, this);
+            GRoot.inst.nativeStage.off(InteractiveEvents.Up, this.$gripMouseUp, this);
+        }
+
+        public dispose():void {
+            if (this.$gripObject)
+                this.$gripObject.off(InteractiveEvents.Down, this.$gripMouseDown, this);
+            GRoot.inst.nativeStage.off(InteractiveEvents.Move, this.$gripMouseMove, this);
+            GRoot.inst.nativeStage.off(InteractiveEvents.Up, this.$gripMouseUp, this);
+            super.dispose();
         }
     }
 }

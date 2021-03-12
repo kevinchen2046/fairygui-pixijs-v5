@@ -1,28 +1,37 @@
 {
-  "name": "fairygui-egret",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "lib": "lib"
-  },
-  "author": "",
-  "license": "MIT",
-  "devDependencies": {
-    "@babel/core": "^7.6.0",
-    "babel-preset-es2015": "^6.24.1",
-    "browserify": "^14.3.0",
-    "gulp": "^3.9.1",
-    "gulp-babel": "^8.0.0",
-    "gulp-concat": "^2.6.1",
-    "gulp-minify": "^3.1.0",
-    "gulp-string-replace": "^1.1.2",
-    "gulp-typescript": "^3.1.6",
-    "gulp-uglify": "^3.0.2",
-    "tsify": "^3.0.1",
-    "typescript": "^2.2.2",
-    "vinyl-source-stream": "^1.1.0",
-    "watchify": "^3.9.0",
-    "gulp-inject-string": "^1.1.2"
-  }
+    "name": "fairygui-pixijs-5.3.8",
+    "version": "1.0.0",
+    "description": "* This is an UILib based on PixiJS to build game GUI.\r * Download editor here: [http://en.fairygui.com/product/](http://en.fairygui.com/product)\r * Editor supports a few of game engines include Unity3D, PixiJS, ActionScript, Starling etc. [Learn more.](http://en.fairygui.com/)\r * The developers use the editor and Lib are all here in the Tencent QQ online chat group for discussing issues. Click to join in: [Group1 434866637](//shang.qq.com/wpa/qunwpa?idkey=ab22fe72483424d16370a31f19fde67810fb7175007b364154258c36df974e77), [Group2 614444599](//shang.qq.com/wpa/qunwpa?idkey=2793363c5f735ba3d1baa3f81732ee84df3c3e9a31a99206bddc6cc912f062c7). Welcome to join us and have fun. :)",
+    "main": "index.js",
+    "scripts": {
+        "build": "gulp build"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/jcyuan/FairyGUI-PixiJS.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/jcyuan/FairyGUI-PixiJS/issues"
+    },
+    "homepage": "https://github.com/jcyuan/FairyGUI-PixiJS#readme",
+    "devDependencies": {
+        "@babel/core": "^7.6.0",
+        "babel-preset-es2015": "^6.24.1",
+        "browserify": "^14.3.0",
+        "gulp": "^3.9.1",
+        "gulp-babel": "^8.0.0",
+        "gulp-concat": "^2.6.1",
+        "gulp-minify": "^3.1.0",
+        "gulp-string-replace": "^1.1.2",
+        "gulp-typescript": "^3.1.6",
+        "gulp-uglify": "^3.0.2",
+        "tsify": "^3.0.1",
+        "typescript": "^2.2.2",
+        "vinyl-source-stream": "^1.1.0",
+        "watchify": "^3.9.0",
+        "gulp-inject-string": "^1.1.2"
+    }
 }

@@ -1,128 +1,115 @@
-/// <reference path="GObject.ts" />
+/// <reference path="./GObject.ts" />
 
-module fgui {
+namespace fgui {
 
     export class GComponent extends GObject {
-        private _sortingChildCount: number = 0;
-        private _applyingController: Controller;
 
-        protected _margin: Margin;
-        protected _trackBounds: boolean;
-        protected _boundsChanged: boolean;
-        protected _childrenRenderOrder: ChildrenRenderOrder = ChildrenRenderOrder.Ascent;
-        protected _apexIndex: number = 0;
+        protected $sortingChildCount: number = 0;
+        protected $opaque: boolean;
 
-        public _buildingDisplayList: boolean;
-        public _children: Array<GObject>;
-        public _controllers: Array<Controller>;
-        public _transitions: Array<Transition>;
-        public _rootContainer: UIContainer;
-        public _container: egret.DisplayObjectContainer;
-        public _scrollPane: ScrollPane;
-        public _alignOffset: egret.Point;
+        protected $margin: utils.Margin;
+        protected $trackBounds: boolean;
+        protected $boundsChanged: boolean;
+        protected $children: GObject[];
+        protected $applyingController:controller.Controller;
+
+        /**@internal */
+        $buildingDisplayList: boolean;
+        /**@internal */
+        $controllers: controller.Controller[];
+        /**@internal */
+        $transitions: Transition[];
+        /**@internal */
+        $rootContainer: UIContainer;
+        /**@internal */
+        $container: PIXI.Container;
+        /**@internal */
+        $scrollPane: ScrollPane;
+        /**@internal */
+        $alignOffset: PIXI.Point;
 
         public constructor() {
             super();
-            this._children = new Array<GObject>();
-            this._controllers = new Array<Controller>();
-            this._transitions = new Array<Transition>();
-            this._margin = new Margin();
-            this._alignOffset = new egret.Point();
+            this.$children = [];
+            this.$controllers = [];
+            this.$transitions = [];
+            this.$margin = new utils.Margin();
+            this.$alignOffset = new PIXI.Point();
         }
 
         protected createDisplayObject(): void {
-            this._rootContainer = new UIContainer();
-            this.setDisplayObject(this._rootContainer);
-            this._container = this._rootContainer;
+            this.$rootContainer = new UIContainer(this);
+            this.setDisplayObject(this.$rootContainer);
+            this.$container = this.$rootContainer;
         }
 
         public dispose(): void {
-            var i: number;
-            var cnt: number;
-
-            cnt = this._transitions.length;
-            for (i = 0; i < cnt; ++i) {
-                var trans: Transition = this._transitions[i];
+            GTimer.inst.remove(this.$validate, this);
+            this.off("added", this.$added, this);
+            this.off("removed", this.$removed, this);
+            this.$transitions.forEach((trans: Transition): void => {
                 trans.dispose();
-            }
-
-            cnt = this._controllers.length;
-            for (i = 0; i < cnt; ++i) {
-                var cc: Controller = this._controllers[i];
-                cc.dispose();
-            }
-
-            if (this._scrollPane)
-                this._scrollPane.dispose();
-
-            cnt = this._children.length;
-            for (i = cnt - 1; i >= 0; --i) {
-                var obj: GObject = this._children[i];
-                obj.parent = null;//avoid removeFromParent call
+            });
+            let numChildren: number = this.$children.length;
+            for (let i = numChildren - 1; i >= 0; --i) {
+                let obj: GObject = this.$children[i];
+                obj.parent = null; //avoid removeFromParent call
                 obj.dispose();
             }
-
-            this._boundsChanged = false;
+            this.$boundsChanged = false;
+            if(this.$scrollPane) this.$scrollPane.dispose();
             super.dispose();
         }
 
-        public get displayListContainer(): egret.DisplayObjectContainer {
-            return this._container;
+        public get displayListContainer(): PIXI.Container {
+            return this.$container;
         }
 
         public addChild(child: GObject): GObject {
-            this.addChildAt(child, this._children.length);
+            this.addChildAt(child, this.$children.length);
             return child;
         }
 
         public addChildAt(child: GObject, index: number = 0): GObject {
             if (!child)
-                throw "child is null";
-
-            var numChildren: number = this._children.length;
-
+                throw new Error("Invalid child");
+            let numChildren: number = this.$children.length;
             if (index >= 0 && index <= numChildren) {
-                if (child.parent == this) {
+                if (child.parent == this)
                     this.setChildIndex(child, index);
-                }
                 else {
                     child.removeFromParent();
                     child.parent = this;
-
-                    var cnt: number = this._children.length;
+                    let cnt: number = this.$children.length;
                     if (child.sortingOrder != 0) {
-                        this._sortingChildCount++;
+                        this.$sortingChildCount++;
                         index = this.getInsertPosForSortingChild(child);
                     }
-                    else if (this._sortingChildCount > 0) {
-                        if (index > (cnt - this._sortingChildCount))
-                            index = cnt - this._sortingChildCount;
+                    else if (this.$sortingChildCount > 0) {
+                        if (index > (cnt - this.$sortingChildCount))
+                            index = cnt - this.$sortingChildCount;
                     }
-
                     if (index == cnt)
-                        this._children.push(child);
+                        this.$children.push(child);
                     else
-                        this._children.splice(index, 0, child);
+                        this.$children.splice(index, 0, child);
 
                     this.childStateChanged(child);
                     this.setBoundsChangedFlag();
                 }
-
                 return child;
             }
-            else {
-                throw "Invalid child index";
-            }
+            else
+                throw new Error("Invalid child index");
         }
 
         private getInsertPosForSortingChild(target: GObject): number {
-            var cnt: number = this._children.length;
-            var i: number = 0;
+            let cnt: number = this.$children.length;
+            let i: number = 0;
             for (i = 0; i < cnt; i++) {
-                var child: GObject = this._children[i];
+                let child: GObject = this.$children[i];
                 if (child == target)
                     continue;
-
                 if (target.sortingOrder < child.sortingOrder)
                     break;
             }
@@ -130,233 +117,165 @@ module fgui {
         }
 
         public removeChild(child: GObject, dispose: boolean = false): GObject {
-            var childIndex: number = this._children.indexOf(child);
-            if (childIndex != -1) {
+            let childIndex: number = this.$children.indexOf(child);
+            if (childIndex != -1)
                 this.removeChildAt(childIndex, dispose);
-            }
             return child;
         }
 
         public removeChildAt(index: number, dispose: boolean = false): GObject {
             if (index >= 0 && index < this.numChildren) {
-                var child: GObject = this._children[index];
+                let child: GObject = this.$children[index];
                 child.parent = null;
 
                 if (child.sortingOrder != 0)
-                    this._sortingChildCount--;
+                    this.$sortingChildCount--;
 
-                this._children.splice(index, 1);
-                child.group = null;
-                if (child.inContainer) {
-                    this._container.removeChild(child.displayObject);
-                    if (this._childrenRenderOrder == ChildrenRenderOrder.Arch)
-                        GTimers.inst.callLater(this.buildNativeDisplayList, this);
-                }
+                this.$children.splice(index, 1);
+                if (child.inContainer)
+                    this.$container.removeChild(child.displayObject);
 
-                if (dispose)
+                if (dispose === true)
                     child.dispose();
 
                 this.setBoundsChangedFlag();
 
                 return child;
             }
-            else {
-                throw "Invalid child index";
-            }
+            else
+                throw new Error("Invalid child index");
         }
 
         public removeChildren(beginIndex: number = 0, endIndex: number = -1, dispose: boolean = false): void {
             if (endIndex < 0 || endIndex >= this.numChildren)
                 endIndex = this.numChildren - 1;
 
-            for (var i: number = beginIndex; i <= endIndex; ++i)
+            for (let i: number = beginIndex; i <= endIndex; ++i)
                 this.removeChildAt(beginIndex, dispose);
         }
 
         public getChildAt(index: number = 0): GObject {
             if (index >= 0 && index < this.numChildren)
-                return this._children[index];
+                return this.$children[index];
             else
-                throw "Invalid child index";
+                throw new Error("Invalid child index");
         }
 
         public getChild(name: string): GObject {
-            var cnt: number = this._children.length;
-            for (var i: number = 0; i < cnt; ++i) {
-                if (this._children[i].name == name)
-                    return this._children[i];
+            let cnt: number = this.$children.length;
+            for (let i: number = 0; i < cnt; ++i) {
+                if (this.$children[i].name == name)
+                    return this.$children[i];
             }
-
-            return null;
-        }
-
-        public getChildByPath(path: String): GObject {
-            var arr: string[] = path.split(".");
-            var cnt: number = arr.length;
-            var gcom: GComponent = this;
-            var obj: GObject;
-            for (var i: number = 0; i < cnt; ++i) {
-                obj = gcom.getChild(arr[i]);
-                if (!obj)
-                    break;
-
-                if (i != cnt - 1) {
-                    if (!(gcom instanceof GComponent)) {
-                        obj = null;
-                        break;
-                    }
-                    else
-                        gcom = <GComponent>obj;
-                }
-            }
-
-            return obj;
-        }
-
-        public getVisibleChild(name: string): GObject {
-            var cnt: number = this._children.length;
-            for (var i: number = 0; i < cnt; ++i) {
-                var child: GObject = this._children[i];
-                if (child.internalVisible && child.internalVisible && child.name == name)
-                    return child;
-            }
-
             return null;
         }
 
         public getChildInGroup(name: string, group: GGroup): GObject {
-            var cnt: number = this._children.length;
-            for (var i: number = 0; i < cnt; ++i) {
-                var child: GObject = this._children[i];
+            let cnt: number = this.$children.length;
+            for (let i: number = 0; i < cnt; ++i) {
+                let child: GObject = this.$children[i];
                 if (child.group == group && child.name == name)
                     return child;
             }
-
             return null;
         }
 
         public getChildById(id: string): GObject {
-            var cnt: number = this._children.length;
-            for (var i: number = 0; i < cnt; ++i) {
-                if (this._children[i]._id == id)
-                    return this._children[i];
+            let cnt: number = this.$children.length;
+            for (let i: number = 0; i < cnt; ++i) {
+                if (this.$children[i].id == id)
+                    return this.$children[i];
             }
-
             return null;
         }
 
         public getChildIndex(child: GObject): number {
-            return this._children.indexOf(child);
+            return this.$children.indexOf(child);
         }
 
         public setChildIndex(child: GObject, index: number = 0): void {
-            var oldIndex: number = this._children.indexOf(child);
+            let oldIndex: number = this.$children.indexOf(child);
             if (oldIndex == -1)
-                throw "Not a child of this container";
-
+                throw new Error("no such child found");
             if (child.sortingOrder != 0) //no effect
                 return;
-
-            var cnt: number = this._children.length;
-            if (this._sortingChildCount > 0) {
-                if (index > (cnt - this._sortingChildCount - 1))
-                    index = cnt - this._sortingChildCount - 1;
+            let cnt: number = this.$children.length;
+            if (this.$sortingChildCount > 0) {
+                if (index > (cnt - this.$sortingChildCount - 1))
+                    index = cnt - this.$sortingChildCount - 1;
             }
-
-            this._setChildIndex(child, oldIndex, index);
+            this.$setChildIndex(child, oldIndex, index);
         }
 
         public setChildIndexBefore(child: GObject, index: number): number {
-            var oldIndex: number = this._children.indexOf(child);
+            let oldIndex: number = this.$children.indexOf(child);
             if (oldIndex == -1)
-                throw "Not a child of this container";
-
+                throw new Error("no such child found");
             if (child.sortingOrder != 0) //no effect
                 return oldIndex;
-
-            var cnt: number = this._children.length;
-            if (this._sortingChildCount > 0) {
-                if (index > (cnt - this._sortingChildCount - 1))
-                    index = cnt - this._sortingChildCount - 1;
+            let cnt: number = this.$children.length;
+            if (this.$sortingChildCount > 0) {
+                if (index > (cnt - this.$sortingChildCount - 1))
+                    index = cnt - this.$sortingChildCount - 1;
             }
-
             if (oldIndex < index)
-                return this._setChildIndex(child, oldIndex, index - 1);
+                return this.$setChildIndex(child, oldIndex, index - 1);
             else
-                return this._setChildIndex(child, oldIndex, index);
+                return this.$setChildIndex(child, oldIndex, index);
         }
 
-        private _setChildIndex(child: GObject, oldIndex: number, index: number = 0): number {
-            var cnt: number = this._children.length;
+        protected $setChildIndex(child: GObject, oldIndex: number, index: number = 0): number {
+            let cnt: number = this.$children.length;
             if (index > cnt)
                 index = cnt;
 
             if (oldIndex == index)
                 return oldIndex;
 
-            this._children.splice(oldIndex, 1);
-            this._children.splice(index, 0, child);
+            this.$children.splice(oldIndex, 1);
+            this.$children.splice(index, 0, child);
 
             if (child.inContainer) {
-                var displayIndex: number = 0;
-                var g: GObject;
-                var i: number;
-
-                if (this._childrenRenderOrder == ChildrenRenderOrder.Ascent) {
-                    for (i = 0; i < index; i++) {
-                        g = this._children[i];
-                        if (g.inContainer)
-                            displayIndex++;
-                    }
-                    if (displayIndex == this._container.numChildren)
-                        displayIndex--;
-                    this._container.setChildIndex(child.displayObject, displayIndex);
+                let displayIndex: number = 0;
+                let childCount: number = this.$container.children.length;
+                for (let i: number = 0; i < index; i++) {
+                    let g: GObject = this.$children[i];
+                    if (g.inContainer)
+                        displayIndex++;
                 }
-                else if (this._childrenRenderOrder == ChildrenRenderOrder.Descent) {
-                    for (i = cnt - 1; i > index; i--) {
-                        g = this._children[i];
-                        if (g.inContainer)
-                            displayIndex++;
-                    }
-                    if (displayIndex == this._container.numChildren)
-                        displayIndex--;
-                    this._container.setChildIndex(child.displayObject, displayIndex);
-                }
-                else {
-                    GTimers.inst.callLater(this.buildNativeDisplayList, this);
-                }
+                if (displayIndex == childCount)
+                    displayIndex--;
+                this.$container.setChildIndex(child.displayObject, displayIndex);
 
                 this.setBoundsChangedFlag();
             }
-
             return index;
         }
 
         public swapChildren(child1: GObject, child2: GObject): void {
-            var index1: number = this._children.indexOf(child1);
-            var index2: number = this._children.indexOf(child2);
+            let index1: number = this.$children.indexOf(child1);
+            let index2: number = this.$children.indexOf(child2);
             if (index1 == -1 || index2 == -1)
-                throw "Not a child of this container";
+                throw new Error("no such child found");
             this.swapChildrenAt(index1, index2);
         }
 
         public swapChildrenAt(index1: number, index2: number = 0): void {
-            var child1: GObject = this._children[index1];
-            var child2: GObject = this._children[index2];
-
+            let child1: GObject = this.$children[index1];
+            let child2: GObject = this.$children[index2];
             this.setChildIndex(child1, index2);
             this.setChildIndex(child2, index1);
         }
 
         public get numChildren(): number {
-            return this._children.length;
+            return this.$children.length;
         }
 
         public isAncestorOf(child: GObject): boolean {
             if (child == null)
                 return false;
 
-            var p: GComponent = child.parent;
+            let p: GComponent = child.parent;
             while (p) {
                 if (p == this)
                     return true;
@@ -366,223 +285,143 @@ module fgui {
             return false;
         }
 
-        public addController(controller: Controller): void {
-            this._controllers.push(controller);
-            controller.parent = this;
+        public addController(controller: controller.Controller): void {
+            this.$controllers.push(controller);
+            controller.$parent = this;
             this.applyController(controller);
         }
 
-        public getControllerAt(index: number): Controller {
-            return this._controllers[index];
+        public getControllerAt(index: number): controller.Controller {
+            return this.$controllers[index];
         }
 
-        public getController(name: string): Controller {
-            var cnt: number = this._controllers.length;
-            for (var i: number = 0; i < cnt; ++i) {
-                var c: Controller = this._controllers[i];
+        public getController(name: string): controller.Controller {
+            let cnt: number = this.$controllers.length;
+            for (let i: number = 0; i < cnt; ++i) {
+                let c: controller.Controller = this.$controllers[i];
                 if (c.name == name)
                     return c;
             }
-
             return null;
         }
 
-        public removeController(c: Controller): void {
-            var index: number = this._controllers.indexOf(c);
+        public removeController(c: controller.Controller): void {
+            let index: number = this.$controllers.indexOf(c);
             if (index == -1)
-                throw "controller not exists";
+                throw new Error("controller not exists");
 
-            c.parent = null;
-            this._controllers.splice(index, 1);
+            c.$parent = null;
+            this.$controllers.splice(index, 1);
 
-            var length: number = this._children.length;
-            for (var i: number = 0; i < length; i++) {
-                var child: GObject = this._children[i];
+            this.$children.forEach(child => {
                 child.handleControllerChanged(c);
-            }
+            });
         }
 
-        public get controllers(): Array<Controller> {
-            return this._controllers;
+        public get controllers(): controller.Controller[] {
+            return this.$controllers;
         }
 
         public childStateChanged(child: GObject): void {
-            if (this._buildingDisplayList)
+            if (this.$buildingDisplayList)
                 return;
 
-            var cnt: number = this._children.length;
-            var g: GObject;
-            var i: number;
-
             if (child instanceof GGroup) {
-                for (i = 0; i < cnt; i++) {
-                    g = this._children[i];
+                this.$children.forEach(g => {
                     if (g.group == child)
                         this.childStateChanged(g);
-                }
+                }, this);
                 return;
             }
 
             if (!child.displayObject)
                 return;
 
-            if (child.internalVisible) {
+            if (child.finalVisible) {
                 if (!child.displayObject.parent) {
-                    var index: number = 0;
-                    if (this._childrenRenderOrder == ChildrenRenderOrder.Ascent) {
-                        for (i = 0; i < cnt; i++) {
-                            g = this._children[i];
-                            if (g == child)
-                                break;
+                    let index: number = 0;
+                    let len: number = this.$children.length;
+                    for (let i1: number = 0; i1 < len; i1++) {
+                        let g = this.$children[i1];
+                        if (g == child)
+                            break;
 
-                            if (g.displayObject != null && g.displayObject.parent != null)
-                                index++;
-                        }
-                        this._container.addChildAt(child.displayObject, index);
+                        if (g.displayObject && g.displayObject.parent)
+                            index++;
                     }
-                    else if (this._childrenRenderOrder == ChildrenRenderOrder.Descent) {
-                        for (i = cnt - 1; i >= 0; i--) {
-                            g = this._children[i];
-                            if (g == child)
-                                break;
-
-                            if (g.displayObject != null && g.displayObject.parent != null)
-                                index++;
-                        }
-                        this._container.addChildAt(child.displayObject, index);
-                    }
-                    else {
-                        this._container.addChild(child.displayObject);
-
-                        GTimers.inst.callLater(this.buildNativeDisplayList, this);
-                    }
+                    this.$container.addChildAt(child.displayObject, index);
                 }
             }
             else {
                 if (child.displayObject.parent)
-                    this._container.removeChild(child.displayObject);
+                    this.$container.removeChild(child.displayObject);
             }
         }
 
-        private buildNativeDisplayList(): void {
-            var cnt: number = this._children.length;
-            if (cnt == 0)
-                return;
-
-            var i: number;
-            var child: GObject;
-            switch (this._childrenRenderOrder) {
-                case ChildrenRenderOrder.Ascent:
-                    {
-                        for (i = 0; i < cnt; i++) {
-                            child = this._children[i];
-                            if (child.displayObject != null && child.internalVisible)
-                                this._container.addChild(child.displayObject);
-                        }
-                    }
-                    break;
-                case ChildrenRenderOrder.Descent:
-                    {
-                        for (i = cnt - 1; i >= 0; i--) {
-                            child = this._children[i];
-                            if (child.displayObject != null && child.internalVisible)
-                                this._container.addChild(child.displayObject);
-                        }
-                    }
-                    break;
-
-                case ChildrenRenderOrder.Arch:
-                    {
-                        var apex: number = ToolSet.clamp(this._apexIndex, 0, cnt);
-                        for (i = 0; i < apex; i++) {
-                            child = this._children[i];
-                            if (child.displayObject != null && child.internalVisible)
-                                this._container.addChild(child.displayObject);
-                        }
-                        for (i = cnt - 1; i >= apex; i--) {
-                            child = this._children[i];
-                            if (child.displayObject != null && child.internalVisible)
-                                this._container.addChild(child.displayObject);
-                        }
-                    }
-                    break;
-            }
-        }
-
-        public applyController(c: Controller): void {
-            this._applyingController = c;
-            var child: GObject;
-            var length: number = this._children.length;
-            for (var i: number = 0; i < length; i++) {
-                child = this._children[i];
+        public applyController(c: controller.Controller): void {
+            this.$applyingController = c;
+            this.$children.forEach(child => {
                 child.handleControllerChanged(c);
-            }
-            this._applyingController = null;
-
-            c.runActions();
+            });
+            this.$applyingController = null;
+            c.executeActions();
         }
 
         public applyAllControllers(): void {
-            var cnt: number = this._controllers.length;
-            for (var i: number = 0; i < cnt; ++i) {
-                this.applyController(this._controllers[i]);
-            }
+            this.$controllers.forEach(c => {
+                this.applyController(c);
+            }, this);
         }
 
-        public adjustRadioGroupDepth(obj: GObject, c: Controller): void {
-            var cnt: number = this._children.length;
-            var i: number;
-            var child: GObject;
-            var myIndex: number = -1, maxIndex: number = -1;
-            for (i = 0; i < cnt; i++) {
-                child = this._children[i];
+        public adjustRadioGroupDepth(obj: GObject, c: controller.Controller): void {
+            let myIndex: number = -1, maxIndex: number = -1;
+            this.$children.forEach((child, i) => {
                 if (child == obj) {
                     myIndex = i;
                 }
                 else if ((child instanceof GButton)
-                    && (<GButton><any>child).relatedController == c) {
+                    && child.relatedController == c) {
                     if (i > maxIndex)
                         maxIndex = i;
                 }
-            }
+            });
             if (myIndex < maxIndex) {
-                if (this._applyingController != null)
-                    this._children[maxIndex].handleControllerChanged(this._applyingController);
+                if(this.$applyingController != null)
+                    this.$children[maxIndex].handleControllerChanged(this.$applyingController);  //TODO: twice
                 this.swapChildrenAt(myIndex, maxIndex);
             }
         }
 
         public getTransitionAt(index: number): Transition {
-            return this._transitions[index];
+            return this.$transitions[index];
         }
 
         public getTransition(transName: string): Transition {
-            var cnt: number = this._transitions.length;
-            for (var i: number = 0; i < cnt; ++i) {
-                var trans: Transition = this._transitions[i];
+            let cnt: number = this.$transitions.length;
+            for (let i: number = 0; i < cnt; ++i) {
+                let trans: Transition = this.$transitions[i];
                 if (trans.name == transName)
                     return trans;
             }
-
             return null;
         }
 
         public isChildInView(child: GObject): boolean {
-            if (this._rootContainer.scrollRect != null) {
+            if (this.$rootContainer.scrollRect != null) {
                 return child.x + child.width >= 0 && child.x <= this.width
                     && child.y + child.height >= 0 && child.y <= this.height;
             }
-            else if (this._scrollPane != null) {
-                return this._scrollPane.isChildInView(child);
+            else if (this.$scrollPane != null) {
+                return this.$scrollPane.isChildInView(child);
             }
             else
                 return true;
         }
 
         public getFirstChildInView(): number {
-            var cnt: number = this._children.length;
-            for (var i: number = 0; i < cnt; ++i) {
-                var child: GObject = this._children[i];
+            let cnt: number = this.$children.length;
+            for (let i: number = 0; i < cnt; ++i) {
+                let child: GObject = this.$children[i];
                 if (this.isChildInView(child))
                     return i;
             }
@@ -590,198 +429,157 @@ module fgui {
         }
 
         public get scrollPane(): ScrollPane {
-            return this._scrollPane;
+            return this.$scrollPane;
         }
 
         public get opaque(): boolean {
-            return this._rootContainer.opaque;
+            return this.$opaque;
         }
 
         public set opaque(value: boolean) {
-            this._rootContainer.opaque = value;
+            if (this.$opaque != value) {
+                this.$opaque = value;
+                if (this.$opaque)
+                    this.updateOpaque();
+                else {
+                    if (this.$rootContainer.hitArea && this.$rootContainer.hitArea instanceof PIXI.Rectangle)
+                        this.$rootContainer.hitArea.width = this.$rootContainer.hitArea.height = 0;
+                }
+            }
         }
 
-        public get margin(): Margin {
-            return this._margin;
+        public get margin(): utils.Margin {
+            return this.$margin;
         }
 
-        public set margin(value: Margin) {
-            this._margin.copy(value);
-            if (this._rootContainer.scrollRect != null) {
-                this._container.x = this._margin.left + this._alignOffset.x;
-                this._container.y = this._margin.top + this._alignOffset.y;
+        public set margin(value: utils.Margin) {
+            this.$margin.copy(value);
+            if (this.$rootContainer.scrollRect != null) {
+                this.$container.x = this.$margin.left + this.$alignOffset.x;
+                this.$container.y = this.$margin.top + this.$alignOffset.y;
             }
             this.handleSizeChanged();
         }
 
-        public get childrenRenderOrder(): ChildrenRenderOrder {
-            return this._childrenRenderOrder;
+        public get mask(): PIXI.Container | PIXI.MaskData {
+            return this.$rootContainer.mask;
         }
 
-        public set childrenRenderOrder(value: ChildrenRenderOrder) {
-            if (this._childrenRenderOrder != value) {
-                this._childrenRenderOrder = value;
-                this.buildNativeDisplayList();
-            }
+        public set mask(obj: PIXI.Container | PIXI.MaskData) {
+            if(!obj) return;
+            if(obj instanceof PIXI.Container) obj.interactive=false;
+            if(obj instanceof PIXI.MaskData && obj.maskObject) obj.maskObject.interactive=false;
+            // obj.interactive = obj.interactiveChildren = false;
+            if (obj instanceof PIXI.Graphics)
+                obj.isMask = true;
+            this.$rootContainer.mask = obj;
         }
 
-        public get apexIndex(): number {
-            return this._apexIndex;
-        }
-
-        public set apexIndex(value: number) {
-            if (this._apexIndex != value) {
-                this._apexIndex = value;
-
-                if (this._childrenRenderOrder == ChildrenRenderOrder.Arch)
-                    this.buildNativeDisplayList();
-            }
-        }
-
-        public get mask(): egret.DisplayObject | egret.Rectangle {
-            return this._rootContainer.mask;
-        }
-
-        public set mask(value: egret.DisplayObject | egret.Rectangle) {
-            this._rootContainer.mask = value;
-        }
-
-        public get baseUserData(): string {
-            var buffer: ByteBuffer = this.packageItem.rawData;
-            buffer.seek(0, 4);
-            return buffer.readS();
+        protected updateOpaque() {
+            if (!this.$rootContainer.hitArea)
+                this.$rootContainer.hitArea = new PIXI.Rectangle();
+            let h: PIXI.Rectangle = this.$rootContainer.hitArea as PIXI.Rectangle;
+            h.x = h.y = 0;
+            h.width = this.width;
+            h.height = this.height;
         }
 
         protected updateScrollRect() {
-            var rect: egret.Rectangle = this._rootContainer.scrollRect;
+            let rect: PIXI.Rectangle = this.$rootContainer.scrollRect;
             if (rect == null)
-                rect = new egret.Rectangle();
-
-            var w: number = this.width - this._margin.right;
-            var h: number = this.height - this._margin.bottom;
-            rect.setTo(0, 0, w, h);
-            this._rootContainer.scrollRect = rect;
+                rect = new PIXI.Rectangle();
+            let w: number = this.width - this.$margin.right;
+            let h: number = this.height - this.$margin.bottom;
+            rect.x = rect.y = 0;
+            rect.width = w;
+            rect.height = h;
+            this.$rootContainer.scrollRect = rect;
         }
 
-        protected setupScroll(buffer: ByteBuffer): void {
-            if (this._rootContainer == this._container) {
-                this._container = new egret.DisplayObjectContainer();
-                this._rootContainer.addChild(this._container);
+        protected setupScroll(scrollBarMargin: utils.Margin,
+            scroll: ScrollType,
+            scrollBarDisplay: ScrollBarDisplayType,
+            flags: number,
+            vtScrollBarRes: string,
+            hzScrollBarRes: string,
+            headerRes:string,
+            footerRes:string): void {
+            if (this.$rootContainer == this.$container) {
+                this.$container = new PIXI.Container();
+                this.$rootContainer.addChild(this.$container);
             }
-            this._scrollPane = new ScrollPane(this);
-            this._scrollPane.setup(buffer);
-            this.setBoundsChangedFlag();
+            this.$scrollPane = new ScrollPane(this, scroll, scrollBarMargin, scrollBarDisplay, flags, vtScrollBarRes, hzScrollBarRes, headerRes, footerRes);
         }
 
         protected setupOverflow(overflow: OverflowType): void {
             if (overflow == OverflowType.Hidden) {
-                if (this._rootContainer == this._container) {
-                    this._container = new egret.DisplayObjectContainer();
-                    this._rootContainer.addChild(this._container);
+                if (this.$rootContainer == this.$container) {
+                    this.$container = new PIXI.Container();
+                    this.$rootContainer.addChild(this.$container);
                 }
                 this.updateScrollRect();
-                this._container.x = this._margin.left;
-                this._container.y = this._margin.top;
+                this.$container.x = this.$margin.left;
+                this.$container.y = this.$margin.top;
             }
-            else if (this._margin.left != 0 || this._margin.top != 0) {
-                if (this._rootContainer == this._container) {
-                    this._container = new egret.DisplayObjectContainer();
-                    this._rootContainer.addChild(this._container);
+            else if (this.$margin.left != 0 || this.$margin.top != 0) {
+                if (this.$rootContainer == this.$container) {
+                    this.$container = new PIXI.Container();
+                    this.$rootContainer.addChild(this.$container);
                 }
-                this._container.x = this._margin.left;
-                this._container.y = this._margin.top;
+                this.$container.x = this.$margin.left;
+                this.$container.y = this.$margin.top;
             }
-
             this.setBoundsChangedFlag();
         }
-
+        
         protected handleSizeChanged(): void {
-            super.handleSizeChanged();
-
-            if (this._scrollPane)
-                this._scrollPane.onOwnerSizeChanged();
-            else if (this._rootContainer.scrollRect != null)
+            if (this.$scrollPane)
+                this.$scrollPane.onOwnerSizeChanged();
+            else if (this.$rootContainer.scrollRect != null)
                 this.updateScrollRect();
 
-            if (this._rootContainer.hitArea instanceof PixelHitTest) {
-                var hitTest: PixelHitTest = <PixelHitTest>(this._rootContainer.hitArea);
-                if (this.sourceWidth != 0)
-                    hitTest.scaleX = this._width / this.sourceWidth;
-                if (this.sourceHeight != 0)
-                    hitTest.scaleY = this._height / this.sourceHeight;
-            }
+            if (this.$opaque)
+                this.updateOpaque();
         }
 
         protected handleGrayedChanged(): void {
-            var c: Controller = this.getController("grayed");
-            if (c != null) {
+            let c: controller.Controller = this.getController("grayed");
+            if (c != null)
                 c.selectedIndex = this.grayed ? 1 : 0;
-                return;
-            }
-
-            var v: boolean = this.grayed;
-            var cnt: number = this._children.length;
-            for (var i: number = 0; i < cnt; ++i) {
-                this._children[i].grayed = v;
-            }
-        }
-
-        public handleControllerChanged(c: Controller): void {
-            super.handleControllerChanged(c);
-
-            if (this._scrollPane != null)
-                this._scrollPane.handleControllerChanged(c);
+            else
+                super.handleGrayedChanged();
         }
 
         public setBoundsChangedFlag(): void {
-            if (!this._scrollPane && !this._trackBounds)
+            if (!this.$scrollPane && !this.$trackBounds)
                 return;
-
-            if (!this._boundsChanged) {
-                this._boundsChanged = true;
-
-                egret.callLater(this.__render, this);
+            if (!this.$boundsChanged) {
+                this.$boundsChanged = true;
+                GTimer.inst.callLater(this.$validate, this);
             }
         }
 
-        private __render(): void {
-            if (this._boundsChanged) {
-                var len: number = this._children.length;
-                if (len > 0) {
-                    for (var i: number = 0; i < len; i++) {
-                        var child: GObject = this._children[i];
-                        child.ensureSizeCorrect();
-                    }
-                }
-
+        private $validate(dt: number): void {
+            if (this.$boundsChanged)
                 this.updateBounds();
-            }
         }
 
         public ensureBoundsCorrect(): void {
-            var len: number = this._children.length;
-            if (len > 0) {
-                for (var i: number = 0; i < len; i++) {
-                    var child: GObject = this._children[i];
-                    child.ensureSizeCorrect();
-                }
-            }
-
-            if (this._boundsChanged)
+            if (this.$boundsChanged)
                 this.updateBounds();
         }
 
         protected updateBounds(): void {
-            var ax: number = 0, ay: number = 0, aw: number = 0, ah: number = 0;
-            var len: number = this._children.length;
+            let ax: number = 0, ay: number = 0, aw: number = 0, ah: number = 0;
+            let len: number = this.$children.length;
             if (len > 0) {
                 ax = Number.POSITIVE_INFINITY, ay = Number.POSITIVE_INFINITY;
-                var ar: number = Number.NEGATIVE_INFINITY, ab: number = Number.NEGATIVE_INFINITY;
-                var tmp: number = 0;
-                var i: number = 0;
+                let ar: number = Number.NEGATIVE_INFINITY, ab: number = Number.NEGATIVE_INFINITY;
+                let tmp: number = 0;
 
-                for (var i: number = 0; i < len; i++) {
-                    var child: GObject = this._children[i];
+                this.$children.forEach(child => {
+                    child.ensureSizeCorrect();
+
                     tmp = child.x;
                     if (tmp < ax)
                         ax = tmp;
@@ -794,7 +592,7 @@ module fgui {
                     tmp = child.y + child.actualHeight;
                     if (tmp > ab)
                         ab = tmp;
-                }
+                });
                 aw = ar - ax;
                 ah = ab - ay;
             }
@@ -803,46 +601,46 @@ module fgui {
         }
 
         public setBounds(ax: number, ay: number, aw: number, ah: number = 0): void {
-            this._boundsChanged = false;
+            this.$boundsChanged = false;
 
-            if (this._scrollPane)
-                this._scrollPane.setContentSize(Math.round(ax + aw), Math.round(ay + ah));
+            if (this.$scrollPane)
+                this.$scrollPane.setContentSize(Math.round(ax + aw), Math.round(ay + ah));
         }
 
         public get viewWidth(): number {
-            if (this._scrollPane != null)
-                return this._scrollPane.viewWidth;
+            if (this.$scrollPane != null)
+                return this.$scrollPane.viewWidth;
             else
-                return this.width - this._margin.left - this._margin.right;
+                return this.width - this.$margin.left - this.$margin.right;
         }
 
         public set viewWidth(value: number) {
-            if (this._scrollPane != null)
-                this._scrollPane.viewWidth = value;
+            if (this.$scrollPane != null)
+                this.$scrollPane.viewWidth = value;
             else
-                this.width = value + this._margin.left + this._margin.right;
+                this.width = value + this.$margin.left + this.$margin.right;
         }
 
         public get viewHeight(): number {
-            if (this._scrollPane != null)
-                return this._scrollPane.viewHeight;
+            if (this.$scrollPane != null)
+                return this.$scrollPane.viewHeight;
             else
-                return this.height - this._margin.top - this._margin.bottom;
+                return this.height - this.$margin.top - this.$margin.bottom;
         }
 
         public set viewHeight(value: number) {
-            if (this._scrollPane != null)
-                this._scrollPane.viewHeight = value;
+            if (this.$scrollPane != null)
+                this.$scrollPane.viewHeight = value;
             else
-                this.height = value + this._margin.top + this._margin.bottom;
+                this.height = value + this.$margin.top + this.$margin.bottom;
         }
 
-        public getSnappingPosition(xValue: number, yValue: number, resultPoint?: egret.Point): egret.Point {
+        public getSnappingPosition(xValue: number, yValue: number, resultPoint?: PIXI.Point): PIXI.Point {
             if (!resultPoint)
-                resultPoint = new egret.Point();
+                resultPoint = new PIXI.Point();
 
-            var cnt: number = this._children.length;
-            if (cnt == 0) {
+            let cnt: number = this.$children.length;
+            if (cnt <= 0) {
                 resultPoint.x = 0;
                 resultPoint.y = 0;
                 return resultPoint;
@@ -850,19 +648,19 @@ module fgui {
 
             this.ensureBoundsCorrect();
 
-            var obj: GObject = null;
-            var prev: GObject = null;
-            var i: number = 0;
+            let obj: GObject = null;
+            let prev: GObject = null;
+            let i: number = 0;
             if (yValue != 0) {
                 for (; i < cnt; i++) {
-                    obj = this._children[i];
+                    obj = this.$children[i];
                     if (yValue < obj.y) {
                         if (i == 0) {
                             yValue = 0;
                             break;
                         }
                         else {
-                            prev = this._children[i - 1];
+                            prev = this.$children[i - 1];
                             if (yValue < prev.y + prev.actualHeight / 2) //top half part
                                 yValue = prev.y;
                             else //bottom half part
@@ -880,14 +678,14 @@ module fgui {
                 if (i > 0)
                     i--;
                 for (; i < cnt; i++) {
-                    obj = this._children[i];
+                    obj = this.$children[i];
                     if (xValue < obj.x) {
                         if (i == 0) {
                             xValue = 0;
                             break;
                         }
                         else {
-                            prev = this._children[i - 1];
+                            prev = this.$children[i - 1];
                             if (xValue < prev.x + prev.actualWidth / 2) //top half part
                                 xValue = prev.x;
                             else //bottom half part
@@ -908,285 +706,209 @@ module fgui {
 
         public childSortingOrderChanged(child: GObject, oldValue: number, newValue: number = 0): void {
             if (newValue == 0) {
-                this._sortingChildCount--;
-                this.setChildIndex(child, this._children.length);
+                this.$sortingChildCount--;
+                this.setChildIndex(child, this.$children.length);
             }
             else {
                 if (oldValue == 0)
-                    this._sortingChildCount++;
+                    this.$sortingChildCount++;
 
-                var oldIndex: number = this._children.indexOf(child);
-                var index: number = this.getInsertPosForSortingChild(child);
+                let oldIndex: number = this.$children.indexOf(child);
+                let index: number = this.getInsertPosForSortingChild(child);
                 if (oldIndex < index)
-                    this._setChildIndex(child, oldIndex, index - 1);
+                    this.$setChildIndex(child, oldIndex, index - 1);
                 else
-                    this._setChildIndex(child, oldIndex, index);
+                    this.$setChildIndex(child, oldIndex, index);
             }
         }
 
-        public constructFromResource(): void {
-            this.constructFromResource2(null, 0);
+        /**@internal */
+        constructFromResource(): void {
+            this.constructInternal(null, 0);
         }
 
-        public constructFromResource2(objectPool: Array<GObject>, poolIndex: number): void {
-            var contentItem:PackageItem = this.packageItem.getBranch();
+        private constructInternal(objectPool: GObject[], poolIndex: number): void {
+            let xml: utils.XmlNode = this.packageItem.owner.getItemAsset(this.packageItem) as utils.XmlNode;
 
-            if (!contentItem.decoded) {
-                contentItem.decoded = true;
-                TranslationHelper.translateComponent(contentItem);
+            this.$inProgressBuilding = true;
+
+            let str: string;
+            let arr: string[];
+
+            str = xml.attributes.size;
+            arr = str.split(",");
+            this.$sourceWidth = parseInt(arr[0]);
+            this.$sourceHeight = parseInt(arr[1]);
+            this.$initWidth = this.$sourceWidth;
+            this.$initHeight = this.$sourceHeight;
+
+            this.setSize(this.$sourceWidth, this.$sourceHeight);
+
+            str = xml.attributes.pivot;
+            if (str) {
+                arr = str.split(",");
+                str = xml.attributes.anchor;
+                this.internalSetPivot(parseFloat(arr[0]), parseFloat(arr[1]), str == "true");
             }
 
-            var i: number;
-            var dataLen: number;
-            var curPos: number;
-            var nextPos: number;
-            var f1: number;
-            var f2: number;
-            var i1: number;
-            var i2: number;
+            str = xml.attributes.opaque;
+            this.opaque = str != "false";
 
-            var buffer: ByteBuffer = contentItem.rawData;
-            buffer.seek(0, 0);
+            let overflow: OverflowType;
+            str = xml.attributes.overflow;
+            if (str)
+                overflow = ParseOverflowType(str);
+            else
+                overflow = OverflowType.Visible;
 
-            this._underConstruct = true;
+            str = xml.attributes.margin;
+            if (str)
+                this.$margin.parse(str);
 
-            this.sourceWidth = buffer.readInt();
-            this.sourceHeight = buffer.readInt();
-            this.initWidth = this.sourceWidth;
-            this.initHeight = this.sourceHeight;
-
-            this.setSize(this.sourceWidth, this.sourceHeight);
-
-            if (buffer.readBool()) {
-                this.minWidth = buffer.readInt();
-                this.maxWidth = buffer.readInt();
-                this.minHeight = buffer.readInt();
-                this.maxHeight = buffer.readInt();
-            }
-
-            if (buffer.readBool()) {
-                f1 = buffer.readFloat();
-                f2 = buffer.readFloat();
-                this.internalSetPivot(f1, f2, buffer.readBool());
-            }
-
-            if (buffer.readBool()) {
-                this._margin.top = buffer.readInt();
-                this._margin.bottom = buffer.readInt();
-                this._margin.left = buffer.readInt();
-                this._margin.right = buffer.readInt();
-            }
-
-            var overflow: number = buffer.readByte();
             if (overflow == OverflowType.Scroll) {
-                var savedPos: number = buffer.position;
-                buffer.seek(0, 7);
-                this.setupScroll(buffer);
-                buffer.position = savedPos;
+                let scroll: ScrollType;
+                str = xml.attributes.scroll;
+                if (str)
+                    scroll = ParseScrollType(str);
+                else
+                    scroll = ScrollType.Vertical;
+
+                let scrollBarDisplay: ScrollBarDisplayType;
+                str = xml.attributes.scrollBar;
+                if (str)
+                    scrollBarDisplay = ParseScrollBarDisplayType(str);
+                else
+                    scrollBarDisplay = ScrollBarDisplayType.Default;
+
+                let scrollBarFlags: number;
+                str = xml.attributes.scrollBarFlags;
+                if (str)
+                    scrollBarFlags = parseInt(str);
+                else
+                    scrollBarFlags = 0;
+
+                let scrollBarMargin: utils.Margin = new utils.Margin();
+                str = xml.attributes.scrollBarMargin;
+                if (str)
+                    scrollBarMargin.parse(str);
+
+                let vtScrollBarRes: string;
+                let hzScrollBarRes: string;
+                str = xml.attributes.scrollBarRes;
+                if (str) {
+                    arr = str.split(",");
+                    vtScrollBarRes = arr[0];
+                    hzScrollBarRes = arr[1];
+                }
+
+                let headerRes:string, footerRes:string;
+				str = xml.attributes.ptrRes;
+				if(str) {
+					arr = str.split(",");
+					headerRes = arr[0];
+					footerRes = arr[1];
+				}
+
+                this.setupScroll(scrollBarMargin, scroll, scrollBarDisplay, scrollBarFlags, vtScrollBarRes, hzScrollBarRes, headerRes, footerRes);
             }
             else
                 this.setupOverflow(overflow);
 
-            if (buffer.readBool())
-                buffer.skip(8);
+            this.$buildingDisplayList = true;
 
-            this._buildingDisplayList = true;
+            let col: utils.XmlNode[] = xml.children;
+            col.forEach(cxml => {
+                if (cxml.nodeName == "controller") {
+                    let c = new controller.Controller();
+                    this.$controllers.push(c);
+                    c.$parent = this;
+                    c.setup(cxml);
+                }
+            });
 
-            buffer.seek(0, 1);
+            let displayList = this.packageItem.displayList;
+            displayList.forEach((di, i) => {
 
-            var controllerCount: number = buffer.readShort();
-            for (i = 0; i < controllerCount; i++) {
-                nextPos = buffer.readShort();
-                nextPos += buffer.position;
-
-                var controller: Controller = new Controller();
-                this._controllers.push(controller);
-                controller.parent = this;
-                controller.setup(buffer);
-
-                buffer.position = nextPos;
-            }
-
-            buffer.seek(0, 2);
-
-            var child: GObject;
-            var childCount: number = buffer.readShort();
-            for (i = 0; i < childCount; i++) {
-                dataLen = buffer.readShort();
-                curPos = buffer.position;
-
+                let child: GObject;
                 if (objectPool != null)
                     child = objectPool[poolIndex + i];
-                else {
-                    buffer.seek(curPos, 0);
-
-                    var type: ObjectType = buffer.readByte();
-                    var src: string = buffer.readS();
-                    var pkgId: string = buffer.readS();
-
-                    var pi: PackageItem = null;
-                    if (src != null) {
-                        var pkg: UIPackage;
-                        if (pkgId != null)
-                            pkg = UIPackage.getById(pkgId);
-                        else
-                            pkg = contentItem.owner;
-
-                        pi = pkg != null ? pkg.getItemById(src) : null;
-                    }
-
-                    if (pi != null) {
-                        child = UIObjectFactory.newObject(pi);
-                        child.constructFromResource();
-                    }
-                    else
-                        child = UIObjectFactory.newObject2(type);
+                else if (di.packageItem) {
+                    child = UIObjectFactory.newObject(di.packageItem);
+                    child.packageItem = di.packageItem;
+                    child.constructFromResource();
                 }
+                else
+                    child = UIObjectFactory.newObjectDirectly(di.type);
 
-                child._underConstruct = true;
-                child.setup_beforeAdd(buffer, curPos);
+                child.$inProgressBuilding = true;
+                child.setupBeforeAdd(di.desc);
                 child.parent = this;
-                this._children.push(child);
+                this.$children.push(child);
 
-                buffer.position = curPos + dataLen;
+            }, this);
+
+            this.relations.setup(xml);
+
+            this.$children.forEach((child, i) => {
+                child.relations.setup(displayList[i].desc);
+                child.setupAfterAdd(displayList[i].desc);
+                child.$inProgressBuilding = false;
+            });
+
+            str = xml.attributes.mask;
+            if (str) {
+                let maskObj: PIXI.DisplayObject = this.getChildById(str).displayObject;
+                if (maskObj instanceof PIXI.Graphics || maskObj instanceof PIXI.Sprite)
+                    this.mask = maskObj;
+                else
+                    throw new Error("only PIXI.Sprite or PIXI.Graphics can be applied as mask object");
             }
 
-            buffer.seek(0, 3);
-            this.relations.setup(buffer, true);
+            col.forEach(cxml => {
+                if (cxml.nodeName == "transition") {
+                    let trans = new Transition(this);
+                    this.$transitions.push(trans);
+                    trans.setup(cxml);
+                }
+            }, this);
 
-            buffer.seek(0, 2);
-            buffer.skip(2);
-
-            for (i = 0; i < childCount; i++) {
-                nextPos = buffer.readShort();
-                nextPos += buffer.position;
-
-                buffer.seek(buffer.position, 3);
-                this._children[i].relations.setup(buffer, false);
-
-                buffer.position = nextPos;
-            }
-
-            buffer.seek(0, 2);
-            buffer.skip(2);
-
-            for (i = 0; i < childCount; i++) {
-                nextPos = buffer.readShort();
-                nextPos += buffer.position;
-
-                child = this._children[i];
-                child.setup_afterAdd(buffer, buffer.position);
-                child._underConstruct = false;
-
-                buffer.position = nextPos;
-            }
-
-            buffer.seek(0, 4);
-
-            buffer.skip(2); //customData
-            this.opaque = buffer.readBool();
-            var maskId: number = buffer.readShort();
-            if (maskId != -1) {
-                this.mask = this.getChildAt(maskId).displayObject;
-                buffer.readBool(); //reversedMask
-            }
-            var hitTestId: string = buffer.readS();
-            i1 = buffer.readInt();
-            i2 = buffer.readInt();
-            if (hitTestId != null) {
-                pi = contentItem.owner.getItemById(hitTestId);
-                if (pi != null && pi.pixelHitTestData != null)
-                    this._rootContainer.hitArea = new PixelHitTest(pi.pixelHitTestData, i1, i2);
-            }
-            else if (i1 != 0 && i2 != -1) {
-                this._rootContainer.hitArea = this.getChildAt(i2).displayObject;
-            }
-
-            buffer.seek(0, 5);
-
-            var transitionCount: number = buffer.readShort();
-            for (i = 0; i < transitionCount; i++) {
-                nextPos = buffer.readShort();
-                nextPos += buffer.position;
-
-                var trans: Transition = new Transition(this);
-                trans.setup(buffer);
-                this._transitions.push(trans);
-
-                buffer.position = nextPos;
-            }
-
-            if (this._transitions.length > 0) {
-                this.displayObject.addEventListener(egret.Event.ADDED_TO_STAGE, this.___added, this);
-                this.displayObject.addEventListener(egret.Event.REMOVED_FROM_STAGE, this.___removed, this);
+            if (this.$transitions.length > 0) {
+                this.on("added", this.$added, this);
+                this.on("removed", this.$removed, this);
             }
 
             this.applyAllControllers();
 
-            this._buildingDisplayList = false;
-            this._underConstruct = false;
+            this.$buildingDisplayList = false;
+            this.$inProgressBuilding = false;
 
-            this.buildNativeDisplayList();
+            this.appendChildrenList();
+
             this.setBoundsChangedFlag();
-
-            if (contentItem.objectType != ObjectType.Component)
-                this.constructExtension(buffer);
-
-            this.onConstruct();
+            this.constructFromXML(xml);
         }
 
-        protected onConstruct(): void {
-            this.constructFromXML(null);
+        protected appendChildrenList():void {
+            this.$children.forEach(child => {
+                if (child.displayObject != null && child.finalVisible)
+                    this.$container.addChild(child.displayObject);
+            }, this);
         }
 
-        protected constructExtension(buffer: ByteBuffer): void {
+        protected constructFromXML(xml: utils.XmlNode): void {
         }
 
-        protected constructFromXML(xml: any): void {
+        private $added(d: PIXI.DisplayObject): void {
+            this.$transitions.forEach(trans => {
+                if (trans.autoPlay)
+                    trans.play({ times:trans.autoPlayRepeat, delay:trans.autoPlayDelay });
+            });
         }
 
-        public setup_afterAdd(buffer: ByteBuffer, beginPos: number): void {
-            super.setup_afterAdd(buffer, beginPos);
-
-            buffer.seek(beginPos, 4);
-
-            var pageController: number = buffer.readShort();
-            if (pageController != null && this._scrollPane != null)
-                this._scrollPane.pageController = this._parent.getControllerAt(pageController);
-
-            var cnt: number = buffer.readShort();
-            for (var i: number = 0; i < cnt; i++) {
-                var cc: Controller = this.getController(buffer.readS());
-                var pageId: string = buffer.readS();
-                if (cc != null)
-                    cc.selectedPageId = pageId;
-            }
-
-            if (buffer.version >= 2) {
-                cnt = buffer.readShort();
-                for (i = 0; i < cnt; i++) {
-                    var target: string = buffer.readS();
-                    var propertyId: number = buffer.readShort();
-                    var value: String = buffer.readS();
-                    var obj: GObject = this.getChildByPath(target);
-                    if (obj)
-                        obj.setProp(propertyId, value);
-                }
-            }
-        }
-
-        private ___added(evt: egret.Event): void {
-            var cnt: number = this._transitions.length;
-            for (var i: number = 0; i < cnt; ++i) {
-                this._transitions[i].onOwnerAddedToStage();
-            }
-        }
-
-        private ___removed(evt: egret.Event): void {
-            var cnt: number = this._transitions.length;
-            for (var i: number = 0; i < cnt; ++i) {
-                this._transitions[i].onOwnerRemovedFromStage();
-            }
+        private $removed(d: PIXI.DisplayObject): void {
+            this.$transitions.forEach(trans => {
+                trans.stop(false, false);
+            });
         }
     }
 }

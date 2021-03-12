@@ -1,441 +1,505 @@
+namespace fgui {
 
-module fgui {
+    export class LineInfo {
+        public width: number = 0;
+        public height: number = 0;
+        public textHeight: number = 0;
+        public text: string;
+        public y: number = 0;
 
-    export class GTextField extends GObject {
-        protected _textField: egret.TextField;
-        protected _bitmapContainer: egret.DisplayObjectContainer;
-        protected _font: string;
-        protected _fontSize: number = 0;
-        protected _align: AlignType;
-        protected _verticalAlign: VertAlignType;
-        protected _color: number;
-        protected _leading: number = 0;
-        protected _letterSpacing: number = 0;
-        protected _underline: boolean = false;
-        protected _text: string;
-        protected _ubbEnabled: boolean;
-        protected _templateVars: any;
+        private static pool: LineInfo[] = [];
 
-        protected _autoSize: AutoSizeType;
-        protected _widthAutoSize: boolean;
-        protected _heightAutoSize: boolean;
+        public static get(): LineInfo {
+            if (LineInfo.pool.length) {
+                let ret: LineInfo = LineInfo.pool.pop();
+                ret.width = 0;
+                ret.height = 0;
+                ret.textHeight = 0;
+                ret.text = null;
+                ret.y = 0;
+                return ret;
+            }
+            else
+                return new LineInfo();
+        }
 
-        protected _updatingSize: boolean;
-        protected _sizeDirty: boolean;
-        protected _textWidth: number = 0;
-        protected _textHeight: number = 0;
-        protected _requireRender: boolean;
+        public static recycle(value: LineInfo): void {
+            LineInfo.pool.push(value);
+        }
 
-        protected _bitmapFont: BitmapFont;
-        protected _lines: Array<LineInfo>;
-        protected _bitmapPool: Array<egret.Bitmap>;
+        public static recycleMany(value: LineInfo[]): void {
+            if(value && value.length)
+            {
+                value.forEach(v => {
+                    LineInfo.pool.push(v);
+                }, this);
+            }
+            value.length = 0;
+        }
+    }
 
-        protected static GUTTER_X: number = 2;
-        protected static GUTTER_Y: number = 2;
+    export class GTextField extends GObject implements IColorGear, IColorableTitle {
 
-        protected static _htmlParser: egret.HtmlTextParser = new egret.HtmlTextParser();
+        protected $textField: UITextField;
+        protected $btContainer: UIContainer;
+        protected $bitmapFont: BitmapFont;
+        protected $lines: LineInfo[];
+        protected $bitmapPool: PIXI.Sprite[];
+        protected $font: string;   //could be either fontFamily or an URI pointed to a bitmap font resource
+        
+        protected $style: PIXI.TextStyle;
+        protected $verticalAlign: VertAlignType = VertAlignType.Top;
+        protected $offset: PIXI.Point = new PIXI.Point();
+        protected $color: number;
+        protected $singleLine:boolean = true;
 
+        protected $text: string = "";
+        protected $fontProperties:PIXI.IFontMetrics;
+
+        protected $autoSize: AutoSizeType;
+        protected $widthAutoSize: boolean;
+        protected $heightAutoSize: boolean;
+
+        protected $requireRender: boolean;
+        protected $updatingSize: boolean;
+        protected $sizeDirty: boolean;
+
+        protected $textWidth: number = 0;
+        protected $textHeight: number = 0;
+        
+        public static GUTTER_X: number = 2;
+        public static GUTTER_Y: number = 2;
+        
         public constructor() {
             super();
 
-            this._fontSize = 12;
-            this._align = AlignType.Left;
-            this._verticalAlign = VertAlignType.Top;
-            this._text = "";
-            this._leading = 3;
-            this._color = 0;
-            this._templateVars = null;
+            this.$style = new PIXI.TextStyle({
+                fontSize: 12,
+                fontFamily: UIConfig.defaultFont,
+                align: AlignType.Left,
+                leading: 3,
+                fill: 0
+            });
+            this.$verticalAlign = VertAlignType.Top;
+            this.$text = "";
+            this.$autoSize = AutoSizeType.Both;
+            this.$widthAutoSize = true;
+            this.$heightAutoSize = true;
 
-            this._autoSize = AutoSizeType.Both;
-            this._widthAutoSize = true;
-            this._heightAutoSize = true;
+            this.$bitmapPool = [];
 
-            this._bitmapPool = new Array<egret.Bitmap>();
+            this.touchable = false;  //base GTextField has no interaction
         }
 
         protected createDisplayObject(): void {
-            this._textField = new egret.TextField();
-            this._textField.touchEnabled = false;
-            this.setDisplayObject(this._textField);
+            this.$textField = new UITextField(this);
+            this.setDisplayObject(this.$textField);
         }
 
         private switchBitmapMode(val: boolean): void {
-            if (val && this.displayObject == this._textField) {
-                if (this._bitmapContainer == null)
-                    this._bitmapContainer = new egret.Sprite();
-                this.switchDisplayObject(this._bitmapContainer);
+            if (val && this.displayObject == this.$textField) {
+                if (this.$btContainer == null)
+                    this.$btContainer = new UIContainer(this);
+                this.switchDisplayObject(this.$btContainer);
             }
-            else if (!val && this.displayObject == this._bitmapContainer)
-                this.switchDisplayObject(this._textField);
+            else if (!val && this.displayObject == this.$btContainer)
+                this.switchDisplayObject(this.$textField);
         }
 
         public dispose(): void {
+            GTimer.inst.remove(this.$render, this);
+            this.$bitmapFont = null;
+            this.$bitmapPool.length = 0;
+            this.$bitmapPool = null;
+            this.$style = null;
             super.dispose();
-
-            this._bitmapFont = null;
-            this._requireRender = false;
         }
 
-        public set text(value: string) {
-            this._text = value;
-            if (this._text == null)
-                this._text = "";
-            this.updateGear(6);
+        public set text(value:string) {
+            this.setText(value);
 
-            if (this.parent && this.parent._underConstruct)
+        }
+        protected setText(value: string):void {
+            if(value == null) value = "";
+            if (this.$text == value) return;
+            this.$text = value;
+            this.updateGear(GearType.Text);
+            if (this.parent && this.parent.$inProgressBuilding)
                 this.renderNow();
             else
                 this.render();
         }
 
-        protected updateTextFieldText(): void {
-            var text2: string = this._text;
-            if (this._templateVars != null)
-                text2 = this.parseTemplate(text2);
-            if (this._ubbEnabled) {
-                let arr = GTextField._htmlParser.parser(ToolSet.parseUBB(ToolSet.encodeHTML(text2)));
-                if (this._underline) {
-                    for (var i = 0; i < arr.length; i++) {
-                        let element = arr[i];
-                        if (element.style)
-                            element.style.underline = true;
-                        else
-                            element.style = <egret.ITextStyle>{ underline: true };
-                    }
-                }
-                this._textField.textFlow = arr;
-            }
-            else if (this._underline) {
-                let arr = new Array<egret.ITextElement>(1);
-                arr[0] = <egret.ITextElement>{ text: text2, style: <egret.ITextStyle>{ underline: true } };
-                this._textField.textFlow = arr;
-            }
-            else
-                this._textField.text = text2;
+        public get text(): string {
+            return this.getText();
         }
 
-        public get text(): string {
-            return this._text;
+        protected getText():string {
+            return this.$text;
+        }
+
+        public get color(): number {
+            return this.getColor();
+        }
+
+        protected getColor():number {
+            return this.$color;
+        }
+
+        protected setColor(value:number):void {
+            if (this.$color != value) {
+                this.$color = value;
+                this.updateGear(GearType.Color);
+                this.$style.fill = this.$color;
+                this.render();
+            }
+        }
+
+        public set color(value: number) {
+            this.setColor(value);
+        }
+
+        public get titleColor(): number {
+            return this.color;
+        }
+
+        public set titleColor(value: number) {
+            this.color = value;
+        }
+        
+        public get lineHeight():number {
+            if(this.$style.lineHeight > 0)
+                return this.$style.lineHeight;
+            
+            if(!this.$fontProperties) return (+this.$style.fontSize) + this.$style.strokeThickness;  //rough value
+
+            return this.$fontProperties.fontSize + this.$style.strokeThickness + this.$style.leading;
+        }
+
+        public set lineHeight(lh:number) {
+            this.$style.lineHeight = lh;
         }
 
         public get font(): string {
-            return this._font;
+            return this.$font || UIConfig.defaultFont;
         }
 
         public set font(value: string) {
-            if (this._font != value) {
-                this._font = value;
-                this.updateTextFormat();
+            if (this.$font != value) {
+                this.$font = value;
+                if (this.$font && utils.StringUtil.startsWith(this.$font, "ui://"))
+                    this.$bitmapFont = UIPackage.getBitmapFontByURL(this.$font);
+                else
+                    this.$style.fontFamily = this.$font || UIConfig.defaultFont;
+                this.render();
             }
         }
 
         public get fontSize(): number {
-            return this._fontSize;
+            return +this.$style.fontSize;
         }
 
         public set fontSize(value: number) {
-            if (value < 0)
+            if (value <= 0)
                 return;
-
-            if (this._fontSize != value) {
-                this._fontSize = value;
-                this.updateTextFormat();
-            }
-        }
-
-        public get color(): number {
-            return this._color;
-        }
-
-        public set color(value: number) {
-            if (this._color != value) {
-                this._color = value;
-                this.updateGear(4);
-                this.updateTextFormat();
+            if (this.$style.fontSize != value) {
+                this.$style.fontSize = value;
+                this.render();
             }
         }
 
         public get align(): AlignType {
-            return this._align;
+            return this.$style.align as AlignType;
         }
 
         public set align(value: AlignType) {
-            if (this._align != value) {
-                this._align = value;
-                this._textField.textAlign = this.getAlignTypeString(this._align);
-                if (this._bitmapFont && !this._underConstruct)
-                    this.render();
+            if (this.$style.align != value) {
+                this.$style.align = value;
+                this.render();
             }
         }
 
         public get verticalAlign(): VertAlignType {
-            return this._verticalAlign;
+            return this.$verticalAlign;
         }
 
         public set verticalAlign(value: VertAlignType) {
-            if (this._verticalAlign != value) {
-                this._verticalAlign = value;
-                this._textField.verticalAlign = this.getVertAlignTypeString(this._verticalAlign);
-                if (this._bitmapFont && !this._underConstruct)
-                    this.render();
+            if (this.$verticalAlign != value) {
+                this.$verticalAlign = value;
+                if(!this.$inProgressBuilding)
+                    this.layoutAlign();
             }
         }
 
-        private getAlignTypeString(type: AlignType): string {
-            return type == AlignType.Left ? egret.HorizontalAlign.LEFT :
-                (type == AlignType.Center ? egret.HorizontalAlign.CENTER : egret.HorizontalAlign.RIGHT);
-        }
-
-        private getVertAlignTypeString(type: VertAlignType): string {
-            return type == VertAlignType.Top ? egret.VerticalAlign.TOP :
-                (type == VertAlignType.Middle ? egret.VerticalAlign.MIDDLE : egret.VerticalAlign.BOTTOM);
-        }
-
         public get leading(): number {
-            return this._leading;
+            return this.$style.leading;
         }
 
         public set leading(value: number) {
-            if (this._leading != value) {
-                this._leading = value;
-                this.updateTextFormat();
+            if (this.$style.leading != value) {
+                this.$style.leading = value;
+                this.render();
             }
         }
 
         public get letterSpacing(): number {
-            return this._letterSpacing;
+            return this.$style.letterSpacing;
         }
 
         public set letterSpacing(value: number) {
-            if (this._letterSpacing != value) {
-                this._letterSpacing = value;
-                this.updateTextFormat();
+            if (this.$style.letterSpacing != value) {
+                this.$style.letterSpacing = value;
+                this.render();
             }
         }
 
         public get underline(): boolean {
-            return this._underline;
+            return false;   //TODO: not supported yet
         }
 
         public set underline(value: boolean) {
-            this._underline = value;
+            //TODO: not supported yet
         }
 
         public get bold(): boolean {
-            return this._textField.bold;
+            return this.$style.fontWeight == "bold";
         }
 
         public set bold(value: boolean) {
-            this._textField.bold = value;
+            let v: string = value === true ? "bold" : "normal";
+            if (this.$style.fontWeight != v) {
+                this.$style.fontWeight = v;
+                this.render();
+            }
+        }
+        
+        public get weight(): string {
+            return this.$style.fontWeight;
+        }
+
+        public set weight(v: string) {
+            if (this.$style.fontWeight != v) {
+                this.$style.fontWeight = v;
+                this.render();
+            }
+        }
+
+        public get variant(): string {
+            return this.$style.fontVariant;
+        }
+
+        public set variant(v: string) {
+            if (this.$style.fontVariant != v) {
+                this.$style.fontVariant = v;
+                this.render();
+            }
         }
 
         public get italic(): boolean {
-            return this._textField.italic;
+            return this.$style.fontStyle == "italic";
         }
 
         public set italic(value: boolean) {
-            this._textField.italic = value;
+            let v: string = value === true ? "italic" : "normal";
+            if (this.$style.fontStyle != v) {
+                this.$style.fontStyle = v;
+                this.render();
+            }
         }
 
-        public get singleLine(): boolean {
-            return !this._textField.multiline;
+        public get multipleLine(): boolean {
+            return !this.$singleLine;
         }
 
-        public set singleLine(value: boolean) {
+        public set multipleLine(value: boolean) {
             value = !value;
-            if (this._textField.multiline != value) {
-                this._textField.multiline = value;
+            if(this.$singleLine != value) {
+                this.$singleLine = value;
                 this.render();
             }
         }
 
         public get stroke(): number {
-            return this._textField.stroke;
+            return +this.$style.strokeThickness;
         }
 
         public set stroke(value: number) {
-            this._textField.stroke = value;
+            if (this.$style.strokeThickness != value)
+                this.$style.strokeThickness = value;
         }
 
-        public get strokeColor(): number {
-            return this._textField.strokeColor;
+        public get strokeColor(): number | string {
+            return this.$style.stroke;
         }
 
-        public set strokeColor(value: number) {
-            this._textField.strokeColor = value;
-            this.updateGear(4);
-        }
-
-        public set ubbEnabled(value: boolean) {
-            if (this._ubbEnabled != value) {
-                this._ubbEnabled = value;
-                this.render();
-            }
-        }
-
-        public get ubbEnabled(): boolean {
-            return this._ubbEnabled;
+        public set strokeColor(value: number | string) {
+            if (this.$style.stroke != value)
+                this.$style.stroke = value;
         }
 
         public set autoSize(value: AutoSizeType) {
-            if (this._autoSize != value) {
-                this._autoSize = value;
-                this._widthAutoSize = value == AutoSizeType.Both;
-                this._heightAutoSize = value == AutoSizeType.Both || value == AutoSizeType.Height;
+            if (this.$autoSize != value) {
+                this.$autoSize = value;
+                this.$widthAutoSize = (value == AutoSizeType.Both || value == AutoSizeType.Shrink);
+                this.$heightAutoSize = (value == AutoSizeType.Both || value == AutoSizeType.Height);
                 this.render();
             }
         }
 
         public get autoSize(): AutoSizeType {
-            return this._autoSize;
+            return this.$autoSize;
         }
 
         public get textWidth(): number {
-            if (this._requireRender)
+            if (this.$requireRender)
                 this.renderNow();
-            return this._textWidth;
+            return this.$textWidth;
+        }
+
+        public get textHeight(): number {
+            if (this.$requireRender)
+                this.renderNow();
+            return this.$textHeight;
         }
 
         public ensureSizeCorrect(): void {
-            if (this._sizeDirty && this._requireRender)
+            if (this.$sizeDirty && this.$requireRender)
                 this.renderNow();
         }
 
-        protected updateTextFormat(): void {
-            this._textField.size = this._fontSize;
-            this._bitmapFont = null;
-            if (ToolSet.startsWith(this._font, "ui://")) {
-                var pi: PackageItem = UIPackage.getItemByURL(this._font);
-                if (pi)
-                    this._bitmapFont = <BitmapFont>pi.owner.getItemAsset(pi);
-            }
-
-
-            if (this._bitmapFont == null) {
-                if (this._font)
-                    this._textField.fontFamily = this._font;
-                else
-                    this._textField.fontFamily = UIConfig.defaultFont;
-            }
-            if (this.grayed)
-                this._textField.textColor = 0xAAAAAA;
-            else
-                this._textField.textColor = this._color;
-            this._textField.lineSpacing = this._leading;
-            //this._textField.letterSpacing = this._letterSpacing;
-
-            if (!this._underConstruct)
-                this.render();
-        }
-
         protected render(): void {
-            if (!this._requireRender) {
-                this._requireRender = true;
-                egret.callLater(this.__render, this);
+            if (!this.$requireRender) {
+                this.$requireRender = true;
+                GTimer.inst.callLater(this.$render, this);
             }
 
-            if (!this._sizeDirty && (this._widthAutoSize || this._heightAutoSize)) {
-                this._sizeDirty = true;
-                this.dispatchEventWith(GObject.SIZE_DELAY_CHANGE);
+            if (!this.$sizeDirty && (this.$widthAutoSize || this.$heightAutoSize)) {
+                this.$sizeDirty = true;
+                this.emit(DisplayObjectEvent.SIZE_DELAY_CHANGE, this);
             }
         }
 
-        private __render(): void {
-            if (this._requireRender)
+        private applyStyle():void {
+            this.$textField.style.stroke = this.$style.stroke;
+            this.$textField.style.strokeThickness = this.$style.strokeThickness;
+            this.$textField.style.fontStyle = this.$style.fontStyle;
+            this.$textField.style.fontVariant = this.$style.fontVariant;
+            this.$textField.style.fontWeight = this.$style.fontWeight;
+            this.$textField.style.letterSpacing = this.$style.letterSpacing;
+            this.$textField.style.align = this.$style.align;
+            this.$textField.style.fontSize = this.$style.fontSize;
+            this.$textField.style.fontFamily = this.$style.fontFamily;
+            this.$textField.style.fill = this.$style.fill;
+            this.$textField.style.leading = this.$style.leading;
+        }
+
+        private $render(): void {
+            if (this.$requireRender)
                 this.renderNow();
         }
 
         protected renderNow(updateBounds: boolean = true): void {
-            this._requireRender = false;
-            this._sizeDirty = false;
+            this.$requireRender = false;
+            this.$sizeDirty = false;
 
-            if (this._bitmapFont != null) {
+            if (this.$bitmapFont != null) {
                 this.renderWithBitmapFont(updateBounds);
                 return;
             }
 
             this.switchBitmapMode(false);
-            this._textField.width = this._widthAutoSize ? (this.maxWidth <= 0 ? 10000 : this.maxWidth) : Math.ceil(this.width);
-            this.updateTextFieldText();
-            this._textWidth = Math.ceil(this._textField.textWidth);
-            if (this._textWidth > 0)
-                this._textWidth += 4;
-            this._textHeight = Math.ceil(this._textField.textHeight);
-            if (this._textHeight > 0)
-                this._textHeight += 4;
+            
+            this.applyStyle();
+            this.$textField.$updateMinHeight();
+            let wordWrap = !this.$widthAutoSize && this.multipleLine;
+            this.$textField.width = this.$textField.style.wordWrapWidth = (wordWrap || this.autoSize == AutoSizeType.None) ? Math.ceil(this.width) : 10000;
+            this.$textField.style.wordWrap = wordWrap;
+            this.$textField.style.breakWords = wordWrap;
+            this.$textField.text = this.$text;         //trigger t.dirty = true
+            this.$fontProperties = PIXI.TextMetrics.measureFont(this.$style.toFontString());
+            
+            this.$textWidth = Math.ceil(this.$textField.textWidth);
+            if (this.$textWidth > 0)
+                this.$textWidth += GTextField.GUTTER_X * 2;   //margin gap
+            this.$textHeight = Math.ceil(this.$textField.textHeight);
+            if (this.$textHeight > 0)
+                this.$textHeight += GTextField.GUTTER_Y * 2;  //margin gap
 
-            var w: number, h: number = 0;
-            if (this._widthAutoSize) {
-                w = this._textWidth;
-                this._textField.width = w;
-            }
+            let w = this.width, h = this.height;
+            if(this.autoSize == AutoSizeType.Shrink)
+                this.shrinkTextField();
             else
-                w = this.width;
-
-            if (this._heightAutoSize) {
-                h = this._textHeight;
-                if (this._textField.height != this._textHeight)
-                    this._textField.height = this._textHeight;
-            }
-            else {
-                h = this.height;
-                if (this._textHeight > h)
-                    this._textHeight = h;
+            {
+                this.$textField.scale.set(1, 1);
+                if (this.$widthAutoSize) {
+                    w = this.$textWidth;
+                    this.$textField.width = w;
+                }                
+                    
+                if (this.$heightAutoSize) {
+                    h = this.$textHeight;
+                    if (this.$textField.height != this.$textHeight)
+                        this.$textField.height = this.$textHeight;
+                }
+                else {
+                    h = this.height;
+                    if (this.$textHeight > h)
+                        this.$textHeight = h;
+                }
+                
             }
 
             if (updateBounds) {
-                this._updatingSize = true;
+                this.$updatingSize = true;
                 this.setSize(w, h);
-                this._updatingSize = false;
+                this.$updatingSize = false;
             }
+
+            this.layoutAlign();
         }
 
         private renderWithBitmapFont(updateBounds: boolean): void {
             this.switchBitmapMode(true);
 
-            var cnt: number = this._bitmapContainer.numChildren;
-            for (var i: number = 0; i < cnt; i++) {
-                var obj: egret.DisplayObject = this._bitmapContainer.getChildAt(i);
-                this._bitmapPool.push(<egret.Bitmap>obj);
-            }
-            this._bitmapContainer.removeChildren();
+            this.$btContainer.children.forEach((c, i) => {
+                this.$bitmapPool.push(this.$btContainer.getChildAt(i) as PIXI.Sprite);
+            }, this);
+            this.$btContainer.removeChildren();
 
-            if (!this._lines)
-                this._lines = new Array<LineInfo>();
+            if (!this.$lines)
+                this.$lines = [];
             else
-                LineInfo.returnList(this._lines);
+                LineInfo.recycleMany(this.$lines);
 
-            var letterSpacing: number = this._letterSpacing;
-            var lineSpacing: number = this._leading - 1;
-            var rectWidth: number = this.width - GTextField.GUTTER_X * 2;
-            var lineWidth: number = 0, lineHeight: number = 0, lineTextHeight: number = 0;
-            var glyphWidth: number = 0, glyphHeight: number = 0;
-            var wordChars: number = 0, wordStart: number = 0, wordEnd: number = 0;
-            var lastLineHeight: number = 0;
-            var lineBuffer: string = "";
-            var lineY: number = GTextField.GUTTER_Y;
-            var line: LineInfo;
-            var wordWrap: boolean = !this._widthAutoSize && this._textField.multiline;
-            var fontScale: number = this._bitmapFont.resizable ? this._fontSize / this._bitmapFont.size : 1;
-            var tint: boolean = this._bitmapFont.tint;
-            this._textWidth = 0;
-            this._textHeight = 0;
+            let letterSpacing: number = this.letterSpacing;
+            let lineSpacing: number = this.leading - 1;
+            let rectWidth: number = this.width - GTextField.GUTTER_X * 2;
+            let lineWidth: number = 0, lineHeight: number = 0, lineTextHeight: number = 0;
+            let glyphWidth: number = 0, glyphHeight: number = 0;
+            let wordChars: number = 0, wordStart: number = 0, wordEnd: number = 0;
+            let lastLineHeight: number = 0;
+            let lineBuffer: string = "";
+            let lineY: number = GTextField.GUTTER_Y;
+            let line: LineInfo;
+            let wordWrap: boolean = !this.$widthAutoSize && this.multipleLine;
+            let fontScale: number = this.$bitmapFont.resizable ? this.fontSize / this.$bitmapFont.size : 1;
+            let glyph: BMGlyph;
 
-            var text2: string = this._text;
-            if (this._templateVars != null)
-                text2 = this.parseTemplate(text2);
-            var textLength: number = text2.length;
-            for (var offset: number = 0; offset < textLength; ++offset) {
-                var ch: string = text2.charAt(offset);
-                var cc: number = ch.charCodeAt(0);
+            this.$textWidth = 0;
+            this.$textHeight = 0;
 
-                if (cc == 10) {
+            let textLength: number = this.text.length;
+            for (let offset: number = 0; offset < textLength; ++offset) {
+                let ch: string = this.$text.charAt(offset);
+                let cc: number = ch.charCodeAt(offset);
+
+                if (ch == "\n") {
                     lineBuffer += ch;
-                    line = LineInfo.borrow();
+                    line = LineInfo.get();
                     line.width = lineWidth;
                     if (lineTextHeight == 0) {
                         if (lastLineHeight == 0)
-                            lastLineHeight = this._fontSize;
+                            lastLineHeight = Math.ceil(this.fontSize * fontScale);
                         if (lineHeight == 0)
                             lineHeight = lastLineHeight;
                         lineTextHeight = lineHeight;
@@ -446,9 +510,9 @@ module fgui {
                     line.text = lineBuffer;
                     line.y = lineY;
                     lineY += (line.height + lineSpacing);
-                    if (line.width > this._textWidth)
-                        this._textWidth = line.width;
-                    this._lines.push(line);
+                    if (line.width > this.$textWidth)
+                        this.$textWidth = line.width;
+                    this.$lines.push(line);
 
                     lineBuffer = "";
                     lineWidth = 0;
@@ -460,26 +524,30 @@ module fgui {
                     continue;
                 }
 
-                if (cc >= 65 && cc <= 90 || cc >= 97 && cc <= 122) { //a-z,A-Z
-                    if (wordChars == 0)
-                        wordStart = lineWidth;
-                    wordChars++;
-                }
-                else {
+                if (cc > 256 || cc <= 32) {
                     if (wordChars > 0)
                         wordEnd = lineWidth;
                     wordChars = 0;
                 }
+                else {
+                    if (wordChars == 0)
+                        wordStart = lineWidth;
+                    wordChars++;
+                }
 
-                if (cc == 32) {
-                    glyphWidth = Math.ceil(this._fontSize / 2);
-                    glyphHeight = this._fontSize;
+                if (ch == " ") {
+                    glyphWidth = Math.ceil(this.fontSize / 2);
+                    glyphHeight = Math.ceil(this.fontSize);
                 }
                 else {
-                    var glyph: BMGlyph = this._bitmapFont.glyphs[ch];
+                    glyph = this.$bitmapFont.glyphs[ch];
                     if (glyph) {
                         glyphWidth = Math.ceil(glyph.advance * fontScale);
                         glyphHeight = Math.ceil(glyph.lineHeight * fontScale);
+                    }
+                    else if (ch == " ") {
+                        glyphWidth = Math.ceil(this.$bitmapFont.size * fontScale / 2);
+                        glyphHeight = Math.ceil(this.$bitmapFont.size * fontScale);
                     }
                     else {
                         glyphWidth = 0;
@@ -500,7 +568,7 @@ module fgui {
                     lineBuffer += ch;
                 }
                 else {
-                    line = LineInfo.borrow();
+                    line = LineInfo.get();
                     line.height = lineHeight;
                     line.textHeight = lineTextHeight;
 
@@ -509,10 +577,10 @@ module fgui {
                     }
                     else if (wordChars > 0 && wordEnd > 0) {//if word had broken, move it to new line
                         lineBuffer += ch;
-                        var len: number = lineBuffer.length - wordChars;
-                        line.text = ToolSet.trimRight(lineBuffer.substr(0, len));
+                        let len: number = lineBuffer.length - wordChars;
+                        line.text = utils.StringUtil.trimRight(lineBuffer.substr(0, len));
                         line.width = wordEnd;
-                        lineBuffer = lineBuffer.substr(len);
+                        lineBuffer = lineBuffer.substr(len + 1);
                         lineWidth -= wordStart;
                     }
                     else {
@@ -525,18 +593,19 @@ module fgui {
                     }
                     line.y = lineY;
                     lineY += (line.height + lineSpacing);
-                    if (line.width > this._textWidth)
-                        this._textWidth = line.width;
+                    if (line.width > this.$textWidth)
+                        this.$textWidth = line.width;
 
                     wordChars = 0;
                     wordStart = 0;
                     wordEnd = 0;
-                    this._lines.push(line);
+                    this.$lines.push(line);
                 }
             }
 
-            if (lineBuffer.length > 0) {
-                line = LineInfo.borrow();
+            if (lineBuffer.length > 0
+                || this.$lines.length > 0 && utils.StringUtil.endsWith(this.$lines[this.$lines.length - 1].text, "\n")) {
+                line = LineInfo.get();
                 line.width = lineWidth;
                 if (lineHeight == 0)
                     lineHeight = lastLineHeight;
@@ -546,353 +615,247 @@ module fgui {
                 line.textHeight = lineTextHeight;
                 line.text = lineBuffer;
                 line.y = lineY;
-                if (line.width > this._textWidth)
-                    this._textWidth = line.width;
-                this._lines.push(line);
+                if (line.width > this.$textWidth)
+                    this.$textWidth = line.width;
+                this.$lines.push(line);
             }
 
-            if (this._textWidth > 0)
-                this._textWidth += GTextField.GUTTER_X * 2;
+            if (this.$textWidth > 0)
+                this.$textWidth += GTextField.GUTTER_X * 2;
 
-            var count: number = this._lines.length;
+            let count: number = this.$lines.length;
             if (count == 0) {
-                this._textHeight = 0;
+                this.$textHeight = 0;
             }
             else {
-                line = this._lines[this._lines.length - 1];
-                this._textHeight = line.y + line.height + GTextField.GUTTER_Y;
+                line = this.$lines[this.$lines.length - 1];
+                this.$textHeight = line.y + line.height + GTextField.GUTTER_Y;
             }
 
-            var w: number, h: number = 0;
-            if (this._widthAutoSize) {
-                if (this._textWidth == 0)
+            let w: number, h: number = 0;
+            if (this.$widthAutoSize) {
+                if (this.$textWidth == 0)
                     w = 0;
                 else
-                    w = this._textWidth;
+                    w = this.$textWidth;
             }
             else
                 w = this.width;
 
-            if (this._heightAutoSize) {
-                if (this._textHeight == 0)
+            if (this.$heightAutoSize) {
+                if (this.$textHeight == 0)
                     h = 0;
                 else
-                    h = this._textHeight;
+                    h = this.$textHeight;
             }
             else
                 h = this.height;
 
             if (updateBounds) {
-                this._updatingSize = true;
+                this.$updatingSize = true;
                 this.setSize(w, h);
-                this._updatingSize = false;
+                this.$updatingSize = false;
             }
 
             if (w == 0 || h == 0)
                 return;
 
-            var charX: number = GTextField.GUTTER_X;
-            var lineIndent: number = 0;
-            var charIndent: number = 0;
             rectWidth = this.width - GTextField.GUTTER_X * 2;
-            var lineCount: number = this._lines.length;
-            for (var i: number = 0; i < lineCount; i++) {
-                line = this._lines[i];
-                charX = GTextField.GUTTER_X;
+            this.$lines.forEach(line => {
 
-                if (this._align == AlignType.Center)
+                let charX = GTextField.GUTTER_X;
+                let lineIndent: number = 0;
+                let charIndent: number = 0;
+
+                if (this.align == AlignType.Center)
                     lineIndent = (rectWidth - line.width) / 2;
-                else if (this._align == AlignType.Right)
+                else if (this.align == AlignType.Right)
                     lineIndent = rectWidth - line.width;
                 else
                     lineIndent = 0;
+
                 textLength = line.text.length;
-                for (var j: number = 0; j < textLength; j++) {
-                    ch = line.text.charAt(j);
-                    cc = ch.charCodeAt(0);
+                for (let j: number = 0; j < textLength; j++) {
+                    let ch = line.text.charAt(j);
 
-                    if (cc == 10)
-                        continue;
-
-                    if (cc == 32) {
-                        charX += letterSpacing + Math.ceil(this._fontSize / 2);
-                        continue;
-                    }
-
-                    glyph = this._bitmapFont.glyphs[ch];
+                    glyph = this.$bitmapFont.glyphs[ch];
                     if (glyph != null) {
                         charIndent = (line.height + line.textHeight) / 2 - Math.ceil(glyph.lineHeight * fontScale);
-                        var bm: egret.Bitmap;
-                        if (this._bitmapPool.length)
-                            bm = this._bitmapPool.pop();
-                        else {
-                            bm = new egret.Bitmap();
-                            bm.smoothing = true;
-                        }
-                        bm.x = charX + lineIndent + Math.ceil(glyph.x * fontScale);
-                        bm.y = line.y + charIndent + Math.ceil(glyph.y * fontScale);
-                        bm["$backupY"] = bm.y;
-                        bm.texture = glyph.texture;
-                        bm.scaleX = fontScale;
-                        bm.scaleY = fontScale;
-                        if (tint)
-                            bm.tint = this._color;
+                        let bm: PIXI.Sprite;
+                        if (this.$bitmapPool.length)
+                            bm = this.$bitmapPool.pop();
                         else
-                            bm.tint = 0xFFFFFF;
-                        this._bitmapContainer.addChild(bm);
+                            bm = new PIXI.Sprite();
+                        bm.x = charX + lineIndent + Math.ceil(glyph.offsetX * fontScale);
+                        bm.y = line.y + charIndent + Math.ceil(glyph.offsetY * fontScale);
+                        bm.texture = glyph.texture;
+                        bm.scale.set(fontScale, fontScale);
+                        bm.tint = this.$bitmapFont.colorable === true ? this.$color : 0xFFFFFF;
+                        this.$btContainer.addChild(bm);
 
                         charX += letterSpacing + Math.ceil(glyph.advance * fontScale);
+                    }
+                    else if (ch == " ") {
+                        charX += letterSpacing + Math.ceil(this.$bitmapFont.size * fontScale / 2);
                     }
                     else {
                         charX += letterSpacing;
                     }
-                }//text loop
-            }//line loop
+                }
+            });
+        }
 
-            this.doAlign();
+        public localToGlobal(ax: number = 0, ay: number = 0, resultPoint?: PIXI.Point): PIXI.Point {
+            ax -= this.$offset.x;
+            ay -= this.$offset.y;
+            return super.localToGlobal(ax, ay, resultPoint);
+        }
+
+        public globalToLocal(ax: number = 0, ay: number = 0, resultPoint?: PIXI.Point): PIXI.Point {
+            let r = super.globalToLocal(ax, ay, resultPoint);
+            r.x -= this.$offset.x;
+            r.y -= this.$offset.y;
+            return r;
         }
 
         protected handleSizeChanged(): void {
-            if (this._updatingSize)
+            if (this.$updatingSize)
                 return;
 
-            if (this._bitmapFont != null) {
-                if (!this._widthAutoSize)
+            if (this.$bitmapFont != null) {
+                if (!this.$widthAutoSize)
                     this.render();
-                else
-                    this.doAlign();
             }
             else {
-                if (this._underConstruct) {
-                    this._textField.width = this.width;
-                    this._textField.height = this.height;
+                if (this.$inProgressBuilding) {
+                    this.$textField.width = this.width;
+                    this.$textField.height = this.height;
                 }
                 else {
-                    if (!this._widthAutoSize) {
-                        if (!this._heightAutoSize) {
-                            this._textField.width = this.width;
-                            this._textField.height = this.height;
+                    if(this.$autoSize == AutoSizeType.Shrink)
+                        this.shrinkTextField();
+                    else {
+                        if (!this.$widthAutoSize) {
+                            if (!this.$heightAutoSize) {
+                                this.$textField.width = this.width;
+                                this.$textField.height = this.height;
+                            }
+                            else
+                                this.$textField.width = this.width;
                         }
-                        else
-                            this._textField.width = this.width;
                     }
                 }
             }
+
+            this.layoutAlign();
         }
 
-        protected parseTemplate(template: string): string {
-            var pos1: number = 0, pos2: number, pos3: number;
-            var tag: string;
-            var value: string;
-            var result: string = "";
-            while ((pos2 = template.indexOf("{", pos1)) != -1) {
-                if (pos2 > 0 && template.charCodeAt(pos2 - 1) == 92)//\
-                {
-                    result += template.substring(pos1, pos2 - 1);
-                    result += "{";
-                    pos1 = pos2 + 1;
-                    continue;
-                }
+        protected shrinkTextField():void {
+            let fitScale = Math.min(1, this.width / this.$textWidth);
+            this.$textField.scale.set(fitScale, fitScale);
+        }
 
-                result += template.substring(pos1, pos2);
-                pos1 = pos2;
-                pos2 = template.indexOf("}", pos1);
-                if (pos2 == -1)
-                    break;
-
-                if (pos2 == pos1 + 1) {
-                    result += template.substr(pos1, 2);
-                    pos1 = pos2 + 1;
-                    continue;
-                }
-
-                tag = template.substring(pos1 + 1, pos2);
-                pos3 = tag.indexOf("=");
-                if (pos3 != -1) {
-                    value = this._templateVars[tag.substring(0, pos3)];
-                    if (value == null)
-                        result += tag.substring(pos3 + 1);
-                    else
-                        result += value;
-                }
-                else {
-                    value = this._templateVars[tag];
-                    if (value != null)
-                        result += value;
-                }
-                pos1 = pos2 + 1;
+        protected layoutAlign(): void {
+            let tw = this.$textWidth, th = this.$textHeight;
+            if(this.autoSize == AutoSizeType.Shrink)
+            {
+                tw *= this.displayObject.scale.x;
+                th *= this.displayObject.scale.y;
             }
-
-            if (pos1 < template.length)
-                result += template.substr(pos1);
-
-            return result;
-        }
-
-        public get templateVars(): any {
-            return this._templateVars;
-        }
-
-        public set templateVars(value: any) {
-            if (this._templateVars == null && value == null)
-                return;
-
-            this._templateVars = value;
-            this.flushVars();
-        }
-
-        public setVar(name: string, value: string): GTextField {
-            if (!this._templateVars)
-                this._templateVars = {};
-            this._templateVars[name] = value;
-
-            return this;
-        }
-
-        public flushVars(): void {
-            this.render();
-        }
-
-        protected handleGrayedChanged(): void {
-            super.handleGrayedChanged();
-            this.updateTextFormat();
-        }
-
-        private doAlign(): void {
-            var yOffset: number;
-            if (this._verticalAlign == VertAlignType.Top || this._textHeight == 0)
-                yOffset = GTextField.GUTTER_Y;
+            if (this.$verticalAlign == VertAlignType.Top || th == 0)
+                this.$offset.y = GTextField.GUTTER_Y;
             else {
-                var dh: number = this.height - this._textHeight;
-                if (dh < 0)
-                    dh = 0;
-                if (this._verticalAlign == VertAlignType.Middle)
-                    yOffset = Math.floor(dh / 2);
+                let dh: number = Math.max(0, this.height - th);
+                if (this.$verticalAlign == VertAlignType.Middle)
+                    this.$offset.y = dh * .5;
+                else if(this.$verticalAlign == VertAlignType.Bottom)
+                    this.$offset.y = dh;
+            }
+            
+            let xPos = 0;
+            switch(this.$style.align)
+            {
+                case "center":
+                    xPos = (this.width - tw) * .5;
+                    break;
+                case "right":
+                    xPos = this.width - tw;
+                    break;
+            }
+            this.$offset.x = xPos;
+
+            this.updatePosition();
+        }
+
+        private updatePosition():void {
+            this.displayObject.position.set(Math.floor(this.x + this.$offset.x), Math.floor(this.y + this.$offset.y));
+        }
+
+        protected handleXYChanged(): void {
+            super.handleXYChanged();
+            if (this.$displayObject)
+                this.updatePosition();
+        }
+
+        public setupBeforeAdd(xml: utils.XmlNode): void {
+            super.setupBeforeAdd(xml);
+
+            let str: string = xml.attributes.font;
+            if(str)
+                this.font = str;
+
+            str = xml.attributes.vAlign;
+            if (str)
+                this.verticalAlign = ParseVertAlignType(str);
+
+            str = xml.attributes.leading;
+            if (str)
+                this.$style.leading = parseInt(str);
+
+            str = xml.attributes.letterSpacing;
+            if (str)
+                this.$style.letterSpacing = parseInt(str);
+
+            str = xml.attributes.fontSize;
+            if (str)
+                this.$style.fontSize = parseInt(str);
+                
+            str = xml.attributes.color;
+            if (str)
+                this.color = utils.StringUtil.convertFromHtmlColor(str);
+
+            str = xml.attributes.align;
+            if (str)
+                this.align = ParseAlignType(str);
+                
+            str = xml.attributes.autoSize;
+            if (str) {
+                this.autoSize = ParseAutoSizeType(str);
+                this.$widthAutoSize = (this.$autoSize == AutoSizeType.Both || this.$autoSize == AutoSizeType.Shrink);
+                this.$heightAutoSize = (this.$autoSize == AutoSizeType.Both || this.$autoSize == AutoSizeType.Height);
+            }
+
+            this.underline = xml.attributes.underline == "true";
+            this.italic = xml.attributes.italic == "true";
+            this.bold = xml.attributes.bold == "true";
+            this.multipleLine = xml.attributes.singleLine != "true";
+            str = xml.attributes.strokeColor;
+            if (str) {
+                this.strokeColor = utils.StringUtil.convertFromHtmlColor(str);
+                str = xml.attributes.strokeSize;
+                if (str)
+                    this.stroke = parseInt(str) + 1;
                 else
-                    yOffset = Math.floor(dh);
-            }
-
-            var cnt: number = this._bitmapContainer.numChildren;
-            for (var i: number = 0; i < cnt; i++) {
-                var obj: egret.DisplayObject = this._bitmapContainer.getChildAt(i);
-                obj.y = obj["$backupY"] + yOffset;
+                    this.stroke = 2;
             }
         }
 
-        public getProp(index: number): any {
-            switch (index) {
-                case ObjectPropID.Color:
-                    return this.color;
-                case ObjectPropID.OutlineColor:
-                    return this.strokeColor;
-                case ObjectPropID.FontSize:
-                    return this.fontSize;
-                default:
-                    return super.getProp(index);
-            }
-        }
-
-        public setProp(index: number, value: any): void {
-            switch (index) {
-                case ObjectPropID.Color:
-                    this.color = value;
-                    break;
-                case ObjectPropID.OutlineColor:
-                    this.strokeColor = value;
-                    break;
-                case ObjectPropID.FontSize:
-                    this.fontSize = value;
-                    break;
-                default:
-                    super.setProp(index, value);
-                    break;
-            }
-        }
-
-        public setup_beforeAdd(buffer: ByteBuffer, beginPos: number): void {
-            super.setup_beforeAdd(buffer, beginPos);
-
-            buffer.seek(beginPos, 5);
-
-            this._font = buffer.readS();
-            this._fontSize = buffer.readShort();
-            this._color = buffer.readColor();
-            this.align = buffer.readByte();
-            this.verticalAlign = buffer.readByte();
-            this._leading = buffer.readShort();
-            this._letterSpacing = buffer.readShort();
-            this._ubbEnabled = buffer.readBool();
-            this._autoSize = buffer.readByte();
-            this._widthAutoSize = this._autoSize == AutoSizeType.Both;
-            this._heightAutoSize = this._autoSize == AutoSizeType.Both || this._autoSize == AutoSizeType.Height;
-            this._underline = buffer.readBool();
-            this._textField.italic = buffer.readBool();
-            this._textField.bold = buffer.readBool();
-            this._textField.multiline = !buffer.readBool();
-            if (buffer.readBool()) {
-                this._textField.strokeColor = buffer.readColor();
-                this.stroke = buffer.readFloat() + 1;
-            }
-
-            if (buffer.readBool()) //shadow
-                buffer.skip(12);
-
-            if (buffer.readBool())
-                this._templateVars = {};
-        }
-
-        public setup_afterAdd(buffer: ByteBuffer, beginPos: number): void {
-            super.setup_afterAdd(buffer, beginPos);
-
-            this.updateTextFormat();
-
-            buffer.seek(beginPos, 6);
-
-            var str: string = buffer.readS();
-            if (str != null)
+        public setupAfterAdd(xml: utils.XmlNode): void {
+            super.setupAfterAdd(xml);
+            let str: string = xml.attributes.text;
+            if (str != null && str.length > 0)
                 this.text = str;
-            this._sizeDirty = false;
-        }
-    }
-
-
-    export class LineInfo {
-        public width: number = 0;
-        public height: number = 0;
-        public textHeight: number = 0;
-        public text: string;
-        public y: number = 0;
-
-        private static pool: Array<LineInfo> = [];
-
-        public static borrow(): LineInfo {
-            if (LineInfo.pool.length) {
-                var ret: LineInfo = LineInfo.pool.pop();
-                ret.width = 0;
-                ret.height = 0;
-                ret.textHeight = 0;
-                ret.text = null;
-                ret.y = 0;
-                return ret;
-            }
-            else
-                return new LineInfo();
-        }
-
-        public static returns(value: LineInfo): void {
-            LineInfo.pool.push(value);
-        }
-
-        public static returnList(value: Array<LineInfo>): void {
-            var length: number = value.length;
-            for (var i: number = 0; i < length; i++) {
-                var li: LineInfo = value[i];
-                LineInfo.pool.push(li);
-            }
-            value.length = 0;
-        }
-
-        public constructor() {
+            this.$sizeDirty = false;
         }
     }
 }

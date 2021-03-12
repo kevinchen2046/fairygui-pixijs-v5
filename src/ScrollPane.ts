@@ -1,296 +1,315 @@
+namespace fgui {
 
-module fgui {
+    export class ScrollPane extends PIXI.utils.EventEmitter {
+        private static $easeTypeFunc:Function = (t:number, d:number):number => { return (t = t / d - 1) * t * t + 1; }; //cubic out
 
-    export class ScrollPane extends egret.EventDispatcher {
-        private _owner: GComponent;
-        private _container: egret.DisplayObjectContainer;
-        private _maskContainer: egret.DisplayObjectContainer;
-        private _alignContainer: egret.DisplayObjectContainer;
+        private $owner: GComponent;
+        private $maskContainer: UIContainer;
+        private $container: PIXI.Container;
 
-        private _scrollType: number;
-        private _scrollStep: number;
-        private _decelerationRate: number;
-        private _scrollBarMargin: Margin;
-        private _bouncebackEffect: boolean;
-        private _touchEffect: boolean;
-        private _scrollBarDisplayAuto: boolean;
-        private _vScrollNone: boolean;
-        private _hScrollNone: boolean;
-        private _needRefresh: boolean;
-        private _refreshBarAxis: string;
+        private $alignContainer: PIXI.Container;
 
-        private _displayOnLeft: boolean;
-        private _snapToItem: boolean;
-        public _displayInDemand: boolean;
-        private _pageMode: boolean;
-        private _inertiaDisabled: boolean;
-        private _floating: boolean;
+        private $scrollType: number;
+        private $scrollSpeed: number;
+        private $mouseWheelSpeed: number;
+        private $decelerationRate: number;
+        private $scrollBarMargin: utils.Margin;
+        private $bouncebackEffect: boolean;
+        private $touchEffect: boolean;
+        private $scrollBarDisplayAuto: boolean;
+        private $vScrollNone: boolean;
+        private $hScrollNone: boolean;
+        private $needRefresh: boolean;
+        private $refreshBarAxis: string;
 
-        private _xPos: number;
-        private _yPos: number;
+        private $displayOnLeft: boolean;
+        private $snapToItem: boolean;
+        private $displayOnDemand: boolean;
+        private $mouseWheelEnabled: boolean;
+        private $pageMode: boolean;
+        private $inertiaDisabled: boolean;
 
-        private _viewSize: egret.Point;
-        private _contentSize: egret.Point;
-        private _overlapSize: egret.Point;
-        private _pageSize: egret.Point;
-        private _containerPos: egret.Point;
-        private _beginTouchPos: egret.Point;
-        private _lastTouchPos: egret.Point;
-        private _lastTouchGlobalPos: egret.Point;
-        private _velocity: egret.Point;
-        private _velocityScale: number;
-        private _lastMoveTime: number;
-        private _isHoldAreaDone: boolean;
-        private _aniFlag: number;
-        public _loop: number;
-        private _headerLockedSize: number;
-        private _footerLockedSize: number;
-        private _refreshEventDispatching: boolean;
-        private _dragged: boolean;
+        private $xPos: number;
+        private $yPos: number;
 
-        private _tweening: number;
-        private _tweenTime: egret.Point;
-        private _tweenDuration: egret.Point;
-        private _tweenStart: egret.Point;
-        private _tweenChange: egret.Point;
+        private $viewSize: PIXI.Point;
+        private $contentSize: PIXI.Point;
+        private $overlapSize: PIXI.Point;
+        private $pageSize: PIXI.Point;
+        private $containerPos: PIXI.Point;
+        private $beginTouchPos: PIXI.Point;
+        private $lastTouchPos: PIXI.Point;
+        private $lastTouchGlobalPos: PIXI.Point;
+        private $velocity: PIXI.Point;
+        private $velocityScale: number;
+        private $lastMoveTime: number;
+        private $isHoldAreaDone: boolean;
+        private $aniFlag: number;
+        private $scrollBarVisible: boolean;
+        private $headerLockedSize: number;
+        private $footerLockedSize: number;
+        private $refreshEventDispatching: boolean;
 
-        private _pageController: Controller;
+        private $tweening: number;
+        private $tweenTime: PIXI.Point;
+        private $tweenDuration: PIXI.Point;
+        private $tweenStart: PIXI.Point;
+        private $tweenChange: PIXI.Point;
 
-        private _hzScrollBar: GScrollBar;
-        private _vtScrollBar: GScrollBar;
-        private _header: GComponent;
-        private _footer: GComponent;
+        private $pageController: controller.Controller;
 
+        private $hzScrollBar: GScrollBar;
+        private $vtScrollBar: GScrollBar;
+        private $header: GComponent;
+        private $footer: GComponent;
+
+        private $isDragging: boolean = false;
         public static draggingPane: ScrollPane;
-        private static _gestureFlag: number = 0;
+        private static $gestureFlag: number = 0;
 
-        public static SCROLL: string = "__scroll";
-        public static SCROLL_END: string = "__scrollEnd";
-        public static PULL_DOWN_RELEASE: string = "pullDownRelease";
-        public static PULL_UP_RELEASE: string = "pullUpRelease";
+        private static sHelperPoint: PIXI.Point = new PIXI.Point();
+        private static sHelperRect: PIXI.Rectangle = new PIXI.Rectangle();
+        private static sEndPos: PIXI.Point = new PIXI.Point();
+        private static sOldChange: PIXI.Point = new PIXI.Point();
 
-        public static TWEEN_TIME_GO: number = 0.5; //调用SetPos(ani)时使用的缓动时间
-        public static TWEEN_TIME_DEFAULT: number = 0.3; //惯性滚动的最小缓动时间
-        public static PULL_RATIO: number = 0.5; //下拉过顶或者上拉过底时允许超过的距离占显示区域的比例
+        public static TWEEN_DEFAULT_DURATION: number = .4;
+        public static TWEEN_MANUALLY_SET_DURATION: number = 0.5; //tween duration used when call setPos(useAni=true)
+        public static PULL_DIST_RATIO: number = 0.5;             //pulldown / pullup distance ratio of the whole viewport
 
-        private static sHelperPoint: egret.Point = new egret.Point();
-        private static sHelperRect: egret.Rectangle = new egret.Rectangle();
-        private static sEndPos: egret.Point = new egret.Point();
-        private static sOldChange: egret.Point = new egret.Point();
+        /**@internal */
+        $loop: number;
 
-        public constructor(owner: GComponent) {
+        public constructor(owner: GComponent,
+            scrollType: number,
+            scrollBarMargin: utils.Margin,
+            scrollBarDisplay: number,
+            flags: number,
+            vtScrollBarRes: string,
+            hzScrollBarRes: string,
+            headerRes: string,
+            footerRes: string) {
+
             super();
 
-            this._owner = owner;
+            this.$owner = owner;
 
-            this._maskContainer = new egret.DisplayObjectContainer();
-            this._owner._rootContainer.addChild(this._maskContainer);
+            this.$maskContainer = new UIContainer(null);
+            this.$owner.$rootContainer.addChild(this.$maskContainer);
 
-            this._container = this._owner._container;
-            this._container.x = 0;
-            this._container.y = 0;
-            this._maskContainer.addChild(this._container);
+            this.$container = this.$owner.$container;
+            this.$container.x = 0;
+            this.$container.y = 0;
+            this.$maskContainer.addChild(this.$container);
 
-            this._scrollBarMargin = new Margin();
-            this._xPos = 0;
-            this._yPos = 0;
-            this._aniFlag = 0;
-            this._tweening = 0;
-            this._footerLockedSize = 0;
-            this._headerLockedSize = 0;
-            this._viewSize = new egret.Point();
-            this._contentSize = new egret.Point();
-            this._pageSize = new egret.Point(1, 1);
-            this._overlapSize = new egret.Point();
-            this._tweenTime = new egret.Point();
-            this._tweenStart = new egret.Point();
-            this._tweenDuration = new egret.Point();
-            this._tweenChange = new egret.Point();
-            this._velocity = new egret.Point();
-            this._containerPos = new egret.Point();
-            this._beginTouchPos = new egret.Point();
-            this._lastTouchPos = new egret.Point();
-            this._lastTouchGlobalPos = new egret.Point();
-            this._scrollStep = UIConfig.defaultScrollStep;
-            this._decelerationRate = UIConfig.defaultScrollDecelerationRate;
+            this.$scrollBarMargin = scrollBarMargin;
+            this.$scrollType = scrollType;
+            this.$scrollSpeed = UIConfig.defaultScrollSpeed;
+            this.$mouseWheelSpeed = this.$scrollSpeed * 2;
+            this.$decelerationRate = UIConfig.defaultScrollDecelerationRate;
 
-            this._owner.addEventListener(egret.TouchEvent.TOUCH_BEGIN, this.__touchBegin, this);
-        }
-
-        public setup(buffer: ByteBuffer): void {
-            this._scrollType = buffer.readByte();
-            var scrollBarDisplay: ScrollBarDisplayType = buffer.readByte();
-            var flags: number = buffer.readInt();
-
-            if (buffer.readBool()) {
-                this._scrollBarMargin.top = buffer.readInt();
-                this._scrollBarMargin.bottom = buffer.readInt();
-                this._scrollBarMargin.left = buffer.readInt();
-                this._scrollBarMargin.right = buffer.readInt();
-            }
-
-            var vtScrollBarRes: string = buffer.readS();
-            var hzScrollBarRes: string = buffer.readS();
-            var headerRes: string = buffer.readS();
-            var footerRes: string = buffer.readS();
-
-            this._displayOnLeft = (flags & 1) != 0;
-            this._snapToItem = (flags & 2) != 0;
-            this._displayInDemand = (flags & 4) != 0;
-            this._pageMode = (flags & 8) != 0;
-            if (flags & 16)
-                this._touchEffect = true;
-            else if (flags & 32)
-                this._touchEffect = false;
+            this.$displayOnLeft = (flags & ScrollPaneFlags.DisplayOnLeft) != 0;
+            this.$snapToItem = (flags & ScrollPaneFlags.SnapToItem) != 0;
+            this.$displayOnDemand = (flags & ScrollPaneFlags.DisplayOnDemand) != 0;
+            this.$pageMode = (flags & ScrollPaneFlags.PageMode) != 0;
+            if (flags & ScrollPaneFlags.TouchEffect)
+                this.$touchEffect = true;
+            else if (flags & ScrollPaneFlags.DisableTouchEffect)
+                this.$touchEffect = false;
             else
-                this._touchEffect = UIConfig.defaultScrollTouchEffect;
-            if (flags & 64)
-                this._bouncebackEffect = true;
-            else if (flags & 128)
-                this._bouncebackEffect = false;
+                this.$touchEffect = UIConfig.defaultScrollTouchEffect;
+            if (flags & ScrollPaneFlags.BounceEffect)
+                this.$bouncebackEffect = true;
+            else if (flags & ScrollPaneFlags.DisableBounceEffect)
+                this.$bouncebackEffect = false;
             else
-                this._bouncebackEffect = UIConfig.defaultScrollBounceEffect;
-            this._inertiaDisabled = (flags & 256) != 0;
-            if ((flags & 512) == 0)
-                this._maskContainer.scrollRect = new egret.Rectangle();
-            this._floating = (flags & 1024) != 0;
+                this.$bouncebackEffect = UIConfig.defaultScrollBounceEffect;
+            this.$inertiaDisabled = (flags & ScrollPaneFlags.DisableInertia) != 0;
+            if ((flags & ScrollPaneFlags.DisableScissorRect) == 0)
+                this.$maskContainer.scrollRect = new PIXI.Rectangle();
+
+            this.$scrollBarVisible = true;
+            this.$mouseWheelEnabled = true;
+            this.$xPos = 0;
+            this.$yPos = 0;
+            this.$aniFlag = 0;
+            this.$footerLockedSize = 0;
+            this.$headerLockedSize = 0;
 
             if (scrollBarDisplay == ScrollBarDisplayType.Default)
                 scrollBarDisplay = UIConfig.defaultScrollBarDisplay;
 
+            this.$viewSize = new PIXI.Point();
+            this.$contentSize = new PIXI.Point();
+            this.$pageSize = new PIXI.Point(1, 1);
+            this.$overlapSize = new PIXI.Point();
+            this.$tweening = 0;
+            this.$tweenTime = new PIXI.Point();
+            this.$tweenStart = new PIXI.Point();
+            this.$tweenDuration = new PIXI.Point();
+            this.$tweenChange = new PIXI.Point();
+            this.$velocity = new PIXI.Point();
+            this.$containerPos = new PIXI.Point();
+            this.$beginTouchPos = new PIXI.Point();
+            this.$lastTouchPos = new PIXI.Point();
+            this.$lastTouchGlobalPos = new PIXI.Point();
+
+            let res: string;
             if (scrollBarDisplay != ScrollBarDisplayType.Hidden) {
-                if (this._scrollType == ScrollType.Both || this._scrollType == ScrollType.Vertical) {
-                    var res: string = vtScrollBarRes ? vtScrollBarRes : UIConfig.verticalScrollBar;
+                if (this.$scrollType == ScrollType.Both || this.$scrollType == ScrollType.Vertical) {
+                    const res: string = vtScrollBarRes ? vtScrollBarRes : UIConfig.verticalScrollBar;
                     if (res) {
-                        this._vtScrollBar = <GScrollBar><any>(UIPackage.createObjectFromURL(res));
-                        if (!this._vtScrollBar)
-                            throw "cannot create scrollbar from " + res;
-                        this._vtScrollBar.setScrollPane(this, true);
-                        this._owner._rootContainer.addChild(this._vtScrollBar.displayObject);
+                        this.$vtScrollBar = UIPackage.createObjectFromURL(res) as GScrollBar;
+                        if (!this.$vtScrollBar)
+                            throw new Error(`Cannot create scrollbar from ${res}`);
+                        this.$vtScrollBar.setScrollPane(this, true);
+
+                        this.$owner.$rootContainer.addChild(this.$vtScrollBar.displayObject);
                     }
                 }
-                if (this._scrollType == ScrollType.Both || this._scrollType == ScrollType.Horizontal) {
-                    var res: string = hzScrollBarRes ? hzScrollBarRes : UIConfig.horizontalScrollBar;
+                if (this.$scrollType == ScrollType.Both || this.$scrollType == ScrollType.Horizontal) {
+                    res = hzScrollBarRes ? hzScrollBarRes : UIConfig.horizontalScrollBar;
                     if (res) {
-                        this._hzScrollBar = <GScrollBar><any>(UIPackage.createObjectFromURL(res));
-                        if (!this._hzScrollBar)
-                            throw "cannot create scrollbar from " + res;
-                        this._hzScrollBar.setScrollPane(this, false);
-                        this._owner._rootContainer.addChild(this._hzScrollBar.displayObject);
+                        this.$hzScrollBar = UIPackage.createObjectFromURL(res) as GScrollBar;
+                        if (!this.$hzScrollBar)
+                            throw new Error(`Cannot create scrollbar from ${res}`);
+                        this.$hzScrollBar.setScrollPane(this, false);
+                        this.$owner.$rootContainer.addChild(this.$hzScrollBar.displayObject);
                     }
                 }
 
-                this._scrollBarDisplayAuto = scrollBarDisplay == ScrollBarDisplayType.Auto;
-                if (this._scrollBarDisplayAuto) {
-                    if (this._vtScrollBar)
-                        this._vtScrollBar.displayObject.visible = false;
-                    if (this._hzScrollBar)
-                        this._hzScrollBar.displayObject.visible = false;
+                this.$scrollBarDisplayAuto = scrollBarDisplay == ScrollBarDisplayType.Auto;
+                if (this.$scrollBarDisplayAuto) {
+                    this.$scrollBarVisible = false;
+                    if (this.$vtScrollBar)
+                        this.$vtScrollBar.displayObject.visible = false;
+                    if (this.$hzScrollBar)
+                        this.$hzScrollBar.displayObject.visible = false;
                 }
             }
+            else
+                this.$mouseWheelEnabled = false;
 
             if (headerRes) {
-                this._header = <GComponent><any>(UIPackage.createObjectFromURL(headerRes));
-                if (this._header == null)
-                    throw "cannot create scrollPane header from " + headerRes;
+                this.$header = UIPackage.createObjectFromURL(headerRes) as GComponent;
+                if (this.$header == null)
+                    throw new Error(`Cannot create scrollPane.header from ${res}`);
             }
 
             if (footerRes) {
-                this._footer = <GComponent><any>(UIPackage.createObjectFromURL(footerRes));
-                if (this._footer == null)
-                    throw "cannot create scrollPane footer from " + footerRes;
+                this.$footer = UIPackage.createObjectFromURL(footerRes) as GComponent;
+                if (this.$footer == null)
+                    throw new Error(`Cannot create scrollPane.footer from ${res}`);
             }
 
-            if (this._header != null || this._footer != null)
-                this._refreshBarAxis = (this._scrollType == ScrollType.Both || this._scrollType == ScrollType.Vertical) ? "y" : "x";
+            if (this.$header != null || this.$footer != null)
+                this.$refreshBarAxis = (this.$scrollType == ScrollType.Both || this.$scrollType == ScrollType.Vertical) ? "y" : "x";
 
-            this.setSize(this._owner.width, this._owner.height);
+            this.setSize(owner.width, owner.height);
+
+            this.$owner.on(InteractiveEvents.Over, this.$rollOver, this);
+            this.$owner.on(InteractiveEvents.Out, this.$rollOut, this);
+            this.$owner.on(InteractiveEvents.Down, this.$mouseDown, this);
+            this.$owner.on(DisplayObjectEvent.MOUSE_WHEEL, this.$mouseWheel, this);
         }
 
         public dispose(): void {
-            if (this._tweening != 0)
-                GTimers.inst.remove(this.tweenUpdate, this);
+            if (this.$tweening != 0)
+                GTimer.inst.remove(this.tweenUpdate, this);
 
-            this._pageController = null;
+            this.$pageController = null;
 
-            if (this._hzScrollBar != null)
-                this._hzScrollBar.dispose();
-            if (this._vtScrollBar != null)
-                this._vtScrollBar.dispose();
-            if (this._header != null)
-                this._header.dispose();
-            if (this._footer != null)
-                this._footer.dispose();
+            if (this.$hzScrollBar != null)
+                this.$hzScrollBar.dispose();
+            if (this.$vtScrollBar != null)
+                this.$vtScrollBar.dispose();
+            if (this.$header != null)
+                this.$header.dispose();
+            if (this.$footer != null)
+                this.$footer.dispose();
+                
+            GRoot.inst.nativeStage.off(InteractiveEvents.Move, this.$mouseMove, this);
+            GRoot.inst.nativeStage.off(InteractiveEvents.Up, this.$mouseUp, this);
+            GRoot.inst.nativeStage.off(InteractiveEvents.Click, this.$click, this);
+
+            this.$owner.off(InteractiveEvents.Over, this.$rollOver, this);
+            this.$owner.off(InteractiveEvents.Out, this.$rollOut, this);
+            this.$owner.off(InteractiveEvents.Down, this.$mouseDown, this);
+            this.$owner.off(DisplayObjectEvent.MOUSE_WHEEL, this.$mouseWheel, this);
         }
 
         public get owner(): GComponent {
-            return this._owner;
+            return this.$owner;
         }
 
-        public get hzScrollBar(): GScrollBar {
-            return this._hzScrollBar;
+        public get horzScrollBar(): GScrollBar {
+            return this.$hzScrollBar;
         }
 
-        public get vtScrollBar(): GScrollBar {
-            return this._vtScrollBar;
+        public get vertScrollBar(): GScrollBar {
+            return this.$vtScrollBar;
         }
 
         public get header(): GComponent {
-            return this._header;
+            return this.$header;
         }
 
         public get footer(): GComponent {
-            return this._footer;
+            return this.$footer;
         }
 
         public get bouncebackEffect(): boolean {
-            return this._bouncebackEffect;
+            return this.$bouncebackEffect;
         }
 
         public set bouncebackEffect(sc: boolean) {
-            this._bouncebackEffect = sc;
+            this.$bouncebackEffect = sc;
         }
 
         public get touchEffect(): boolean {
-            return this._touchEffect;
+            return this.$touchEffect;
         }
 
         public set touchEffect(sc: boolean) {
-            this._touchEffect = sc;
+            this.$touchEffect = sc;
         }
 
-        public set scrollStep(val: number) {
-            this._scrollStep = val;
-            if (this._scrollStep == 0)
-                this._scrollStep = UIConfig.defaultScrollStep;
+        public set scrollSpeed(val: number) {
+            this.$scrollSpeed = val;
+            if (this.$scrollSpeed == 0)
+                this.$scrollSpeed = UIConfig.defaultScrollSpeed;
+            this.$mouseWheelSpeed = this.$scrollSpeed * 2;
         }
 
-        public get decelerationRate(): number {
-            return this._decelerationRate;
-        }
-
-        public set decelerationRate(val: number) {
-            this._decelerationRate = val;
-        }
-
-        public get scrollStep(): number {
-            return this._scrollStep;
+        public get scrollSpeed(): number {
+            return this.$scrollSpeed;
         }
 
         public get snapToItem(): boolean {
-            return this._snapToItem;
+            return this.$snapToItem;
         }
 
         public set snapToItem(value: boolean) {
-            this._snapToItem = value;
+            this.$snapToItem = value;
         }
 
-        public get isDragged(): boolean {
-            return this._dragged;
+        public get mouseWheelEnabled(): boolean {
+            return this.$mouseWheelEnabled;
+        }
+
+        public set mouseWheelEnabled(value: boolean) {
+            this.$mouseWheelEnabled = value;
+        }
+
+        public get decelerationRate(): number {
+            return this.$decelerationRate;
+        }
+
+        public set decelerationRate(value: number) {
+            this.$decelerationRate = value;
         }
 
         public get percX(): number {
-            return this._overlapSize.x == 0 ? 0 : this._xPos / this._overlapSize.x;
+            return this.$overlapSize.x == 0 ? 0 : this.$xPos / this.$overlapSize.x;
         }
 
         public set percX(value: number) {
@@ -298,12 +317,12 @@ module fgui {
         }
 
         public setPercX(value: number, ani: boolean = false): void {
-            this._owner.ensureBoundsCorrect();
-            this.setPosX(this._overlapSize.x * ToolSet.clamp01(value), ani);
+            this.$owner.ensureBoundsCorrect();
+            this.setPosX(this.$overlapSize.x * utils.NumberUtil.clamp01(value), ani);
         }
 
         public get percY(): number {
-            return this._overlapSize.y == 0 ? 0 : this._yPos / this._overlapSize.y;
+            return this.$overlapSize.y == 0 ? 0 : this.$yPos / this.$overlapSize.y;
         }
 
         public set percY(value: number) {
@@ -311,12 +330,12 @@ module fgui {
         }
 
         public setPercY(value: number, ani: boolean = false): void {
-            this._owner.ensureBoundsCorrect();
-            this.setPosY(this._overlapSize.y * ToolSet.clamp01(value), ani);
+            this.$owner.ensureBoundsCorrect();
+            this.setPosY(this.$overlapSize.y * utils.NumberUtil.clamp01(value), ani);
         }
 
         public get posX(): number {
-            return this._xPos;
+            return this.$xPos;
         }
 
         public set posX(value: number) {
@@ -324,20 +343,20 @@ module fgui {
         }
 
         public setPosX(value: number, ani: boolean = false): void {
-            this._owner.ensureBoundsCorrect();
+            this.$owner.ensureBoundsCorrect();
 
-            if (this._loop == 1)
+            if (this.$loop == 1)
                 value = this.loopCheckingNewPos(value, "x");
 
-            value = ToolSet.clamp(value, 0, this._overlapSize.x);
-            if (value != this._xPos) {
-                this._xPos = value;
+            value = utils.NumberUtil.clamp(value, 0, this.$overlapSize.x);
+            if (value != this.$xPos) {
+                this.$xPos = value;
                 this.posChanged(ani);
             }
         }
 
         public get posY(): number {
-            return this._yPos;
+            return this.$yPos;
         }
 
         public set posY(value: number) {
@@ -345,120 +364,102 @@ module fgui {
         }
 
         public setPosY(value: number, ani: boolean = false): void {
-            this._owner.ensureBoundsCorrect();
+            this.$owner.ensureBoundsCorrect();
 
-            if (this._loop == 1)
+            if (this.$loop == 1)
                 value = this.loopCheckingNewPos(value, "y");
 
-            value = ToolSet.clamp(value, 0, this._overlapSize.y);
-            if (value != this._yPos) {
-                this._yPos = value;
+            value = utils.NumberUtil.clamp(value, 0, this.$overlapSize.y);
+            if (value != this.$yPos) {
+                this.$yPos = value;
                 this.posChanged(ani);
             }
         }
 
         public get contentWidth(): number {
-            return this._contentSize.x;
+            return this.$contentSize.x;
         }
 
         public get contentHeight(): number {
-            return this._contentSize.y;
+            return this.$contentSize.y;
         }
 
         public get viewWidth(): number {
-            return this._viewSize.x;
+            return this.$viewSize.x;
         }
 
         public set viewWidth(value: number) {
-            value = value + this._owner.margin.left + this._owner.margin.right;
-            if (this._vtScrollBar != null && !this._floating)
-                value += this._vtScrollBar.width;
-            this._owner.width = value;
+            value = value + this.$owner.margin.left + this.$owner.margin.right;
+            if (this.$vtScrollBar != null)
+                value += this.$vtScrollBar.width;
+            this.$owner.width = value;
         }
 
         public get viewHeight(): number {
-            return this._viewSize.y;
+            return this.$viewSize.y;
         }
 
         public set viewHeight(value: number) {
-            value = value + this._owner.margin.top + this._owner.margin.bottom;
-            if (this._hzScrollBar != null && !this._floating)
-                value += this._hzScrollBar.height;
-            this._owner.height = value;
+            value = value + this.$owner.margin.top + this.$owner.margin.bottom;
+            if (this.$hzScrollBar != null)
+                value += this.$hzScrollBar.height;
+            this.$owner.height = value;
         }
 
         public get currentPageX(): number {
-            if (!this._pageMode)
+            if (!this.$pageMode)
                 return 0;
 
-            var page: number = Math.floor(this._xPos / this._pageSize.x);
-            if (this._xPos - page * this._pageSize.x > this._pageSize.x * 0.5)
+            var page: number = Math.floor(this.$xPos / this.$pageSize.x);
+            if (this.$xPos - page * this.$pageSize.x > this.$pageSize.x * 0.5)
                 page++;
 
             return page;
         }
 
         public set currentPageX(value: number) {
-            this.setCurrentPageX(value, false);
+            if (this.$pageMode && this.$overlapSize.x > 0)
+                this.setPosX(value * this.$pageSize.x, false);
         }
 
         public get currentPageY(): number {
-            if (!this._pageMode)
+            if (!this.$pageMode)
                 return 0;
 
-            var page: number = Math.floor(this._yPos / this._pageSize.y);
-            if (this._yPos - page * this._pageSize.y > this._pageSize.y * 0.5)
+            let page: number = Math.floor(this.$yPos / this.$pageSize.y);
+            if (this.$yPos - page * this.$pageSize.y > this.$pageSize.y * 0.5)
                 page++;
 
             return page;
         }
 
         public set currentPageY(value: number) {
-            this.setCurrentPageY(value, false);
-        }
-
-        public setCurrentPageX(value: number, ani?: boolean): void {
-            if (!this._pageMode)
-                return;
-
-            this._owner.ensureBoundsCorrect();
-
-            if (this._overlapSize.x > 0)
-                this.setPosX(value * this._pageSize.x, ani);
-        }
-
-        public setCurrentPageY(value: number, ani?: boolean): void {
-            if (!this._pageMode)
-                return;
-
-            this._owner.ensureBoundsCorrect();
-
-            if (this._overlapSize.y > 0)
-                this.setPosY(value * this._pageSize.y, ani);
+            if (this.$pageMode && this.$overlapSize.y > 0)
+                this.setPosY(value * this.$pageSize.y, false);
         }
 
         public get isBottomMost(): boolean {
-            return this._yPos == this._overlapSize.y || this._overlapSize.y == 0;
+            return this.$yPos == this.$overlapSize.y || this.$overlapSize.y == 0;
         }
 
         public get isRightMost(): boolean {
-            return this._xPos == this._overlapSize.x || this._overlapSize.x == 0;
+            return this.$xPos == this.$overlapSize.x || this.$overlapSize.x == 0;
         }
 
-        public get pageController(): Controller {
-            return this._pageController;
+        public get pageController(): controller.Controller {
+            return this.$pageController;
         }
 
-        public set pageController(value: Controller) {
-            this._pageController = value;
+        public set pageController(value: controller.Controller) {
+            this.$pageController = value;
         }
 
         public get scrollingPosX(): number {
-            return ToolSet.clamp(-this._container.x, 0, this._overlapSize.x);
+            return utils.NumberUtil.clamp(-this.$container.x, 0, this.$overlapSize.x);
         }
 
         public get scrollingPosY(): number {
-            return ToolSet.clamp(-this._container.y, 0, this._overlapSize.y);
+            return utils.NumberUtil.clamp(-this.$container.y, 0, this.$overlapSize.y);
         }
 
         public scrollTop(ani: boolean = false): void {
@@ -470,103 +471,106 @@ module fgui {
         }
 
         public scrollUp(ratio: number = 1, ani: boolean = false): void {
-            if (this._pageMode)
-                this.setPosY(this._yPos - this._pageSize.y * ratio, ani);
+            if (this.$pageMode)
+                this.setPosY(this.$yPos - this.$pageSize.y * ratio, ani);
             else
-                this.setPosY(this._yPos - this._scrollStep * ratio, ani);;
+                this.setPosY(this.$yPos - this.$scrollSpeed * ratio, ani);;
         }
 
         public scrollDown(ratio: number = 1, ani: boolean = false): void {
-            if (this._pageMode)
-                this.setPosY(this._yPos + this._pageSize.y * ratio, ani);
+            if (this.$pageMode)
+                this.setPosY(this.$yPos + this.$pageSize.y * ratio, ani);
             else
-                this.setPosY(this._yPos + this._scrollStep * ratio, ani);
+                this.setPosY(this.$yPos + this.$scrollSpeed * ratio, ani);
         }
 
         public scrollLeft(ratio: number = 1, ani: boolean = false): void {
-            if (this._pageMode)
-                this.setPosX(this._xPos - this._pageSize.x * ratio, ani);
+            if (this.$pageMode)
+                this.setPosX(this.$xPos - this.$pageSize.x * ratio, ani);
             else
-                this.setPosX(this._xPos - this._scrollStep * ratio, ani);
+                this.setPosX(this.$xPos - this.$scrollSpeed * ratio, ani);
         }
 
         public scrollRight(ratio: number = 1, ani: boolean = false): void {
-            if (this._pageMode)
-                this.setPosX(this._xPos + this._pageSize.x * ratio, ani);
+            if (this.$pageMode)
+                this.setPosX(this.$xPos + this.$pageSize.x * ratio, ani);
             else
-                this.setPosX(this._xPos + this._scrollStep * ratio, ani);
+                this.setPosX(this.$xPos + this.$scrollSpeed * ratio, ani);
         }
 
-        public scrollToView(target: any, ani: boolean = false, setFirst: boolean = false): void {
-            this._owner.ensureBoundsCorrect();
-            if (this._needRefresh)
+        public scrollToView(target: Object, ani: boolean = false, snapToFirst: boolean = false): void {
+            this.$owner.ensureBoundsCorrect();
+            if (this.$needRefresh)
                 this.refresh();
 
-            var rect: egret.Rectangle;
+            let rect: PIXI.Rectangle;
             if (target instanceof GObject) {
-                if (target.parent != this._owner) {
+                if (target.parent != this.$owner) {
                     target.parent.localToGlobalRect(target.x, target.y,
                         target.width, target.height, ScrollPane.sHelperRect);
-                    rect = this._owner.globalToLocalRect(ScrollPane.sHelperRect.x, ScrollPane.sHelperRect.y,
+                    rect = this.$owner.globalToLocalRect(ScrollPane.sHelperRect.x, ScrollPane.sHelperRect.y,
                         ScrollPane.sHelperRect.width, ScrollPane.sHelperRect.height, ScrollPane.sHelperRect);
                 }
                 else {
                     rect = ScrollPane.sHelperRect;
-                    rect.setTo(target.x, target.y, target.width, target.height);
+                    rect.x = target.x;
+                    rect.y = target.y;
+                    rect.width = target.width;
+                    rect.height = target.height;
                 }
             }
             else
-                rect = <egret.Rectangle>target;
+                rect = target as PIXI.Rectangle;
 
-            if (this._overlapSize.y > 0) {
-                var bottom: number = this._yPos + this._viewSize.y;
-                if (setFirst || rect.y <= this._yPos || rect.height >= this._viewSize.y) {
-                    if (this._pageMode)
-                        this.setPosY(Math.floor(rect.y / this._pageSize.y) * this._pageSize.y, ani);
+            if (this.$overlapSize.y > 0) {
+                const bottom: number = this.$yPos + this.$viewSize.y;
+                if (snapToFirst || rect.y <= this.$yPos || rect.height >= this.$viewSize.y) {
+                    if (this.$pageMode)
+                        this.setPosY(Math.floor(rect.y / this.$pageSize.y) * this.$pageSize.y, ani);
                     else
                         this.setPosY(rect.y, ani);
                 }
                 else if (rect.y + rect.height > bottom) {
-                    if (this._pageMode)
-                        this.setPosY(Math.floor(rect.y / this._pageSize.y) * this._pageSize.y, ani);
-                    else if (rect.height <= this._viewSize.y / 2)
-                        this.setPosY(rect.y + rect.height * 2 - this._viewSize.y, ani);
+                    if (this.$pageMode)
+                        this.setPosY(Math.floor(rect.y / this.$pageSize.y) * this.$pageSize.y, ani);
+                    else if (rect.height <= this.$viewSize.y / 2)
+                        this.setPosY(rect.y + rect.height * 2 - this.$viewSize.y, ani);
                     else
-                        this.setPosY(rect.y + rect.height - this._viewSize.y, ani);
+                        this.setPosY(rect.y + rect.height - this.$viewSize.y, ani);
                 }
             }
-            if (this._overlapSize.x > 0) {
-                var right: number = this._xPos + this._viewSize.x;
-                if (setFirst || rect.x <= this._xPos || rect.width >= this._viewSize.x) {
-                    if (this._pageMode)
-                        this.setPosX(Math.floor(rect.x / this._pageSize.x) * this._pageSize.x, ani);
+            if (this.$overlapSize.x > 0) {
+                let right: number = this.$xPos + this.$viewSize.x;
+                if (snapToFirst || rect.x <= this.$xPos || rect.width >= this.$viewSize.x) {
+                    if (this.$pageMode)
+                        this.setPosX(Math.floor(rect.x / this.$pageSize.x) * this.$pageSize.x, ani);
                     else
                         this.setPosX(rect.x, ani);
                 }
                 else if (rect.x + rect.width > right) {
-                    if (this._pageMode)
-                        this.setPosX(Math.floor(rect.x / this._pageSize.x) * this._pageSize.x, ani);
-                    else if (rect.width <= this._viewSize.x / 2)
-                        this.setPosX(rect.x + rect.width * 2 - this._viewSize.x, ani);
+                    if (this.$pageMode)
+                        this.setPosX(Math.floor(rect.x / this.$pageSize.x) * this.$pageSize.x, ani);
+                    else if (rect.width <= this.$viewSize.x / 2)
+                        this.setPosX(rect.x + rect.width * 2 - this.$viewSize.x, ani);
                     else
-                        this.setPosX(rect.x + rect.width - this._viewSize.x, ani);
+                        this.setPosX(rect.x + rect.width - this.$viewSize.x, ani);
                 }
             }
 
-            if (!ani && this._needRefresh)
+            if (!ani && this.$needRefresh)
                 this.refresh();
         }
 
         public isChildInView(obj: GObject): boolean {
-            if (this._overlapSize.y > 0) {
-                var dist: number = obj.y + this._container.y;
-                if (dist < -obj.height || dist > this._viewSize.y)
+            if (this.$overlapSize.y > 0) {
+                var dist: number = obj.y + this.$container.y;
+                if (dist < -obj.height || dist > this.$viewSize.y)
                     return false;
             }
 
-            if (this._overlapSize.x > 0) {
-                dist = obj.x + this._container.x;
-                if (dist < -obj.width || dist > this._viewSize.x)
+            if (this.$overlapSize.x > 0) {
+                dist = obj.x + this.$container.x;
+                if (dist < -obj.width || dist > this.$viewSize.x)
                     return false;
             }
 
@@ -574,462 +578,523 @@ module fgui {
         }
 
         public cancelDragging(): void {
-            this._owner.displayObject.removeEventListener(egret.TouchEvent.TOUCH_MOVE, this.__touchMove, this);
-            this._owner.displayObject.removeEventListener(egret.TouchEvent.TOUCH_END, this.__touchEnd, this);
-            this._owner.displayObject.removeEventListener(egret.TouchEvent.TOUCH_TAP, this.__touchTap, this);
+            GRoot.inst.nativeStage.off(InteractiveEvents.Move, this.$mouseMove, this);
+            GRoot.inst.nativeStage.off(InteractiveEvents.Up, this.$mouseUp, this);
+            GRoot.inst.nativeStage.off(InteractiveEvents.Click, this.$click, this);
 
             if (ScrollPane.draggingPane == this)
                 ScrollPane.draggingPane = null;
 
-            ScrollPane._gestureFlag = 0;
-            this._dragged = false;
-            this._maskContainer.touchChildren = true;
+            ScrollPane.$gestureFlag = 0;
+            this.$isDragging = false;
+            this.$maskContainer.interactive = true;
+        }
+
+        public get isDragging():boolean {
+            return this.$isDragging;
         }
 
         public lockHeader(size: number): void {
-            if (this._headerLockedSize == size)
+            if (this.$headerLockedSize == size)
                 return;
 
-            this._headerLockedSize = size;
+            this.$headerLockedSize = size;
 
-            if (!this._refreshEventDispatching && this._container[this._refreshBarAxis] >= 0) {
-                this._tweenStart.setTo(this._container.x, this._container.y);
-                this._tweenChange.setTo(0, 0);
-                this._tweenChange[this._refreshBarAxis] = this._headerLockedSize - this._tweenStart[this._refreshBarAxis];
-                this._tweenDuration.setTo(ScrollPane.TWEEN_TIME_DEFAULT, ScrollPane.TWEEN_TIME_DEFAULT);
-                this.startTween(2);
+            if (!this.$refreshEventDispatching && (<IndexedObject>this.$container)[this.$refreshBarAxis] >= 0) {
+                this.$tweenStart.set(this.$container.x, this.$container.y);
+                this.$tweenChange.set(0, 0);
+                (<IndexedObject>this.$tweenChange)[this.$refreshBarAxis] = this.$headerLockedSize - (<IndexedObject>this.$tweenStart)[this.$refreshBarAxis];
+                this.$tweenDuration.set(ScrollPane.TWEEN_DEFAULT_DURATION, ScrollPane.TWEEN_DEFAULT_DURATION);
+                this.$tweenTime.set(0, 0);
+                this.$tweening = 2;
+                GTimer.inst.addLoop(1, this.tweenUpdate, this);
             }
         }
 
         public lockFooter(size: number): void {
-            if (this._footerLockedSize == size)
+            if (this.$footerLockedSize == size)
                 return;
 
-            this._footerLockedSize = size;
+            this.$footerLockedSize = size;
 
-            if (!this._refreshEventDispatching && this._container[this._refreshBarAxis] <= -this._overlapSize[this._refreshBarAxis]) {
-                this._tweenStart.setTo(this._container.x, this._container.y);
-                this._tweenChange.setTo(0, 0);
-                var max: number = this._overlapSize[this._refreshBarAxis];
+            if (!this.$refreshEventDispatching && (<IndexedObject>this.$container)[this.$refreshBarAxis] <= -(<IndexedObject>this.$overlapSize)[this.$refreshBarAxis]) {
+                this.$tweenStart.set(this.$container.x, this.$container.y);
+                this.$tweenChange.set(0, 0);
+                let max: number = (<IndexedObject>this.$overlapSize)[this.$refreshBarAxis];
                 if (max == 0)
-                    max = Math.max(this._contentSize[this._refreshBarAxis] + this._footerLockedSize - this._viewSize[this._refreshBarAxis], 0);
+                    max = Math.max((<IndexedObject>this.$contentSize)[this.$refreshBarAxis] + this.$footerLockedSize - (<IndexedObject>this.$viewSize)[this.$refreshBarAxis], 0);
                 else
-                    max += this._footerLockedSize;
-                this._tweenChange[this._refreshBarAxis] = -max - this._tweenStart[this._refreshBarAxis];
-                this._tweenDuration.setTo(ScrollPane.TWEEN_TIME_DEFAULT, ScrollPane.TWEEN_TIME_DEFAULT);
-                this.startTween(2);
+                    max += this.$footerLockedSize;
+                (<IndexedObject>this.$tweenChange)[this.$refreshBarAxis] = -max - (<IndexedObject>this.$tweenStart)[this.$refreshBarAxis];
+                this.$tweenDuration.set(ScrollPane.TWEEN_DEFAULT_DURATION, ScrollPane.TWEEN_DEFAULT_DURATION);
+                this.$tweenTime.set(0, 0);
+                this.$tweening = 2;
+                GTimer.inst.addLoop(1, this.tweenUpdate, this);
             }
         }
 
-        public onOwnerSizeChanged(): void {
-            this.setSize(this._owner.width, this._owner.height);
+        /**
+         * @internal
+         */
+        onOwnerSizeChanged(): void {
+            this.setSize(this.$owner.width, this.$owner.height);
             this.posChanged(false);
         }
 
-        public handleControllerChanged(c: Controller): void {
-            if (this._pageController == c) {
-                if (this._scrollType == ScrollType.Horizontal)
-                    this.setCurrentPageX(c.selectedIndex, true);
+        /**
+         * @internal
+         */
+        handleControllerChanged(c: controller.Controller): void {
+            if (this.$pageController == c) {
+                if (this.$scrollType == ScrollType.Horizontal)
+                    this.currentPageX = c.selectedIndex;
                 else
-                    this.setCurrentPageY(c.selectedIndex, true);
+                    this.currentPageY = c.selectedIndex;
             }
         }
 
         private updatePageController(): void {
-            if (this._pageController != null && !this._pageController.changing) {
-                var index: number;
-                if (this._scrollType == ScrollType.Horizontal)
+            if (this.$pageController != null && !this.$pageController.$updating) {
+                let index: number;
+                if (this.$scrollType == ScrollType.Horizontal)
                     index = this.currentPageX;
                 else
                     index = this.currentPageY;
-                if (index < this._pageController.pageCount) {
-                    var c: Controller = this._pageController;
-                    this._pageController = null; //防止HandleControllerChanged的调用
+                if (index < this.$pageController.pageCount) {
+                    const c: controller.Controller = this.$pageController;
+                    this.$pageController = null; //prevent from handleControllerChanged calling
                     c.selectedIndex = index;
-                    this._pageController = c;
+                    this.$pageController = c;
                 }
             }
         }
 
-        public adjustMaskContainer(): void {
-            var mx: number, my: number;
-            if (this._displayOnLeft && this._vtScrollBar != null && !this._floating)
-                mx = Math.floor(this._owner.margin.left + this._vtScrollBar.width);
+        /**
+         * @internal
+         */
+        adjustMaskContainer(): void {
+            let mx: number, my: number;
+            if (this.$displayOnLeft && this.$vtScrollBar != null)
+                mx = Math.floor(this.$owner.margin.left + this.$vtScrollBar.width);
             else
-                mx = Math.floor(this._owner.margin.left);
-            my = Math.floor(this._owner.margin.top);
+                mx = Math.floor(this.$owner.margin.left);
+            my = Math.floor(this.$owner.margin.top);
 
-            this._maskContainer.x = mx;
-            this._maskContainer.y = my;
+            this.$maskContainer.position.set(mx, my);
 
-            if (this._owner._alignOffset.x != 0 || this._owner._alignOffset.y != 0) {
-                if (this._alignContainer == null) {
-                    this._alignContainer = new egret.DisplayObjectContainer();
-                    this._maskContainer.addChild(this._alignContainer);
-                    this._alignContainer.addChild(this._container);
+            if (this.$owner.$alignOffset.x != 0 || this.$owner.$alignOffset.y != 0) {
+                if (this.$alignContainer == null) {
+                    this.$alignContainer = new PIXI.Container();
+                    this.$maskContainer.addChild(this.$alignContainer);
+                    this.$alignContainer.addChild(this.$container);
                 }
 
-                this._alignContainer.x = this._owner._alignOffset.x;
-                this._alignContainer.y = this._owner._alignOffset.y;
+                this.$alignContainer.position.set(this.$owner.$alignOffset.x, this.$owner.$alignOffset.y);
             }
-            else if (this._alignContainer) {
-                this._alignContainer.x = this._alignContainer.y = 0;
-            }
+            else if (this.$alignContainer)
+                this.$alignContainer.position.set(0, 0);
         }
 
-        public setSize(aWidth: number, aHeight: number): void {
+        public setSize(width: number, height: number): void {
             this.adjustMaskContainer();
 
-            if (this._hzScrollBar) {
-                this._hzScrollBar.y = aHeight - this._hzScrollBar.height;
-                if (this._vtScrollBar && !this._vScrollNone) {
-                    this._hzScrollBar.width = aWidth - this._vtScrollBar.width - this._scrollBarMargin.left - this._scrollBarMargin.right;
-                    if (this._displayOnLeft)
-                        this._hzScrollBar.x = this._scrollBarMargin.left + this._vtScrollBar.width;
+            if (this.$hzScrollBar) {
+                this.$hzScrollBar.y = height - this.$hzScrollBar.height;
+                if (this.$vtScrollBar && !this.$vScrollNone) {
+                    this.$hzScrollBar.width = width - this.$vtScrollBar.width - this.$scrollBarMargin.left - this.$scrollBarMargin.right;
+                    if (this.$displayOnLeft)
+                        this.$hzScrollBar.x = this.$scrollBarMargin.left + this.$vtScrollBar.width;
                     else
-                        this._hzScrollBar.x = this._scrollBarMargin.left;
+                        this.$hzScrollBar.x = this.$scrollBarMargin.left;
                 }
                 else {
-                    this._hzScrollBar.width = aWidth - this._scrollBarMargin.left - this._scrollBarMargin.right;
-                    this._hzScrollBar.x = this._scrollBarMargin.left;
+                    this.$hzScrollBar.width = width - this.$scrollBarMargin.left - this.$scrollBarMargin.right;
+                    this.$hzScrollBar.x = this.$scrollBarMargin.left;
                 }
             }
-            if (this._vtScrollBar) {
-                if (!this._displayOnLeft)
-                    this._vtScrollBar.x = aWidth - this._vtScrollBar.width;
-                if (this._hzScrollBar)
-                    this._vtScrollBar.height = aHeight - this._hzScrollBar.height - this._scrollBarMargin.top - this._scrollBarMargin.bottom;
+            if (this.$vtScrollBar) {
+                if (!this.$displayOnLeft)
+                    this.$vtScrollBar.x = width - this.$vtScrollBar.width;
+                if (this.$hzScrollBar)
+                    this.$vtScrollBar.height = height - this.$hzScrollBar.height - this.$scrollBarMargin.top - this.$scrollBarMargin.bottom;
                 else
-                    this._vtScrollBar.height = aHeight - this._scrollBarMargin.top - this._scrollBarMargin.bottom;
-                this._vtScrollBar.y = this._scrollBarMargin.top;
+                    this.$vtScrollBar.height = height - this.$scrollBarMargin.top - this.$scrollBarMargin.bottom;
+                this.$vtScrollBar.y = this.$scrollBarMargin.top;
             }
 
-            this._viewSize.x = aWidth;
-            this._viewSize.y = aHeight;
-            if (this._hzScrollBar && !this._floating)
-                this._viewSize.y -= this._hzScrollBar.height;
-            if (this._vtScrollBar && !this._floating)
-                this._viewSize.x -= this._vtScrollBar.width;
-            this._viewSize.x -= (this._owner.margin.left + this._owner.margin.right);
-            this._viewSize.y -= (this._owner.margin.top + this._owner.margin.bottom);
+            this.$viewSize.x = width;
+            this.$viewSize.y = height;
+            if (this.$hzScrollBar && !this.$hScrollNone)
+                this.$viewSize.y -= this.$hzScrollBar.height;
+            if (this.$vtScrollBar && !this.$vScrollNone)
+                this.$viewSize.x -= this.$vtScrollBar.width;
+            this.$viewSize.x -= (this.$owner.margin.left + this.$owner.margin.right);
+            this.$viewSize.y -= (this.$owner.margin.top + this.$owner.margin.bottom);
 
-            this._viewSize.x = Math.max(1, this._viewSize.x);
-            this._viewSize.y = Math.max(1, this._viewSize.y);
-            this._pageSize.x = this._viewSize.x;
-            this._pageSize.y = this._viewSize.y;
+            this.$viewSize.x = Math.max(1, this.$viewSize.x);
+            this.$viewSize.y = Math.max(1, this.$viewSize.y);
+            this.$pageSize.x = this.$viewSize.x;
+            this.$pageSize.y = this.$viewSize.y;
 
             this.handleSizeChanged();
         }
 
-        public setContentSize(aWidth: number, aHeight: number): void {
-            if (this._contentSize.x == aWidth && this._contentSize.y == aHeight)
+        public setContentSize(w: number, h: number): void {
+            if (this.$contentSize.x == w && this.$contentSize.y == h)
                 return;
 
-            this._contentSize.x = aWidth;
-            this._contentSize.y = aHeight;
+            this.$contentSize.x = w;
+            this.$contentSize.y = h;
             this.handleSizeChanged();
         }
 
-        public changeContentSizeOnScrolling(deltaWidth: number, deltaHeight: number,
-            deltaPosX: number, deltaPosY: number): void {
-            var isRightmost: boolean = this._xPos == this._overlapSize.x;
-            var isBottom: boolean = this._yPos == this._overlapSize.y;
+        /**
+         * @internal
+         */
+        changeContentSizeOnScrolling(deltaWidth: number, deltaHeight: number, deltaPosX: number, deltaPosY: number): void {
+            const isRightmost: boolean = this.$xPos == this.$overlapSize.x;
+            const isBottom: boolean = this.$yPos == this.$overlapSize.y;
 
-            this._contentSize.x += deltaWidth;
-            this._contentSize.y += deltaHeight;
+            this.$contentSize.x += deltaWidth;
+            this.$contentSize.y += deltaHeight;
             this.handleSizeChanged();
 
-            if (this._tweening == 1) {
-                //如果原来滚动位置是贴边，加入处理继续贴边。
-                if (deltaWidth != 0 && isRightmost && this._tweenChange.x < 0) {
-                    this._xPos = this._overlapSize.x;
-                    this._tweenChange.x = -this._xPos - this._tweenStart.x;
+            if (this.$tweening == 1) {
+                //if the last scroll is CLINGING-SIDE, then just continue to cling
+                if (deltaWidth != 0 && isRightmost && this.$tweenChange.x < 0) {
+                    this.$xPos = this.$overlapSize.x;
+                    this.$tweenChange.x = -this.$xPos - this.$tweenStart.x;
                 }
 
-                if (deltaHeight != 0 && isBottom && this._tweenChange.y < 0) {
-                    this._yPos = this._overlapSize.y;
-                    this._tweenChange.y = -this._yPos - this._tweenStart.y;
+                if (deltaHeight != 0 && isBottom && this.$tweenChange.y < 0) {
+                    this.$yPos = this.$overlapSize.y;
+                    this.$tweenChange.y = -this.$yPos - this.$tweenStart.y;
                 }
             }
-            else if (this._tweening == 2) {
-                //重新调整起始位置，确保能够顺滑滚下去
+            else if (this.$tweening == 2) {
+                //re-pos to ensure the scrolling will go on smooth
                 if (deltaPosX != 0) {
-                    this._container.x -= deltaPosX;
-                    this._tweenStart.x -= deltaPosX;
-                    this._xPos = -this._container.x;
+                    this.$container.x -= deltaPosX;
+                    this.$tweenStart.x -= deltaPosX;
+                    this.$xPos = -this.$container.x;
                 }
                 if (deltaPosY != 0) {
-                    this._container.y -= deltaPosY;
-                    this._tweenStart.y -= deltaPosY;
-                    this._yPos = -this._container.y;
+                    this.$container.y -= deltaPosY;
+                    this.$tweenStart.y -= deltaPosY;
+                    this.$yPos = -this.$container.y;
                 }
             }
-            else if (this._dragged) {
+            else if (this.$isDragging) {
                 if (deltaPosX != 0) {
-                    this._container.x -= deltaPosX;
-                    this._containerPos.x -= deltaPosX;
-                    this._xPos = -this._container.x;
+                    this.$container.x -= deltaPosX;
+                    this.$containerPos.x -= deltaPosX;
+                    this.$xPos = -this.$container.x;
                 }
                 if (deltaPosY != 0) {
-                    this._container.y -= deltaPosY;
-                    this._containerPos.y -= deltaPosY;
-                    this._yPos = -this._container.y;
+                    this.$container.y -= deltaPosY;
+                    this.$containerPos.y -= deltaPosY;
+                    this.$yPos = -this.$container.y;
                 }
             }
             else {
-                //如果原来滚动位置是贴边，加入处理继续贴边。
+                //if the last scroll is CLINGING-SIDE, then just continue to cling
                 if (deltaWidth != 0 && isRightmost) {
-                    this._xPos = this._overlapSize.x;
-                    this._container.x = -this._xPos;
+                    this.$xPos = this.$overlapSize.x;
+                    this.$container.x = -this.$xPos;
                 }
 
                 if (deltaHeight != 0 && isBottom) {
-                    this._yPos = this._overlapSize.y;
-                    this._container.y = -this._yPos;
+                    this.$yPos = this.$overlapSize.y;
+                    this.$container.y = -this.$yPos;
                 }
             }
 
-            if (this._pageMode)
+            if (this.$pageMode)
                 this.updatePageController();
         }
 
-        private handleSizeChanged(): void {
-            if (this._displayInDemand) {
-                this._vScrollNone = this._contentSize.y <= this._viewSize.y;
-                this._hScrollNone = this._contentSize.x <= this._viewSize.x;
+        private handleSizeChanged(onScrolling: boolean = false): void {
+            if (this.$displayOnDemand) {
+                if (this.$vtScrollBar) {
+                    if (this.$contentSize.y <= this.$viewSize.y) {
+                        if (!this.$vScrollNone) {
+                            this.$vScrollNone = true;
+                            this.$viewSize.x += this.$vtScrollBar.width;
+                        }
+                    }
+                    else {
+                        if (this.$vScrollNone) {
+                            this.$vScrollNone = false;
+                            this.$viewSize.x -= this.$vtScrollBar.width;
+                        }
+                    }
+                }
+                if (this.$hzScrollBar) {
+                    if (this.$contentSize.x <= this.$viewSize.x) {
+                        if (!this.$hScrollNone) {
+                            this.$hScrollNone = true;
+                            this.$viewSize.y += this.$hzScrollBar.height;
+                        }
+                    }
+                    else {
+                        if (this.$hScrollNone) {
+                            this.$hScrollNone = false;
+                            this.$viewSize.y -= this.$hzScrollBar.height;
+                        }
+                    }
+                }
             }
 
-            if (this._vtScrollBar) {
-                if (this._contentSize.y == 0)
-                    this._vtScrollBar.setDisplayPerc(0);
-                else
-                    this._vtScrollBar.setDisplayPerc(Math.min(1, this._viewSize.y / this._contentSize.y));
+            if (this.$vtScrollBar) {
+                if (this.$viewSize.y < this.$vtScrollBar.minSize)
+                    //use this.$vtScrollBar.displayObject.visible instead of this.$vtScrollBar.visible... ScrollBar actually is not in its owner's display tree, so vtScrollBar.visible will not work
+                    this.$vtScrollBar.displayObject.visible = false;
+                else {
+                    this.$vtScrollBar.displayObject.visible = this.$scrollBarVisible && !this.$vScrollNone;
+                    if (this.$contentSize.y == 0)
+                        this.$vtScrollBar.displayPerc = 0;
+                    else
+                        this.$vtScrollBar.displayPerc = Math.min(1, this.$viewSize.y / this.$contentSize.y);
+                }
             }
-            if (this._hzScrollBar) {
-                if (this._contentSize.x == 0)
-                    this._hzScrollBar.setDisplayPerc(0);
-                else
-                    this._hzScrollBar.setDisplayPerc(Math.min(1, this._viewSize.x / this._contentSize.x));
+            if (this.$hzScrollBar) {
+                if (this.$viewSize.x < this.$hzScrollBar.minSize)
+                    this.$hzScrollBar.displayObject.visible = false;
+                else {
+                    this.$hzScrollBar.displayObject.visible = this.$scrollBarVisible && !this.$hScrollNone;
+                    if (this.$contentSize.x == 0)
+                        this.$hzScrollBar.displayPerc = 0;
+                    else
+                        this.$hzScrollBar.displayPerc = Math.min(1, this.$viewSize.x / this.$contentSize.x);
+                }
             }
 
-            this.updateScrollBarVisible();
-
-            var rect: egret.Rectangle = this._maskContainer.scrollRect;
+            const rect: PIXI.Rectangle = this.$maskContainer.scrollRect;
             if (rect) {
-                rect.width = this._viewSize.x;
-                rect.height = this._viewSize.y;
-                if (this._vScrollNone && this._vtScrollBar)
-                    rect.width += this._vtScrollBar.width;
-                if (this._hScrollNone && this._hzScrollBar)
-                    rect.height += this._hzScrollBar.height;
-                this._maskContainer.scrollRect = rect;
+                rect.width = this.$viewSize.x;
+                rect.height = this.$viewSize.y;
+                this.$maskContainer.scrollRect = rect;
             }
 
-            if (this._scrollType == ScrollType.Horizontal || this._scrollType == ScrollType.Both)
-                this._overlapSize.x = Math.ceil(Math.max(0, this._contentSize.x - this._viewSize.x));
+            if (this.$scrollType == ScrollType.Horizontal || this.$scrollType == ScrollType.Both)
+                this.$overlapSize.x = Math.ceil(Math.max(0, this.$contentSize.x - this.$viewSize.x));
             else
-                this._overlapSize.x = 0;
-            if (this._scrollType == ScrollType.Vertical || this._scrollType == ScrollType.Both)
-                this._overlapSize.y = Math.ceil(Math.max(0, this._contentSize.y - this._viewSize.y));
+                this.$overlapSize.x = 0;
+            if (this.$scrollType == ScrollType.Vertical || this.$scrollType == ScrollType.Both)
+                this.$overlapSize.y = Math.ceil(Math.max(0, this.$contentSize.y - this.$viewSize.y));
             else
-                this._overlapSize.y = 0;
+                this.$overlapSize.y = 0;
 
-            //边界检查
-            this._xPos = ToolSet.clamp(this._xPos, 0, this._overlapSize.x);
-            this._yPos = ToolSet.clamp(this._yPos, 0, this._overlapSize.y);
-            if (this._refreshBarAxis != null) {
-                var max: number = this._overlapSize[this._refreshBarAxis];
+            //bounds checking
+            this.$xPos = utils.NumberUtil.clamp(this.$xPos, 0, this.$overlapSize.x);
+            this.$yPos = utils.NumberUtil.clamp(this.$yPos, 0, this.$overlapSize.y);
+            if (this.$refreshBarAxis != null) {
+                var max: number = (<IndexedObject>this.$overlapSize)[this.$refreshBarAxis];
                 if (max == 0)
-                    max = Math.max(this._contentSize[this._refreshBarAxis] + this._footerLockedSize - this._viewSize[this._refreshBarAxis], 0);
+                    max = Math.max((<IndexedObject>this.$contentSize)[this.$refreshBarAxis] + this.$footerLockedSize - (<IndexedObject>this.$viewSize)[this.$refreshBarAxis], 0);
                 else
-                    max += this._footerLockedSize;
+                    max += this.$footerLockedSize;
 
-                if (this._refreshBarAxis == "x") {
-                    this._container.x = ToolSet.clamp(this._container.x, -max, this._headerLockedSize);
-                    this._container.y = ToolSet.clamp(this._container.y, -this._overlapSize.y, 0);
+                if (this.$refreshBarAxis == "x") {
+                    this.$container.position.set(utils.NumberUtil.clamp(this.$container.x, -max, this.$headerLockedSize),
+                        utils.NumberUtil.clamp(this.$container.y, -this.$overlapSize.y, 0));
                 }
                 else {
-                    this._container.x = ToolSet.clamp(this._container.x, -this._overlapSize.x, 0);
-                    this._container.y = ToolSet.clamp(this._container.y, -max, this._headerLockedSize);
+                    this.$container.position.set(utils.NumberUtil.clamp(this.$container.x, -this.$overlapSize.x, 0),
+                        utils.NumberUtil.clamp(this.$container.y, -max, this.$headerLockedSize));
                 }
 
-                if (this._header != null) {
-                    if (this._refreshBarAxis == "x")
-                        this._header.height = this._viewSize.y;
+                if (this.$header != null) {
+                    if (this.$refreshBarAxis == "x")
+                        this.$header.height = this.$viewSize.y;
                     else
-                        this._header.width = this._viewSize.x;
+                        this.$header.width = this.$viewSize.x;
                 }
 
-                if (this._footer != null) {
-                    if (this._refreshBarAxis == "y")
-                        this._footer.height = this._viewSize.y;
+                if (this.$footer != null) {
+                    if (this.$refreshBarAxis == "y")
+                        this.$footer.height = this.$viewSize.y;
                     else
-                        this._footer.width = this._viewSize.x;
+                        this.$footer.width = this.$viewSize.x;
                 }
             }
             else {
-                this._container.x = ToolSet.clamp(this._container.x, -this._overlapSize.x, 0);
-                this._container.y = ToolSet.clamp(this._container.y, -this._overlapSize.y, 0);
+                this.$container.position.set(utils.NumberUtil.clamp(this.$container.x, -this.$overlapSize.x, 0),
+                    utils.NumberUtil.clamp(this.$container.y, -this.$overlapSize.y, 0));
             }
 
-            this.updateScrollBarPos();
-            if (this._pageMode)
+            this.syncScrollBar();
+            this.checkRefreshBar();
+            if (this.$pageMode)
                 this.updatePageController();
         }
 
         private posChanged(ani: boolean): void {
-            if (this._aniFlag == 0)
-                this._aniFlag = ani ? 1 : -1;
-            else if (this._aniFlag == 1 && !ani)
-                this._aniFlag = -1;
+            if (this.$aniFlag == 0)
+                this.$aniFlag = ani ? 1 : -1;
+            else if (this.$aniFlag == 1 && !ani)
+                this.$aniFlag = -1;
 
-            this._needRefresh = true;
-            GTimers.inst.callLater(this.refresh, this);
-            if (this._tweening != 0)
-                this.killTween();
+            this.$needRefresh = true;
+            GTimer.inst.callLater(this.refresh, this);
         }
 
         private refresh(): void {
-            this._needRefresh = false;
-            GTimers.inst.remove(this.refresh, this);
+            this.$needRefresh = false;
+            GTimer.inst.remove(this.refresh, this);
 
-            if (this._pageMode || this._snapToItem) {
-                ScrollPane.sEndPos.setTo(-this._xPos, -this._yPos);
+            if (this.$pageMode || this.$snapToItem) {
+                ScrollPane.sEndPos.set(-this.$xPos, -this.$yPos);
                 this.alignPosition(ScrollPane.sEndPos, false);
-                this._xPos = -ScrollPane.sEndPos.x;
-                this._yPos = -ScrollPane.sEndPos.y;
+                this.$xPos = -ScrollPane.sEndPos.x;
+                this.$yPos = -ScrollPane.sEndPos.y;
             }
 
             this.refresh2();
 
-            this.dispatchEventWith(ScrollPane.SCROLL);
-            if (this._needRefresh) //在onScroll事件里开发者可能修改位置，这里再刷新一次，避免闪烁
-            {
-                this._needRefresh = false;
-                GTimers.inst.remove(this.refresh, this);
+            //Events.dispatch(Events.SCROLL, this.$owner.displayObject);
+            this.emit(ScrollEvent.SCROLL, this);
 
+            if (this.$needRefresh) { //developer might modify position in the callback, so here refresh again to avoid flickering
+                this.$needRefresh = false;
+                GTimer.inst.remove(this.refresh, this);
                 this.refresh2();
             }
-
-            this.updateScrollBarPos();
-            this._aniFlag = 0;
+            this.syncScrollBar();
+            this.$aniFlag = 0;
         }
 
-        private refresh2() {
-            if (this._aniFlag == 1 && !this._dragged) {
-                var posX: number;
-                var posY: number;
+        private refresh2(): void {
+            if (this.$aniFlag == 1 && !this.$isDragging) {
+                let posX: number;
+                let posY: number;
 
-                if (this._overlapSize.x > 0)
-                    posX = -Math.floor(this._xPos);
+                if (this.$overlapSize.x > 0)
+                    posX = -Math.floor(this.$xPos);
                 else {
-                    if (this._container.x != 0)
-                        this._container.x = 0;
+                    if (this.$container.x != 0)
+                        this.$container.x = 0;
                     posX = 0;
                 }
-                if (this._overlapSize.y > 0)
-                    posY = -Math.floor(this._yPos);
+                if (this.$overlapSize.y > 0)
+                    posY = -Math.floor(this.$yPos);
                 else {
-                    if (this._container.y != 0)
-                        this._container.y = 0;
+                    if (this.$container.y != 0)
+                        this.$container.y = 0;
                     posY = 0;
                 }
 
-                if (posX != this._container.x || posY != this._container.y) {
-                    this._tweenDuration.setTo(ScrollPane.TWEEN_TIME_GO, ScrollPane.TWEEN_TIME_GO);
-                    this._tweenStart.setTo(this._container.x, this._container.y);
-                    this._tweenChange.setTo(posX - this._tweenStart.x, posY - this._tweenStart.y);
-                    this.startTween(1);
+                if (posX != this.$container.x || posY != this.$container.y) {
+                    this.$tweening = 1;
+                    this.$tweenTime.set(0, 0);
+                    this.$tweenDuration.set(ScrollPane.TWEEN_MANUALLY_SET_DURATION, ScrollPane.TWEEN_MANUALLY_SET_DURATION);
+                    this.$tweenStart.set(this.$container.x, this.$container.y);
+                    this.$tweenChange.set(posX - this.$tweenStart.x, posY - this.$tweenStart.y);
+                    GTimer.inst.addLoop(1, this.tweenUpdate, this);
                 }
-                else if (this._tweening != 0)
+                else if (this.$tweening != 0)
                     this.killTween();
             }
             else {
-                if (this._tweening != 0)
+                if (this.$tweening != 0)
                     this.killTween();
 
-                this._container.x = Math.floor(-this._xPos);
-                this._container.y = Math.floor(-this._yPos);
+                this.$container.position.set(Math.floor(-this.$xPos), Math.floor(-this.$yPos));
 
                 this.loopCheckingCurrent();
             }
 
-            if (this._pageMode)
+            if (this.$pageMode)
                 this.updatePageController();
         }
 
-        private __touchBegin(evt: egret.TouchEvent): void {
-            if (!this._touchEffect)
-                return;
-
-            if (this._tweening != 0) {
-                this.killTween();
-                this._dragged = true;
+        private syncScrollBar(end: boolean = false): void {
+            if (this.$vtScrollBar != null) {
+                this.$vtScrollBar.scrollPerc = this.$overlapSize.y == 0 ? 0 : utils.NumberUtil.clamp(-this.$container.y, 0, this.$overlapSize.y) / this.$overlapSize.y;
+                if (this.$scrollBarDisplayAuto)
+                    this.showScrollBar(!end);
             }
-            else
-                this._dragged = false;
+            if (this.$hzScrollBar != null) {
+                this.$hzScrollBar.scrollPerc = this.$overlapSize.x == 0 ? 0 : utils.NumberUtil.clamp(-this.$container.x, 0, this.$overlapSize.x) / this.$overlapSize.x;
+                if (this.$scrollBarDisplayAuto)
+                    this.showScrollBar(!end);
+            }
 
-            var pt: egret.Point = this._owner.globalToLocal(evt.stageX, evt.stageY, ScrollPane.sHelperPoint);
-
-            this._containerPos.setTo(this._container.x, this._container.y);
-            this._beginTouchPos.setTo(pt.x, pt.y);
-            this._lastTouchPos.setTo(pt.x, pt.y);
-            this._lastTouchGlobalPos.setTo(evt.stageX, evt.stageY);
-            this._isHoldAreaDone = false;
-            this._velocity.setTo(0, 0);
-            this._velocityScale = 1;
-            this._lastMoveTime = egret.getTimer() / 1000;
-
-            this._owner.displayObject.stage.addEventListener(egret.TouchEvent.TOUCH_MOVE, this.__touchMove, this);
-            this._owner.displayObject.stage.addEventListener(egret.TouchEvent.TOUCH_END, this.__touchEnd, this);
-            this._owner.displayObject.stage.addEventListener(egret.TouchEvent.TOUCH_TAP, this.__touchTap, this);
+            if (end)
+                this.$maskContainer.interactive = true;
         }
 
-        private __touchMove(evt: egret.TouchEvent): void {
-            if (this._owner.displayObject.stage == null)
+        private $mouseDown(e:PIXI.InteractionEvent): void {
+            if (!this.$touchEffect)
+                return;
+                
+            if (this.$tweening != 0) {
+                this.killTween();
+                this.$isDragging = true;
+            }
+            else
+                this.$isDragging = false;
+
+            const globalMouse: PIXI.Point = PIXI.utils.isMobile.any ? 
+                this.$owner.globalToLocal(e.data.global.x, e.data.global.y)
+                : this.$owner.globalToLocal(GRoot.globalMouseStatus.mouseX, GRoot.globalMouseStatus.mouseY, ScrollPane.sHelperPoint);
+
+            this.$containerPos.set(this.$container.x, this.$container.y);
+            this.$beginTouchPos.copyFrom(globalMouse);
+            this.$lastTouchPos.copyFrom(globalMouse);
+            this.$lastTouchGlobalPos.copyFrom(globalMouse);
+            this.$isHoldAreaDone = false;
+            this.$velocity.set(0, 0);
+            this.$velocityScale = 1;
+            this.$lastMoveTime = GTimer.inst.curTime / 1000;
+
+            GRoot.inst.nativeStage.on(InteractiveEvents.Move, this.$mouseMove, this);
+            GRoot.inst.nativeStage.on(InteractiveEvents.Up, this.$mouseUp, this);
+            GRoot.inst.nativeStage.on(InteractiveEvents.Click, this.$click, this);
+        }
+
+        private $mouseMove(): void {
+            if (!this.$touchEffect)
                 return;
 
-            if (!this._touchEffect)
+            if (ScrollPane.draggingPane != null && ScrollPane.draggingPane != this || GObject.draggingObject != null)
                 return;
 
-            if (ScrollPane.draggingPane != null && ScrollPane.draggingPane != this || GObject.draggingObject != null) //已经有其他拖动
-                return;
+            let sensitivity: number = UIConfig.touchScrollSensitivity;
 
-            var pt: egret.Point = this._owner.globalToLocal(evt.stageX, evt.stageY, ScrollPane.sHelperPoint);
+            const globalMouse: PIXI.Point = this.$owner.globalToLocal(GRoot.globalMouseStatus.mouseX, GRoot.globalMouseStatus.mouseY, ScrollPane.sHelperPoint);
 
-            var sensitivity: number = UIConfig.touchScrollSensitivity;
-            var diff: number, diff2: number;
-            var sv: boolean, sh: boolean, st: boolean;
+            let diff: number, diff2: number;
+            let sv: boolean, sh: boolean;
 
-            if (this._scrollType == ScrollType.Vertical) {
-                if (!this._isHoldAreaDone) {
-                    //表示正在监测垂直方向的手势
-                    ScrollPane._gestureFlag |= 1;
+            if (this.$scrollType == ScrollType.Vertical) {
+                if (!this.$isHoldAreaDone) {
+                    //gesture on vertical dir is being observed
+                    ScrollPane.$gestureFlag |= 1;
 
-                    diff = Math.abs(this._beginTouchPos.y - pt.y);
+                    diff = Math.abs(this.$beginTouchPos.y - globalMouse.y);
                     if (diff < sensitivity)
                         return;
 
-                    if ((ScrollPane._gestureFlag & 2) != 0) //已经有水平方向的手势在监测，那么我们用严格的方式检查是不是按垂直方向移动，避免冲突
-                    {
-                        diff2 = Math.abs(this._beginTouchPos.x - pt.x);
-                        if (diff < diff2) //不通过则不允许滚动了
+                    if ((ScrollPane.$gestureFlag & 2) != 0) {
+                        diff2 = Math.abs(this.$beginTouchPos.x - globalMouse.x);
+                        if (diff < diff2)
                             return;
                     }
                 }
 
                 sv = true;
             }
-            else if (this._scrollType == ScrollType.Horizontal) {
-                if (!this._isHoldAreaDone) {
-                    ScrollPane._gestureFlag |= 2;
+            else if (this.$scrollType == ScrollType.Horizontal) {
+                if (!this.$isHoldAreaDone) {
+                    ScrollPane.$gestureFlag |= 2;  //gesture on horz dir is being observed
 
-                    diff = Math.abs(this._beginTouchPos.x - pt.x);
+                    diff = Math.abs(this.$beginTouchPos.x - globalMouse.x);
                     if (diff < sensitivity)
                         return;
 
-                    if ((ScrollPane._gestureFlag & 1) != 0) {
-                        diff2 = Math.abs(this._beginTouchPos.y - pt.y);
+                    if ((ScrollPane.$gestureFlag & 1) != 0) {
+                        diff2 = Math.abs(this.$beginTouchPos.y - globalMouse.y);
                         if (diff < diff2)
                             return;
                     }
@@ -1038,12 +1103,12 @@ module fgui {
                 sh = true;
             }
             else {
-                ScrollPane._gestureFlag = 3;
+                ScrollPane.$gestureFlag = 3;  //both
 
-                if (!this._isHoldAreaDone) {
-                    diff = Math.abs(this._beginTouchPos.y - pt.y);
+                if (!this.$isHoldAreaDone) {
+                    diff = Math.abs(this.$beginTouchPos.y - globalMouse.y);
                     if (diff < sensitivity) {
-                        diff = Math.abs(this._beginTouchPos.x - pt.x);
+                        diff = Math.abs(this.$beginTouchPos.x - globalMouse.x);
                         if (diff < sensitivity)
                             return;
                     }
@@ -1052,467 +1117,460 @@ module fgui {
                 sv = sh = true;
             }
 
-            var newPosX: number = Math.floor(this._containerPos.x + pt.x - this._beginTouchPos.x);
-            var newPosY: number = Math.floor(this._containerPos.y + pt.y - this._beginTouchPos.y);
+            let newPosX: number = Math.floor(this.$containerPos.x + globalMouse.x - this.$beginTouchPos.x);
+            let newPosY: number = Math.floor(this.$containerPos.y + globalMouse.y - this.$beginTouchPos.y);
 
             if (sv) {
                 if (newPosY > 0) {
-                    if (!this._bouncebackEffect)
-                        this._container.y = 0;
-                    else if (this._header != null && this._header.maxHeight != 0)
-                        this._container.y = Math.floor(Math.min(newPosY * 0.5, this._header.maxHeight));
+                    if (!this.$bouncebackEffect)
+                        this.$container.y = 0;
+                    else if (this.$header != null && this.$header.height != 0)    //TODO: height -> maxHeight
+                        this.$container.y = Math.floor(Math.min(newPosY * 0.5, this.$header.height));
                     else
-                        this._container.y = Math.floor(Math.min(newPosY * 0.5, this._viewSize.y * ScrollPane.PULL_RATIO));
+                        this.$container.y = Math.floor(Math.min(newPosY * 0.5, this.$viewSize.y * ScrollPane.PULL_DIST_RATIO));
                 }
-                else if (newPosY < -this._overlapSize.y) {
-                    if (!this._bouncebackEffect)
-                        this._container.y = -this._overlapSize.y;
-                    else if (this._footer != null && this._footer.maxHeight > 0)
-                        this._container.y = Math.floor(Math.max((newPosY + this._overlapSize.y) * 0.5, -this._footer.maxHeight) - this._overlapSize.y);
+                else if (newPosY < -this.$overlapSize.y) {
+                    if (!this.$bouncebackEffect)
+                        this.$container.y = -this.$overlapSize.y;
+                    else if (this.$footer != null && this.$footer.height > 0)    //TODO: height -> maxHeight
+                        this.$container.y = Math.floor(Math.max((newPosY + this.$overlapSize.y) * 0.5, -this.$footer.height) - this.$overlapSize.y);
                     else
-                        this._container.y = Math.floor(Math.max((newPosY + this._overlapSize.y) * 0.5, -this._viewSize.y * ScrollPane.PULL_RATIO) - this._overlapSize.y);
+                        this.$container.y = Math.floor(Math.max((newPosY + this.$overlapSize.y) * 0.5, -this.$viewSize.y * ScrollPane.PULL_DIST_RATIO) - this.$overlapSize.y);
                 }
                 else
-                    this._container.y = newPosY;
+                    this.$container.y = newPosY;
             }
 
             if (sh) {
                 if (newPosX > 0) {
-                    if (!this._bouncebackEffect)
-                        this._container.x = 0;
-                    else if (this._header != null && this._header.maxWidth != 0)
-                        this._container.x = Math.floor(Math.min(newPosX * 0.5, this._header.maxWidth));
+                    if (!this.$bouncebackEffect)
+                        this.$container.x = 0;
+                    else if (this.$header != null && this.$header.width != 0)      //TODO: width -> maxWidth
+                        this.$container.x = Math.floor(Math.min(newPosX * 0.5, this.$header.width));
                     else
-                        this._container.x = Math.floor(Math.min(newPosX * 0.5, this._viewSize.x * ScrollPane.PULL_RATIO));
+                        this.$container.x = Math.floor(Math.min(newPosX * 0.5, this.$viewSize.x * ScrollPane.PULL_DIST_RATIO));
                 }
-                else if (newPosX < 0 - this._overlapSize.x) {
-                    if (!this._bouncebackEffect)
-                        this._container.x = -this._overlapSize.x;
-                    else if (this._footer != null && this._footer.maxWidth > 0)
-                        this._container.x = Math.floor(Math.max((newPosX + this._overlapSize.x) * 0.5, -this._footer.maxWidth) - this._overlapSize.x);
+                else if (newPosX < 0 - this.$overlapSize.x) {
+                    if (!this.$bouncebackEffect)
+                        this.$container.x = -this.$overlapSize.x;
+                    else if (this.$footer != null && this.$footer.width > 0)  //TODO: width -> maxWidth
+                        this.$container.x = Math.floor(Math.max((newPosX + this.$overlapSize.x) * 0.5, -this.$footer.width) - this.$overlapSize.x);
                     else
-                        this._container.x = Math.floor(Math.max((newPosX + this._overlapSize.x) * 0.5, -this._viewSize.x * ScrollPane.PULL_RATIO) - this._overlapSize.x);
+                        this.$container.x = Math.floor(Math.max((newPosX + this.$overlapSize.x) * 0.5, -this.$viewSize.x * ScrollPane.PULL_DIST_RATIO) - this.$overlapSize.x);
                 }
                 else
-                    this._container.x = newPosX;
+                    this.$container.x = newPosX;
             }
 
-
-            //更新速度
-            var now: number = egret.getTimer() / 1000;
-            var deltaTime: number = Math.max(now - this._lastMoveTime, 1 / 60);
-            var deltaPositionX: number = pt.x - this._lastTouchPos.x;
-            var deltaPositionY: number = pt.y - this._lastTouchPos.y;
+            //update acceleration
+            const frameRate: number = GRoot.inst.applicationContext.ticker.FPS;
+            const now: number = GTimer.inst.curTime / 1000;
+            const deltaTime: number = Math.max(now - this.$lastMoveTime, 1 / frameRate);
+            let deltaPositionX: number = globalMouse.x - this.$lastTouchPos.x;
+            let deltaPositionY: number = globalMouse.y - this.$lastTouchPos.y;
             if (!sh)
                 deltaPositionX = 0;
             if (!sv)
                 deltaPositionY = 0;
             if (deltaTime != 0) {
-                var frameRate: number = this._owner.displayObject.stage.frameRate;
-                var elapsed: number = deltaTime * frameRate - 1;
-                if (elapsed > 1) //速度衰减
-                {
-                    var factor: number = Math.pow(0.833, elapsed);
-                    this._velocity.x = this._velocity.x * factor;
-                    this._velocity.y = this._velocity.y * factor;
+                const elapsed: number = deltaTime * frameRate - 1;
+                if (elapsed > 1) {
+                    const factor: number = Math.pow(0.833, elapsed);
+                    this.$velocity.x = this.$velocity.x * factor;
+                    this.$velocity.y = this.$velocity.y * factor;
                 }
-                this._velocity.x = ToolSet.lerp(this._velocity.x, deltaPositionX * 60 / frameRate / deltaTime, deltaTime * 10);
-                this._velocity.y = ToolSet.lerp(this._velocity.y, deltaPositionY * 60 / frameRate / deltaTime, deltaTime * 10);
+                this.$velocity.x = utils.NumberUtil.lerp(this.$velocity.x, deltaPositionX * 60 / frameRate / deltaTime, deltaTime * 10);
+                this.$velocity.y = utils.NumberUtil.lerp(this.$velocity.y, deltaPositionY * 60 / frameRate / deltaTime, deltaTime * 10);
             }
 
-            /*速度计算使用的是本地位移，但在后续的惯性滚动判断中需要用到屏幕位移，所以这里要记录一个位移的比例。
-            */
-            var deltaGlobalPositionX: number = this._lastTouchGlobalPos.x - evt.stageX;
-            var deltaGlobalPositionY: number = this._lastTouchGlobalPos.y - evt.stageY;
+            //in the inertia scrolling we need the offset value to screen space, so here we need to reocrd the offset ratio
+            const deltaGlobalPositionX: number = this.$lastTouchGlobalPos.x - globalMouse.x;
+            const deltaGlobalPositionY: number = this.$lastTouchGlobalPos.y - globalMouse.y;
             if (deltaPositionX != 0)
-                this._velocityScale = Math.abs(deltaGlobalPositionX / deltaPositionX);
+                this.$velocityScale = Math.abs(deltaGlobalPositionX / deltaPositionX);
             else if (deltaPositionY != 0)
-                this._velocityScale = Math.abs(deltaGlobalPositionY / deltaPositionY);
+                this.$velocityScale = Math.abs(deltaGlobalPositionY / deltaPositionY);
 
-            this._lastTouchPos.setTo(pt.x, pt.y);
-            this._lastTouchGlobalPos.setTo(evt.stageX, evt.stageY);
-            this._lastMoveTime = now;
+            this.$lastTouchPos.copyFrom(globalMouse);
+            this.$lastTouchGlobalPos.copyFrom(globalMouse);
+            this.$lastMoveTime = now;
 
-            //同步更新pos值
-            if (this._overlapSize.x > 0)
-                this._xPos = ToolSet.clamp(-this._container.x, 0, this._overlapSize.x);
-            if (this._overlapSize.y > 0)
-                this._yPos = ToolSet.clamp(-this._container.y, 0, this._overlapSize.y);
+            //update position
+            if (this.$overlapSize.x > 0)
+                this.$xPos = utils.NumberUtil.clamp(-this.$container.x, 0, this.$overlapSize.x);
+            if (this.$overlapSize.y > 0)
+                this.$yPos = utils.NumberUtil.clamp(-this.$container.y, 0, this.$overlapSize.y);
 
-            //循环滚动特别检查
-            if (this._loop != 0) {
-                newPosX = this._container.x;
-                newPosY = this._container.y;
+            if (this.$loop != 0) {
+                newPosX = this.$container.x;
+                newPosY = this.$container.y;
                 if (this.loopCheckingCurrent()) {
-                    this._containerPos.x += this._container.x - newPosX;
-                    this._containerPos.y += this._container.y - newPosY;
+                    this.$containerPos.x += this.$container.x - newPosX;
+                    this.$containerPos.y += this.$container.y - newPosY;
                 }
             }
 
             ScrollPane.draggingPane = this;
-            this._isHoldAreaDone = true;
-            this._dragged = true;
-            this._maskContainer.touchChildren = false;
+            this.$isHoldAreaDone = true;
+            this.$isDragging = true;
+            this.$maskContainer.interactive = false;
 
-            this.updateScrollBarPos();
-            this.updateScrollBarVisible();
-            if (this._pageMode)
+            this.syncScrollBar();
+            this.checkRefreshBar();
+            if (this.$pageMode)
                 this.updatePageController();
 
-            this.dispatchEventWith(ScrollPane.SCROLL);
+            this.emit(ScrollEvent.SCROLL, this);
+            //Events.dispatch(Events.SCROLL, this.$owner.displayObject);
         }
 
-        private __touchEnd(evt: egret.TouchEvent): void {
-            evt.currentTarget.removeEventListener(egret.TouchEvent.TOUCH_MOVE, this.__touchMove, this);
-            evt.currentTarget.removeEventListener(egret.TouchEvent.TOUCH_END, this.__touchEnd, this);
-            evt.currentTarget.removeEventListener(egret.TouchEvent.TOUCH_TAP, this.__touchTap, this);
+        private $mouseUp(): void {
+            GRoot.inst.nativeStage.off(InteractiveEvents.Move, this.$mouseMove, this);
+            GRoot.inst.nativeStage.off(InteractiveEvents.Up, this.$mouseUp, this);
+            GRoot.inst.nativeStage.off(InteractiveEvents.Click, this.$click, this);
 
             if (ScrollPane.draggingPane == this)
                 ScrollPane.draggingPane = null;
 
-            ScrollPane._gestureFlag = 0;
+            ScrollPane.$gestureFlag = 0;
 
-            if (!this._dragged || !this._touchEffect || this._owner.displayObject.stage == null) {
-                this._dragged = false;
-                this._maskContainer.touchChildren = true;
+            if (!this.$isDragging || !this.$touchEffect) {
+                this.$isDragging = false;
+                this.$maskContainer.interactive = true;
                 return;
             }
 
-            // touch事件不一定都是以tap结束,拖拽的结束动作是touchEnd,这时需要正确处理isDragged标记位.否则在播放滚动动画时会因为处于拖拽状态而使滚动动画失效
-            this._dragged = false;
-            this._maskContainer.touchChildren = true;
+            this.$isDragging = false;
+            this.$maskContainer.interactive = true;
 
-            this._tweenStart.setTo(this._container.x, this._container.y);
+            this.$tweenStart.set(this.$container.x, this.$container.y);
 
-            ScrollPane.sEndPos.setTo(this._tweenStart.x, this._tweenStart.y);
-            var flag: boolean = false;
-            if (this._container.x > 0) {
+            ScrollPane.sEndPos.set(this.$tweenStart.x, this.$tweenStart.y);
+
+            let flag: boolean = false;
+            if (this.$container.x > 0) {
                 ScrollPane.sEndPos.x = 0;
                 flag = true;
             }
-            else if (this._container.x < -this._overlapSize.x) {
-                ScrollPane.sEndPos.x = -this._overlapSize.x;
+            else if (this.$container.x < -this.$overlapSize.x) {
+                ScrollPane.sEndPos.x = -this.$overlapSize.x;
                 flag = true;
             }
-            if (this._container.y > 0) {
+            if (this.$container.y > 0) {
                 ScrollPane.sEndPos.y = 0;
                 flag = true;
             }
-            else if (this._container.y < -this._overlapSize.y) {
-                ScrollPane.sEndPos.y = -this._overlapSize.y;
+            else if (this.$container.y < -this.$overlapSize.y) {
+                ScrollPane.sEndPos.y = -this.$overlapSize.y;
                 flag = true;
             }
             if (flag) {
-                this._tweenChange.setTo(ScrollPane.sEndPos.x - this._tweenStart.x, ScrollPane.sEndPos.y - this._tweenStart.y);
-                if (this._tweenChange.x < -UIConfig.touchDragSensitivity || this._tweenChange.y < -UIConfig.touchDragSensitivity) {
-                    this._refreshEventDispatching = true;
-                    this.dispatchEventWith(ScrollPane.PULL_DOWN_RELEASE);
-                    this._refreshEventDispatching = false;
+                this.$tweenChange.set(ScrollPane.sEndPos.x - this.$tweenStart.x, ScrollPane.sEndPos.y - this.$tweenStart.y);
+                if (this.$tweenChange.x < -UIConfig.touchDragSensitivity || this.$tweenChange.y < -UIConfig.touchDragSensitivity) {
+                    this.$refreshEventDispatching = true;
+                    this.emit(ScrollEvent.PULL_DOWN_RELEASE);
+                    //Events.dispatch(Events.PULLthis.$DOWNthis.$RELEASE, this.$owner.displayObject);
+                    this.$refreshEventDispatching = false;
                 }
-                else if (this._tweenChange.x > UIConfig.touchDragSensitivity || this._tweenChange.y > UIConfig.touchDragSensitivity) {
-                    this._refreshEventDispatching = true;
-                    this.dispatchEventWith(ScrollPane.PULL_UP_RELEASE);
-                    this._refreshEventDispatching = false;
+                else if (this.$tweenChange.x > UIConfig.touchDragSensitivity || this.$tweenChange.y > UIConfig.touchDragSensitivity) {
+                    this.$refreshEventDispatching = true;
+                    this.emit(ScrollEvent.PULL_UP_RELEASE);
+                    //Events.dispatch(Events.PULLthis.$UPthis.$RELEASE, this.$owner.displayObject);
+                    this.$refreshEventDispatching = false;
                 }
 
-                if (this._headerLockedSize > 0 && ScrollPane.sEndPos[this._refreshBarAxis] == 0) {
-                    ScrollPane.sEndPos[this._refreshBarAxis] = this._headerLockedSize;
-                    this._tweenChange.x = ScrollPane.sEndPos.x - this._tweenStart.x;
-                    this._tweenChange.y = ScrollPane.sEndPos.y - this._tweenStart.y;
+                if (this.$headerLockedSize > 0 && (<IndexedObject>ScrollPane.sEndPos)[this.$refreshBarAxis] == 0) {
+                    (<IndexedObject>ScrollPane.sEndPos)[this.$refreshBarAxis] = this.$headerLockedSize;
+                    this.$tweenChange.x = ScrollPane.sEndPos.x - this.$tweenStart.x;
+                    this.$tweenChange.y = ScrollPane.sEndPos.y - this.$tweenStart.y;
                 }
-                else if (this._footerLockedSize > 0 && ScrollPane.sEndPos[this._refreshBarAxis] == -this._overlapSize[this._refreshBarAxis]) {
-                    var max: number = this._overlapSize[this._refreshBarAxis];
+                else if (this.$footerLockedSize > 0 && (<IndexedObject>ScrollPane.sEndPos)[this.$refreshBarAxis] == -(<IndexedObject>this.$overlapSize)[this.$refreshBarAxis]) {
+                    var max: number = (<IndexedObject>this.$overlapSize)[this.$refreshBarAxis];
                     if (max == 0)
-                        max = Math.max(this._contentSize[this._refreshBarAxis] + this._footerLockedSize - this._viewSize[this._refreshBarAxis], 0);
+                        max = Math.max((<IndexedObject>this.$contentSize)[this.$refreshBarAxis] + this.$footerLockedSize - (<IndexedObject>this.$viewSize)[this.$refreshBarAxis], 0);
                     else
-                        max += this._footerLockedSize;
-                    ScrollPane.sEndPos[this._refreshBarAxis] = -max;
-                    this._tweenChange.x = ScrollPane.sEndPos.x - this._tweenStart.x;
-                    this._tweenChange.y = ScrollPane.sEndPos.y - this._tweenStart.y;
+                        max += this.$footerLockedSize;
+                    (<IndexedObject>ScrollPane.sEndPos)[this.$refreshBarAxis] = -max;
+                    this.$tweenChange.x = ScrollPane.sEndPos.x - this.$tweenStart.x;
+                    this.$tweenChange.y = ScrollPane.sEndPos.y - this.$tweenStart.y;
                 }
 
-                this._tweenDuration.setTo(ScrollPane.TWEEN_TIME_DEFAULT, ScrollPane.TWEEN_TIME_DEFAULT);
+                this.$tweenDuration.set(ScrollPane.TWEEN_DEFAULT_DURATION, ScrollPane.TWEEN_DEFAULT_DURATION);
             }
             else {
-                //更新速度
-                if (!this._inertiaDisabled) {
-                    var frameRate: number = this._owner.displayObject.stage.frameRate;
-                    var elapsed: number = (egret.getTimer() / 1000 - this._lastMoveTime) * frameRate - 1;
+                if (!this.$inertiaDisabled) {
+                    const frameRate: number = GRoot.inst.applicationContext.ticker.FPS;
+                    const elapsed: number = (GTimer.inst.curTime / 1000 - this.$lastMoveTime) * frameRate - 1;
                     if (elapsed > 1) {
-                        var factor: number = Math.pow(0.833, elapsed);
-                        this._velocity.x = this._velocity.x * factor;
-                        this._velocity.y = this._velocity.y * factor;
+                        const factor: number = Math.pow(0.833, elapsed);
+                        this.$velocity.x = this.$velocity.x * factor;
+                        this.$velocity.y = this.$velocity.y * factor;
                     }
-                    //根据速度计算目标位置和需要时间
-                    this.updateTargetAndDuration(this._tweenStart, ScrollPane.sEndPos);
+                    //calc dist & duration by speed
+                    this.updateTargetAndDuration(this.$tweenStart, ScrollPane.sEndPos);
                 }
                 else
-                    this._tweenDuration.setTo(ScrollPane.TWEEN_TIME_DEFAULT, ScrollPane.TWEEN_TIME_DEFAULT);
-                ScrollPane.sOldChange.setTo(ScrollPane.sEndPos.x - this._tweenStart.x, ScrollPane.sEndPos.y - this._tweenStart.y);
+                    this.$tweenDuration.set(ScrollPane.TWEEN_DEFAULT_DURATION, ScrollPane.TWEEN_DEFAULT_DURATION);
 
-                //调整目标位置
+                ScrollPane.sOldChange.set(ScrollPane.sEndPos.x - this.$tweenStart.x, ScrollPane.sEndPos.y - this.$tweenStart.y);
+
+                //adjust
                 this.loopCheckingTarget(ScrollPane.sEndPos);
-                if (this._pageMode || this._snapToItem)
+                if (this.$pageMode || this.$snapToItem)
                     this.alignPosition(ScrollPane.sEndPos, true);
 
-                this._tweenChange.x = ScrollPane.sEndPos.x - this._tweenStart.x;
-                this._tweenChange.y = ScrollPane.sEndPos.y - this._tweenStart.y;
-                if (this._tweenChange.x == 0 && this._tweenChange.y == 0) {
-                    this.updateScrollBarVisible();
+                this.$tweenChange.x = ScrollPane.sEndPos.x - this.$tweenStart.x;
+                this.$tweenChange.y = ScrollPane.sEndPos.y - this.$tweenStart.y;
+                if (this.$tweenChange.x == 0 && this.$tweenChange.y == 0) {
+                    if (this.$scrollBarDisplayAuto)
+                        this.showScrollBar(false);
                     return;
                 }
 
-                //如果目标位置已调整，随之调整需要时间
-                if (this._pageMode || this._snapToItem) {
+                if (this.$pageMode || this.$snapToItem) {
                     this.fixDuration("x", ScrollPane.sOldChange.x);
                     this.fixDuration("y", ScrollPane.sOldChange.y);
                 }
             }
 
-            this.startTween(2);
+            this.$tweening = 2;
+            this.$tweenTime.set(0, 0);
+            GTimer.inst.addLoop(1, this.tweenUpdate, this);
         }
 
-        private __touchTap(evt: egret.TouchEvent): void {
-            this._dragged = false;
+        private $click(): void {
+            this.$isDragging = false;
         }
 
-        private updateScrollBarPos(): void {
-            if (this._vtScrollBar != null)
-                this._vtScrollBar.setScrollPerc(this._overlapSize.y == 0 ? 0 : ToolSet.clamp(-this._container.y, 0, this._overlapSize.y) / this._overlapSize.y);
-
-            if (this._hzScrollBar != null)
-                this._hzScrollBar.setScrollPerc(this._overlapSize.x == 0 ? 0 : ToolSet.clamp(-this._container.x, 0, this._overlapSize.x) / this._overlapSize.x);
-
-            this.checkRefreshBar();
-        }
-
-        public updateScrollBarVisible(): void {
-            if (this._vtScrollBar) {
-                if (this._viewSize.y <= this._vtScrollBar.minSize || this._vScrollNone)
-                    this._vtScrollBar.displayObject.visible = false;
+        private $mouseWheel(evt: any): void {
+            if (!this.$mouseWheelEnabled)
+                return;
+            const delta = evt.delta > 0 ? -1 : (evt.delta < 0 ? 1 : 0);
+            if (this.$overlapSize.x > 0 && this.$overlapSize.y == 0) {
+                if (this.$pageMode)
+                    this.setPosX(this.$xPos + this.$pageSize.x * delta, false);
                 else
-                    this.updateScrollBarVisible2(this._vtScrollBar);
-            }
-
-            if (this._hzScrollBar) {
-                if (this._viewSize.x <= this._hzScrollBar.minSize || this._hScrollNone)
-                    this._hzScrollBar.displayObject.visible = false;
-                else
-                    this.updateScrollBarVisible2(this._hzScrollBar);
-            }
-        }
-
-        private updateScrollBarVisible2(bar: GScrollBar): void {
-            if (this._scrollBarDisplayAuto)
-                GTween.kill(bar, false, "alpha");
-
-            if (this._scrollBarDisplayAuto && this._tweening == 0 && !this._dragged && !bar.gripDragging) {
-                if (bar.displayObject.visible)
-                    GTween.to(1, 0, 0.5).setDelay(0.5).onComplete(this.__barTweenComplete, this).setTarget(bar, "alpha");
+                    this.setPosX(this.$xPos + this.$mouseWheelSpeed * delta, false);
             }
             else {
-                bar.alpha = 1;
-                bar.displayObject.visible = true;
+                if (this.$pageMode)
+                    this.setPosY(this.$yPos + this.$pageSize.y * delta, false);
+                else
+                    this.setPosY(this.$yPos + this.$mouseWheelSpeed * delta, false);
             }
         }
 
-        private __barTweenComplete(tweener: GTweener): void {
-            var bar: GObject = <GObject>(tweener.target);
-            bar.alpha = 1;
-            bar.displayObject.visible = false;
+        private $rollOver(): void {
+            this.showScrollBar(true);
+        }
+
+        private $rollOut(): void {
+            this.showScrollBar(false);
+        }
+
+        private showScrollBar(visible: boolean): void {
+            if (visible) {
+                GTimer.inst.remove(this.setScrollBarVisible, this);
+                this.setScrollBarVisible(true);
+            }
+            else
+                GTimer.inst.add(500, 1, this.setScrollBarVisible, this, visible);
+        }
+
+        private setScrollBarVisible(visible: boolean): void {
+            this.$scrollBarVisible = visible && this.$viewSize.x > 0 && this.$viewSize.y > 0;
+            if (this.$vtScrollBar)
+                this.$vtScrollBar.displayObject.visible = this.$scrollBarVisible && !this.$vScrollNone;
+            if (this.$hzScrollBar)
+                this.$hzScrollBar.displayObject.visible = this.$scrollBarVisible && !this.$hScrollNone;
         }
 
         private getLoopPartSize(division: number, axis: string): number {
-            return (this._contentSize[axis] + (axis == "x" ? (<GList><any>this._owner).columnGap : (<GList><any>this._owner).lineGap)) / division;
+            let pad: number = 0;
+            if (this.$owner instanceof GList)
+                pad = axis == "x" ? this.$owner.columnGap : this.$owner.lineGap;
+            return ((<IndexedObject>this.$contentSize)[axis] + pad) / division;
         }
 
         private loopCheckingCurrent(): boolean {
-            var changed: boolean = false;
-            if (this._loop == 1 && this._overlapSize.x > 0) {
-                if (this._xPos < 0.001) {
-                    this._xPos += this.getLoopPartSize(2, "x");
+            let changed: boolean = false;
+            if (this.$loop == 1 && this.$overlapSize.x > 0) {
+                if (this.$xPos < 0.001) {
+                    this.$xPos += this.getLoopPartSize(2, "x");
                     changed = true;
                 }
-                else if (this._xPos >= this._overlapSize.x) {
-                    this._xPos -= this.getLoopPartSize(2, "x");
+                else if (this.$xPos >= this.$overlapSize.x) {
+                    this.$xPos -= this.getLoopPartSize(2, "x");
                     changed = true;
                 }
             }
-            else if (this._loop == 2 && this._overlapSize.y > 0) {
-                if (this._yPos < 0.001) {
-                    this._yPos += this.getLoopPartSize(2, "y");
+            else if (this.$loop == 2 && this.$overlapSize.y > 0) {
+                if (this.$yPos < 0.001) {
+                    this.$yPos += this.getLoopPartSize(2, "y");
                     changed = true;
                 }
-                else if (this._yPos >= this._overlapSize.y) {
-                    this._yPos -= this.getLoopPartSize(2, "y");
+                else if (this.$yPos >= this.$overlapSize.y) {
+                    this.$yPos -= this.getLoopPartSize(2, "y");
                     changed = true;
                 }
             }
 
-            if (changed) {
-                this._container.x = Math.floor(-this._xPos);
-                this._container.y = Math.floor(-this._yPos);
-            }
+            if (changed)
+                this.$container.position.set(Math.floor(-this.$xPos), Math.floor(-this.$yPos));
 
             return changed;
         }
 
-        private loopCheckingTarget(endPos: egret.Point): void {
-            if (this._loop == 1)
+        private loopCheckingTarget(endPos: PIXI.Point): void {
+            if (this.$loop == 1)
                 this.loopCheckingTarget2(endPos, "x");
 
-            if (this._loop == 2)
+            if (this.$loop == 2)
                 this.loopCheckingTarget2(endPos, "y");
         }
 
-        private loopCheckingTarget2(endPos: egret.Point, axis: string): void {
-            var halfSize: number;
-            var tmp: number;
-            if (endPos[axis] > 0) {
+        private loopCheckingTarget2(endPos: PIXI.Point, axis: string): void {
+            let halfSize: number;
+            let tmp: number;
+            if ((<IndexedObject>endPos)[axis] > 0) {
                 halfSize = this.getLoopPartSize(2, axis);
-                tmp = this._tweenStart[axis] - halfSize;
-                if (tmp <= 0 && tmp >= -this._overlapSize[axis]) {
-                    endPos[axis] -= halfSize;
-                    this._tweenStart[axis] = tmp;
+                tmp = (<IndexedObject>this.$tweenStart)[axis] - halfSize;
+                if (tmp <= 0 && tmp >= -(<IndexedObject>this.$overlapSize)[axis]) {
+                    (<IndexedObject>endPos)[axis] -= halfSize;
+                    (<IndexedObject>this.$tweenStart)[axis] = tmp;
                 }
             }
-            else if (endPos[axis] < -this._overlapSize[axis]) {
+            else if ((<IndexedObject>endPos)[axis] < -(<IndexedObject>this.$overlapSize)[axis]) {
                 halfSize = this.getLoopPartSize(2, axis);
-                tmp = this._tweenStart[axis] + halfSize;
-                if (tmp <= 0 && tmp >= -this._overlapSize[axis]) {
-                    endPos[axis] += halfSize;
-                    this._tweenStart[axis] = tmp;
+                tmp = (<IndexedObject>this.$tweenStart)[axis] + halfSize;
+                if (tmp <= 0 && tmp >= -(<IndexedObject>this.$overlapSize)[axis]) {
+                    (<IndexedObject>endPos)[axis] += halfSize;
+                    (<IndexedObject>this.$tweenStart)[axis] = tmp;
                 }
             }
         }
 
         private loopCheckingNewPos(value: number, axis: string): number {
-            if (this._overlapSize[axis] == 0)
+            if ((<IndexedObject>this.$overlapSize)[axis] == 0)
                 return value;
 
-            var pos: number = axis == "x" ? this._xPos : this._yPos;
-            var changed: boolean = false;
-            var v: number;
+            let pos: number = axis == "x" ? this.$xPos : this.$yPos;
+            let changed: boolean = false;
+            let v: number;
             if (value < 0.001) {
                 value += this.getLoopPartSize(2, axis);
                 if (value > pos) {
                     v = this.getLoopPartSize(6, axis);
                     v = Math.ceil((value - pos) / v) * v;
-                    pos = ToolSet.clamp(pos + v, 0, this._overlapSize[axis]);
+                    pos = utils.NumberUtil.clamp(pos + v, 0, (<IndexedObject>this.$overlapSize)[axis]);
                     changed = true;
                 }
             }
-            else if (value >= this._overlapSize[axis]) {
+            else if (value >= (<IndexedObject>this.$overlapSize)[axis]) {
                 value -= this.getLoopPartSize(2, axis);
                 if (value < pos) {
                     v = this.getLoopPartSize(6, axis);
                     v = Math.ceil((pos - value) / v) * v;
-                    pos = ToolSet.clamp(pos - v, 0, this._overlapSize[axis]);
+                    pos = utils.NumberUtil.clamp(pos - v, 0, (<IndexedObject>this.$overlapSize)[axis]);
                     changed = true;
                 }
             }
 
             if (changed) {
                 if (axis == "x")
-                    this._container.x = -Math.floor(pos);
+                    this.$container.x = -Math.floor(pos);
                 else
-                    this._container.y = -Math.floor(pos);
+                    this.$container.y = -Math.floor(pos);
             }
 
             return value;
         }
 
-        private alignPosition(pos: egret.Point, inertialScrolling: boolean): void {
-            if (this._pageMode) {
+        private alignPosition(pos: PIXI.Point, inertialScrolling: boolean): void {
+            if (this.$pageMode) {
                 pos.x = this.alignByPage(pos.x, "x", inertialScrolling);
                 pos.y = this.alignByPage(pos.y, "y", inertialScrolling);
             }
-            else if (this._snapToItem) {
-                var pt: egret.Point = this._owner.getSnappingPosition(-pos.x, -pos.y, ScrollPane.sHelperPoint);
-                if (pos.x < 0 && pos.x > -this._overlapSize.x)
+            else if (this.$snapToItem) {
+                var pt: PIXI.Point = this.$owner.getSnappingPosition(-pos.x, -pos.y, ScrollPane.sHelperPoint);
+                if (pos.x < 0 && pos.x > -this.$overlapSize.x)
                     pos.x = -pt.x;
-                if (pos.y < 0 && pos.y > -this._overlapSize.y)
+                if (pos.y < 0 && pos.y > -this.$overlapSize.y)
                     pos.y = -pt.y;
             }
         }
 
         private alignByPage(pos: number, axis: string, inertialScrolling: boolean): number {
-            var page: number;
+            let page: number;
 
             if (pos > 0)
                 page = 0;
-            else if (pos < -this._overlapSize[axis])
-                page = Math.ceil(this._contentSize[axis] / this._pageSize[axis]) - 1;
+            else if (pos < -(<IndexedObject>this.$overlapSize)[axis])
+                page = Math.ceil((<IndexedObject>this.$contentSize)[axis] / (<IndexedObject>this.$pageSize)[axis]) - 1;
             else {
-                page = Math.floor(-pos / this._pageSize[axis]);
-                var change: number = inertialScrolling ? (pos - this._containerPos[axis]) : (pos - this._container[axis]);
-                var testPageSize: number = Math.min(this._pageSize[axis], this._contentSize[axis] - (page + 1) * this._pageSize[axis]);
-                var delta: number = -pos - page * this._pageSize[axis];
+                page = Math.floor(-pos / (<IndexedObject>this.$pageSize)[axis]);
+                var change: number = inertialScrolling ? (pos - (<IndexedObject>this.$containerPos)[axis]) : (pos - (<IndexedObject>this.$container)[axis]);
+                var testPageSize: number = Math.min((<IndexedObject>this.$pageSize)[axis], (<IndexedObject>this.$contentSize)[axis] - (page + 1) * (<IndexedObject>this.$pageSize)[axis]);
+                var delta: number = -pos - page * (<IndexedObject>this.$pageSize)[axis];
 
-                //页面吸附策略
-                if (Math.abs(change) > this._pageSize[axis])//如果滚动距离超过1页,则需要超过页面的一半，才能到更下一页
-                {
+                //page mode magnetic
+                if (Math.abs(change) > (<IndexedObject>this.$pageSize)[axis]) {
                     if (delta > testPageSize * 0.5)
                         page++;
                 }
-                else //否则只需要页面的1/3，当然，需要考虑到左移和右移的情况
-                {
+                else {
                     if (delta > testPageSize * (change < 0 ? 0.3 : 0.7))
                         page++;
                 }
 
-                //重新计算终点
-                pos = -page * this._pageSize[axis];
-                if (pos < -this._overlapSize[axis]) //最后一页未必有pageSize那么大
-                    pos = -this._overlapSize[axis];
+                //re-calc dist
+                const dst = (<IndexedObject>this.$pageSize)[axis];
+                pos = -page * dst;
+                if (pos < -dst)
+                    pos = -dst;
             }
 
-            //惯性滚动模式下，会增加判断尽量不要滚动超过一页
             if (inertialScrolling) {
-                var oldPos: number = this._tweenStart[axis];
+                var oldPos: number = (<IndexedObject>this.$tweenStart)[axis];
                 var oldPage: number;
                 if (oldPos > 0)
                     oldPage = 0;
-                else if (oldPos < -this._overlapSize[axis])
-                    oldPage = Math.ceil(this._contentSize[axis] / this._pageSize[axis]) - 1;
+                else if (oldPos < -(<IndexedObject>this.$overlapSize)[axis])
+                    oldPage = Math.ceil((<IndexedObject>this.$contentSize)[axis] / (<IndexedObject>this.$pageSize)[axis]) - 1;
                 else
-                    oldPage = Math.floor(-oldPos / this._pageSize[axis]);
-                var startPage: number = Math.floor(-this._containerPos[axis] / this._pageSize[axis]);
+                    oldPage = Math.floor(-oldPos / (<IndexedObject>this.$pageSize)[axis]);
+                var startPage: number = Math.floor(-(<IndexedObject>this.$containerPos)[axis] / (<IndexedObject>this.$pageSize)[axis]);
                 if (Math.abs(page - startPage) > 1 && Math.abs(oldPage - startPage) <= 1) {
                     if (page > startPage)
                         page = startPage + 1;
                     else
                         page = startPage - 1;
-                    pos = -page * this._pageSize[axis];
+                    pos = -page * (<IndexedObject>this.$pageSize)[axis];
                 }
             }
 
             return pos;
         }
 
-        private updateTargetAndDuration(orignPos: egret.Point, resultPos: egret.Point): void {
+        private updateTargetAndDuration(orignPos: PIXI.Point, resultPos: PIXI.Point): void {
             resultPos.x = this.updateTargetAndDuration2(orignPos.x, "x");
             resultPos.y = this.updateTargetAndDuration2(orignPos.y, "y");
         }
 
         private updateTargetAndDuration2(pos: number, axis: string): number {
-            var v: number = this._velocity[axis];
+            let v: number = (<IndexedObject>this.$velocity)[axis];
             var duration: number = 0;
             if (pos > 0)
                 pos = 0;
-            else if (pos < -this._overlapSize[axis])
-                pos = -this._overlapSize[axis];
+            else if (pos < -(<IndexedObject>this.$overlapSize)[axis])
+                pos = -(<IndexedObject>this.$overlapSize)[axis];
             else {
-                //以屏幕像素为基准
-                var isMobile: boolean = egret.Capabilities.isMobile;
-                var v2: number = Math.abs(v) * this._velocityScale;
-                //在移动设备上，需要对不同分辨率做一个适配，我们的速度判断以1136分辨率为基准
-                if (isMobile)
-                    v2 *= 1136 / Math.max(this._owner.displayObject.stage.stageWidth, this._owner.displayObject.stage.stageHeight);
-                //这里有一些阈值的处理，因为在低速内，不希望产生较大的滚动（甚至不滚动）
-                var ratio: number = 0;
-
-                if (this._pageMode || !isMobile) {
+                let v2: number = Math.abs(v) * this.$velocityScale;
+                if (PIXI.utils.isMobile.any)
+                    v2 *= Math.max(GRoot.inst.stageWrapper.designWidth, GRoot.inst.stageWrapper.designHeight) / Math.max(GRoot.inst.stageWidth, GRoot.inst.stageHeight);
+                //threshold, if too slow, stop it
+                let ratio: number = 0;
+                if (this.$pageMode || !PIXI.utils.isMobile.any) {
                     if (v2 > 500)
                         ratio = Math.pow((v2 - 500) / 500, 2);
                 }
@@ -1526,209 +1584,196 @@ module fgui {
 
                     v2 *= ratio;
                     v *= ratio;
-                    this._velocity[axis] = v;
+                    (<IndexedObject>this.$velocity)[axis] = v;
 
-                    //算法：v*（this._decelerationRate的n次幂）= 60，即在n帧后速度降为60（假设每秒60帧）。
-                    duration = Math.log(60 / v2) / Math.log(this._decelerationRate) / 60;
+                    duration = Math.log(60 / v2) / Math.log(this.$decelerationRate) / 60;
 
-                    //计算距离要使用本地速度
-                    //理论公式貌似滚动的距离不够，改为经验公式
-                    //var change:number = (v/ 60 - 1) / (1 - this._decelerationRate);
-                    var change: number = Math.floor(v * duration * 0.4);
+                    const change: number = (v / 60 - 1) / (1 - this.$decelerationRate);
+                    //const change: number = Math.floor(v * duration * 0.4);
                     pos += change;
                 }
             }
 
-            if (duration < ScrollPane.TWEEN_TIME_DEFAULT)
-                duration = ScrollPane.TWEEN_TIME_DEFAULT;
-            this._tweenDuration[axis] = duration;
+            if (duration < ScrollPane.TWEEN_DEFAULT_DURATION)
+                duration = ScrollPane.TWEEN_DEFAULT_DURATION;
+            (<IndexedObject>this.$tweenDuration)[axis] = duration;
 
             return pos;
         }
 
         private fixDuration(axis: string, oldChange: number): void {
-            if (this._tweenChange[axis] == 0 || Math.abs(this._tweenChange[axis]) >= Math.abs(oldChange))
+            if ((<IndexedObject>this.$tweenChange)[axis] == 0 || Math.abs((<IndexedObject>this.$tweenChange)[axis]) >= Math.abs(oldChange))
                 return;
 
-            var newDuration: number = Math.abs(this._tweenChange[axis] / oldChange) * this._tweenDuration[axis];
-            if (newDuration < ScrollPane.TWEEN_TIME_DEFAULT)
-                newDuration = ScrollPane.TWEEN_TIME_DEFAULT;
+            let newDuration: number = Math.abs((<IndexedObject>this.$tweenChange)[axis] / oldChange) * (<IndexedObject>this.$tweenDuration)[axis];
+            if (newDuration < ScrollPane.TWEEN_DEFAULT_DURATION)
+                newDuration = ScrollPane.TWEEN_DEFAULT_DURATION;
 
-            this._tweenDuration[axis] = newDuration;
-        }
-
-        private startTween(type: number): void {
-            this._tweenTime.setTo(0, 0);
-            this._tweening = type;
-            GTimers.inst.add(1, 0, this.tweenUpdate, this);
-
-            this.updateScrollBarVisible();
+            (<IndexedObject>this.$tweenDuration)[axis] = newDuration;
         }
 
         private killTween(): void {
-            if (this._tweening == 1) //取消类型为1的tween需立刻设置到终点
-            {
-                this._container.x = this._tweenStart.x + this._tweenChange.x;
-                this._container.y = this._tweenStart.y + this._tweenChange.y;
-                this.dispatchEventWith(ScrollPane.SCROLL);
+            //tweening == 1: set to end immediately
+            if (this.$tweening == 1) {
+                this.$container.position.set(this.$tweenStart.x + this.$tweenChange.x, this.$tweenStart.y + this.$tweenChange.y);
+                this.emit(ScrollEvent.SCROLL, this);
+                //Events.dispatch(Events.SCROLL, this.$owner.displayObject);
             }
 
-            this._tweening = 0;
-            GTimers.inst.remove(this.tweenUpdate, this);
-
-            this.updateScrollBarVisible();
-
-            this.dispatchEventWith(ScrollPane.SCROLL_END);
+            this.$tweening = 0;
+            GTimer.inst.remove(this.tweenUpdate, this);
+            this.emit(ScrollEvent.SCROLL_END, this);
+            //Events.dispatch(Events.SCROLLthis.$END, this.$owner.displayObject);
         }
 
         private checkRefreshBar(): void {
-            if (this._header == null && this._footer == null)
+            if (this.$header == null && this.$footer == null)
                 return;
 
-            var pos: number = this._container[this._refreshBarAxis];
-            if (this._header != null) {
+            const pos: number = (<IndexedObject>this.$container)[this.$refreshBarAxis];
+            if (this.$header != null) {
                 if (pos > 0) {
-                    if (this._header.displayObject.parent == null)
-                        this._maskContainer.addChildAt(this._header.displayObject, 0);
-                    var pt: egret.Point = ScrollPane.sHelperPoint;
-                    pt.setTo(this._header.width, this._header.height);
-                    pt[this._refreshBarAxis] = pos;
-                    this._header.setSize(pt.x, pt.y);
+                    if (this.$header.displayObject.parent == null)
+                        this.$maskContainer.addChildAt(this.$header.displayObject, 0);
+                    const pt: PIXI.Point = ScrollPane.sHelperPoint;
+                    pt.set(this.$header.width, this.$header.height);
+                    (<IndexedObject>pt)[this.$refreshBarAxis] = pos;
+                    this.$header.setSize(pt.x, pt.y);
                 }
                 else {
-                    if (this._header.displayObject.parent != null)
-                        this._maskContainer.removeChild(this._header.displayObject);
+                    if (this.$header.displayObject.parent != null)
+                        this.$maskContainer.removeChild(this.$header.displayObject);
                 }
             }
 
-            if (this._footer != null) {
-                var max: number = this._overlapSize[this._refreshBarAxis];
-                if (pos < -max || max == 0 && this._footerLockedSize > 0) {
-                    if (this._footer.displayObject.parent == null)
-                        this._maskContainer.addChildAt(this._footer.displayObject, 0);
+            if (this.$footer != null) {
+                var max: number = (<IndexedObject>this.$overlapSize)[this.$refreshBarAxis];
+                if (pos < -max || max == 0 && this.$footerLockedSize > 0) {
+                    if (this.$footer.displayObject.parent == null)
+                        this.$maskContainer.addChildAt(this.$footer.displayObject, 0);
 
-                    pt = ScrollPane.sHelperPoint;
-                    pt.setTo(this._footer.x, this._footer.y);
+                    const pt: PIXI.Point = ScrollPane.sHelperPoint;
+                    pt.set(this.$footer.x, this.$footer.y);
                     if (max > 0)
-                        pt[this._refreshBarAxis] = pos + this._contentSize[this._refreshBarAxis];
+                        (<IndexedObject>pt)[this.$refreshBarAxis] = pos + (<IndexedObject>this.$contentSize)[this.$refreshBarAxis];
                     else
-                        pt[this._refreshBarAxis] = Math.max(Math.min(pos + this._viewSize[this._refreshBarAxis], this._viewSize[this._refreshBarAxis] - this._footerLockedSize),
-                            this._viewSize[this._refreshBarAxis] - this._contentSize[this._refreshBarAxis]);
-                    this._footer.setXY(pt.x, pt.y);
+                        (<IndexedObject>pt)[this.$refreshBarAxis] = Math.max(Math.min(pos + (<IndexedObject>this.$viewSize)[this.$refreshBarAxis], (<IndexedObject>this.$viewSize)[this.$refreshBarAxis] - this.$footerLockedSize),
+                            (<IndexedObject>this.$viewSize)[this.$refreshBarAxis] - (<IndexedObject>this.$contentSize)[this.$refreshBarAxis]);
+                    this.$footer.setXY(pt.x, pt.y);
 
-                    pt.setTo(this._footer.width, this._footer.height);
+                    pt.set(this.$footer.width, this.$footer.height);
                     if (max > 0)
-                        pt[this._refreshBarAxis] = -max - pos;
+                        (<IndexedObject>pt)[this.$refreshBarAxis] = -max - pos;
                     else
-                        pt[this._refreshBarAxis] = this._viewSize[this._refreshBarAxis] - this._footer[this._refreshBarAxis];
-                    this._footer.setSize(pt.x, pt.y);
+                        (<IndexedObject>pt)[this.$refreshBarAxis] = (<IndexedObject>this.$viewSize)[this.$refreshBarAxis] - (<IndexedObject>this.$footer)[this.$refreshBarAxis];
+                    this.$footer.setSize(pt.x, pt.y);
                 }
                 else {
-                    if (this._footer.displayObject.parent != null)
-                        this._maskContainer.removeChild(this._footer.displayObject);
+                    if (this.$footer.displayObject.parent != null)
+                        this.$maskContainer.removeChild(this.$footer.displayObject);
                 }
             }
         }
 
-        private tweenUpdate(timestamp: number): boolean {
+        private tweenUpdate(): void {
             var nx: number = this.runTween("x");
             var ny: number = this.runTween("y");
 
-            this._container.x = nx;
-            this._container.y = ny;
+            this.$container.position.set(nx, ny);
 
-            if (this._tweening == 2) {
-                if (this._overlapSize.x > 0)
-                    this._xPos = ToolSet.clamp(-nx, 0, this._overlapSize.x);
-                if (this._overlapSize.y > 0)
-                    this._yPos = ToolSet.clamp(-ny, 0, this._overlapSize.y);
+            if (this.$tweening == 2) {
+                if (this.$overlapSize.x > 0)
+                    this.$xPos = utils.NumberUtil.clamp(-nx, 0, this.$overlapSize.x);
+                if (this.$overlapSize.y > 0)
+                    this.$yPos = utils.NumberUtil.clamp(-ny, 0, this.$overlapSize.y);
 
-                if (this._pageMode)
+                if (this.$pageMode)
                     this.updatePageController();
             }
 
-            if (this._tweenChange.x == 0 && this._tweenChange.y == 0) {
-                this._tweening = 0;
-                GTimers.inst.remove(this.tweenUpdate, this);
+            if (this.$tweenChange.x == 0 && this.$tweenChange.y == 0) {
+                this.$tweening = 0;
+                GTimer.inst.remove(this.tweenUpdate, this);
 
                 this.loopCheckingCurrent();
-                this.updateScrollBarPos();
-                this.updateScrollBarVisible();
 
-                this.dispatchEventWith(ScrollPane.SCROLL);
-                this.dispatchEventWith(ScrollPane.SCROLL_END);
+                this.syncScrollBar(true);
+                this.checkRefreshBar();
+
+                this.emit(ScrollEvent.SCROLL, this);
+                this.emit(ScrollEvent.SCROLL_END, this);
+                //Events.dispatch(Events.SCROLL, this.$owner.displayObject);
+                //Events.dispatch(Events.SCROLLthis.$END, this.$owner.displayObject);
             }
             else {
-                this.updateScrollBarPos();
-                this.dispatchEventWith(ScrollPane.SCROLL);
-            }
+                this.syncScrollBar(false);
+                this.checkRefreshBar();
 
-            return true;
+                this.emit(ScrollEvent.SCROLL, this);
+                //Events.dispatch(Events.SCROLL, this.$owner.displayObject);
+            }
         }
 
         private runTween(axis: string): number {
-            var newValue: number;
-            if (this._tweenChange[axis] != 0) {
-                this._tweenTime[axis] += GTimers.deltaTime / 1000;
-                if (this._tweenTime[axis] >= this._tweenDuration[axis]) {
-                    newValue = this._tweenStart[axis] + this._tweenChange[axis];
-                    this._tweenChange[axis] = 0;
+            const delta:number = GTimer.inst.ticker.deltaTime;
+            let newValue: number;
+            if ((<IndexedObject>this.$tweenChange)[axis] != 0) {
+                (<IndexedObject>this.$tweenTime)[axis] += delta * PIXI.settings.TARGET_FPMS;
+                if ((<IndexedObject>this.$tweenTime)[axis] >= (<IndexedObject>this.$tweenDuration)[axis]) {
+                    newValue = (<IndexedObject>this.$tweenStart)[axis] + (<IndexedObject>this.$tweenChange)[axis];
+                    (<IndexedObject>this.$tweenChange)[axis] = 0;
                 }
                 else {
-                    var ratio: number = ScrollPane.easeFunc(this._tweenTime[axis], this._tweenDuration[axis]);
-                    newValue = this._tweenStart[axis] + Math.floor(this._tweenChange[axis] * ratio);
+                    const ratio: number = ScrollPane.$easeTypeFunc((<IndexedObject>this.$tweenTime)[axis], (<IndexedObject>this.$tweenDuration)[axis]);
+                    newValue = (<IndexedObject>this.$tweenStart)[axis] + Math.floor((<IndexedObject>this.$tweenChange)[axis] * ratio);
                 }
 
                 var threshold1: number = 0;
-                var threshold2: number = -this._overlapSize[axis];
-                if (this._headerLockedSize > 0 && this._refreshBarAxis == axis)
-                    threshold1 = this._headerLockedSize;
-                if (this._footerLockedSize > 0 && this._refreshBarAxis == axis) {
-                    var max: number = this._overlapSize[this._refreshBarAxis];
+                var threshold2: number = -(<IndexedObject>this.$overlapSize)[axis];
+                if (this.$headerLockedSize > 0 && this.$refreshBarAxis == axis)
+                    threshold1 = this.$headerLockedSize;
+                if (this.$footerLockedSize > 0 && this.$refreshBarAxis == axis) {
+                    var max: number = (<IndexedObject>this.$overlapSize)[this.$refreshBarAxis];
                     if (max == 0)
-                        max = Math.max(this._contentSize[this._refreshBarAxis] + this._footerLockedSize - this._viewSize[this._refreshBarAxis], 0);
+                        max = Math.max((<IndexedObject>this.$contentSize)[this.$refreshBarAxis] + this.$footerLockedSize - (<IndexedObject>this.$viewSize)[this.$refreshBarAxis], 0);
                     else
-                        max += this._footerLockedSize;
+                        max += this.$footerLockedSize;
                     threshold2 = -max;
                 }
 
-                if (this._tweening == 2 && this._bouncebackEffect) {
-                    if (newValue > 20 + threshold1 && this._tweenChange[axis] > 0
-                        || newValue > threshold1 && this._tweenChange[axis] == 0)//开始回弹
+                if (this.$tweening == 2 && this.$bouncebackEffect) {
+                    if (newValue > 20 + threshold1 && (<IndexedObject>this.$tweenChange)[axis] > 0
+                        || newValue > threshold1 && (<IndexedObject>this.$tweenChange)[axis] == 0) //start to bounce
                     {
-                        this._tweenTime[axis] = 0;
-                        this._tweenDuration[axis] = ScrollPane.TWEEN_TIME_DEFAULT;
-                        this._tweenChange[axis] = -newValue + threshold1;
-                        this._tweenStart[axis] = newValue;
+                        (<IndexedObject>this.$tweenTime)[axis] = 0;
+                        (<IndexedObject>this.$tweenDuration)[axis] = ScrollPane.TWEEN_DEFAULT_DURATION;
+                        (<IndexedObject>this.$tweenChange)[axis] = -newValue + threshold1;
+                        (<IndexedObject>this.$tweenStart)[axis] = newValue;
                     }
-                    else if (newValue < threshold2 - 20 && this._tweenChange[axis] < 0
-                        || newValue < threshold2 && this._tweenChange[axis] == 0)//开始回弹
+                    else if (newValue < threshold2 - 20 && (<IndexedObject>this.$tweenChange)[axis] < 0
+                        || newValue < threshold2 && (<IndexedObject>this.$tweenChange)[axis] == 0)
                     {
-                        this._tweenTime[axis] = 0;
-                        this._tweenDuration[axis] = ScrollPane.TWEEN_TIME_DEFAULT;
-                        this._tweenChange[axis] = threshold2 - newValue;
-                        this._tweenStart[axis] = newValue;
+                        (<IndexedObject>this.$tweenTime)[axis] = 0;
+                        (<IndexedObject>this.$tweenDuration)[axis] = ScrollPane.TWEEN_DEFAULT_DURATION;
+                        (<IndexedObject>this.$tweenChange)[axis] = threshold2 - newValue;
+                        (<IndexedObject>this.$tweenStart)[axis] = newValue;
                     }
                 }
                 else {
                     if (newValue > threshold1) {
                         newValue = threshold1;
-                        this._tweenChange[axis] = 0;
+                        (<IndexedObject>this.$tweenChange)[axis] = 0;
                     }
                     else if (newValue < threshold2) {
                         newValue = threshold2;
-                        this._tweenChange[axis] = 0;
+                        (<IndexedObject>this.$tweenChange)[axis] = 0;
                     }
                 }
             }
             else
-                newValue = this._container[axis];
+                newValue = (<IndexedObject>this.$container)[axis];
 
             return newValue;
-        }
-
-        private static easeFunc(t: number, d: number): number {
-            return (t = t / d - 1) * t * t + 1;//cubicOut
         }
     }
 }

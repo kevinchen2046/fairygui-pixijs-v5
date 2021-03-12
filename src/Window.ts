@@ -1,104 +1,103 @@
-
-module fgui {
+namespace fgui {
 
     export class Window extends GComponent {
-        private _contentPane: GComponent;
-        private _modalWaitPane: GObject;
-        private _closeButton: GObject;
-        private _dragArea: GObject;
-        private _contentArea: GObject;
-        private _frame: GComponent;
-        private _modal: boolean;
+        private $contentPane: GComponent;
+        private $modalWaitPane: GObject;
+        private $closeButton: GObject;
+        private $dragArea: GObject;
+        private $contentArea: GObject;
+        private $frame: GComponent;
+        private $modal: boolean;
 
-        private _uiSources: Array<IUISource>;
-        private _inited: boolean;
-        private _loading: boolean;
+        private $uiSources: IUISource[];
+        private $inited: boolean;
+        private $loading: boolean;
 
-        protected _requestingCmd: number = 0;
+        protected $requestingCmd: number = 0;
 
-        public bringToFontOnClick: boolean;
+        public bringToFrontOnClick: boolean;
 
         public constructor() {
             super();
             this.focusable = true;
-            this._uiSources = new Array<IUISource>();
-            this.bringToFontOnClick = UIConfig.bringWindowToFrontOnClick;
+            this.$uiSources = [];
+            this.bringToFrontOnClick = UIConfig.bringWindowToFrontOnClick;
 
-            this.displayObject.addEventListener(egret.Event.ADDED_TO_STAGE, this.__onShown, this);
-            this.displayObject.addEventListener(egret.Event.REMOVED_FROM_STAGE, this.__onHidden, this);
-            this.displayObject.addEventListener(egret.TouchEvent.TOUCH_BEGIN, this.__mouseDown, this, true);
+            this.on("added", this.$onShown, this);
+            this.on("removed", this.$onHidden, this);
+            this.on(InteractiveEvents.Down, this.$mouseDown, this);
         }
 
         public addUISource(source: IUISource): void {
-            this._uiSources.push(source);
+            this.$uiSources.push(source);
         }
 
         public set contentPane(val: GComponent) {
-            if (this._contentPane != val) {
-                if (this._contentPane != null)
-                    this.removeChild(this._contentPane);
-                this._contentPane = val;
-                if (this._contentPane != null) {
-                    this.addChild(this._contentPane);
-                    this.setSize(this._contentPane.width, this._contentPane.height);
-                    this._contentPane.addRelation(this, RelationType.Size);
-                    this._frame = <GComponent><any>(this._contentPane.getChild("frame"));
-                    if (this._frame != null) {
-                        this.closeButton = this._frame.getChild("closeButton");
-                        this.dragArea = this._frame.getChild("dragArea");
-                        this.contentArea = this._frame.getChild("contentArea");
+            if (this.$contentPane != val) {
+                if (this.$contentPane != null)
+                    this.removeChild(this.$contentPane);
+                this.$contentPane = val;
+                if (this.$contentPane != null) {
+                    this.addChild(this.$contentPane);
+                    this.setSize(this.$contentPane.width, this.$contentPane.height);
+                    this.$contentPane.addRelation(this, RelationType.Size);
+                    this.$frame = this.$contentPane.getChild("frame") as GComponent;
+                    if (this.$frame != null) {
+                        this.closeButton = this.$frame.getChild("closeButton");
+                        this.dragArea = this.$frame.getChild("dragArea");
+                        this.contentArea = this.$frame.getChild("contentArea");
                     }
                 }
             }
         }
 
         public get contentPane(): GComponent {
-            return this._contentPane;
+            return this.$contentPane;
         }
 
         public get frame(): GComponent {
-            return this._frame;
+            return this.$frame;
         }
 
         public get closeButton(): GObject {
-            return this._closeButton;
+            return this.$closeButton;
         }
 
         public set closeButton(value: GObject) {
-            if (this._closeButton != null)
-                this._closeButton.removeClickListener(this.closeEventHandler, this);
-            this._closeButton = value;
-            if (this._closeButton != null)
-                this._closeButton.addClickListener(this.closeEventHandler, this);
+            if (this.$closeButton != null)
+                this.$closeButton.removeClick(this.closeEventHandler, this);
+            this.$closeButton = value;
+            if (this.$closeButton != null)
+                this.$closeButton.click(this.closeEventHandler, this);
         }
 
         public get dragArea(): GObject {
-            return this._dragArea;
+            return this.$dragArea;
         }
 
         public set dragArea(value: GObject) {
-            if (this._dragArea != value) {
-                if (this._dragArea != null) {
-                    this._dragArea.draggable = false;
-                    this._dragArea.removeEventListener(DragEvent.DRAG_START, this.__dragStart, this);
+            if (this.$dragArea != value) {
+                if (this.$dragArea != null) {
+                    this.$dragArea.draggable = false;
+                    this.$dragArea.off(DragEvent.START, this.$dragStart, this);
                 }
 
-                this._dragArea = value;
-                if (this._dragArea != null) {
-                    if ((this._dragArea instanceof GGraph) && (<GGraph><any>(this._dragArea)).displayObject == null)
-                        this._dragArea.asGraph.drawRect(0, 0, 0, 0, 0);
-                    this._dragArea.draggable = true;
-                    this._dragArea.addEventListener(DragEvent.DRAG_START, this.__dragStart, this);
+                this.$dragArea = value;
+                if (this.$dragArea != null) {
+                    if (this.$dragArea instanceof GGraph)
+                        this.$dragArea.drawRect(0, 0, 0, 0, 0);
+                    this.$dragArea.draggable = true;
+                    this.$dragArea.on(DragEvent.START, this.$dragStart, this);
                 }
             }
         }
 
         public get contentArea(): GObject {
-            return this._contentArea;
+            return this.$contentArea;
         }
 
         public set contentArea(value: GObject) {
-            this._contentArea = value;
+            this.$contentArea = value;
         }
 
         public show(): void {
@@ -115,21 +114,19 @@ module fgui {
         }
 
         public hideImmediately(): void {
-            var r: GRoot = (this.parent instanceof GRoot) ? <GRoot><any>(this.parent) : null;
-            if (!r)
-                r = GRoot.inst;
+            let r: GRoot = (this.parent && this.parent instanceof GRoot) ? this.parent : GRoot.inst;
             r.hideWindowImmediately(this);
         }
 
-        public centerOn(r: GRoot, restraint: boolean = false) {
-            this.setXY(Math.round((r.width - this.width) / 2), Math.round((r.height - this.height) / 2));
-            if (restraint) {
+        public centerOn(r: GRoot, autoUpdate: boolean = false): void {
+            this.setXY(Math.round((r.width - this.width) * .5), Math.round((r.height - this.height) * .5));
+            if (autoUpdate) {
                 this.addRelation(r, RelationType.Center_Center);
                 this.addRelation(r, RelationType.Middle_Middle);
             }
         }
 
-        public toggleStatus(): void {
+        public toggleVisible(): void {
             if (this.isTop)
                 this.hide();
             else
@@ -145,80 +142,79 @@ module fgui {
         }
 
         public get modal(): boolean {
-            return this._modal;
+            return this.$modal;
         }
 
         public set modal(val: boolean) {
-            this._modal = val;
+            this.$modal = val;
         }
 
         public bringToFront(): void {
             this.root.bringToFront(this);
         }
 
-        public showModalWait(requestingCmd: number = 0): void {
-            if (requestingCmd != 0)
-                this._requestingCmd = requestingCmd;
+        public showModalWait(msg?:string, cmd: number = 0): void {
+            if (cmd != 0)
+                this.$requestingCmd = cmd;
 
             if (UIConfig.windowModalWaiting) {
-                if (!this._modalWaitPane)
-                    this._modalWaitPane = UIPackage.createObjectFromURL(UIConfig.windowModalWaiting);
+                if (!this.$modalWaitPane)
+                    this.$modalWaitPane = UIPackage.createObjectFromURL(UIConfig.windowModalWaiting);
 
-                this.layoutModalWaitPane();
+                this.layoutModalWaitPane(msg);
 
-                this.addChild(this._modalWaitPane);
+                this.addChild(this.$modalWaitPane);
             }
         }
 
-        protected layoutModalWaitPane(): void {
-            if (this._contentArea != null) {
-                var pt: egret.Point = this._frame.localToGlobal();
+        protected layoutModalWaitPane(msg?:string): void {
+            if (this.$contentArea != null) {
+                let pt: PIXI.Point = this.$frame.localToGlobal();
                 pt = this.globalToLocal(pt.x, pt.y, pt);
-                this._modalWaitPane.setXY(pt.x + this._contentArea.x, pt.y + this._contentArea.y);
-                this._modalWaitPane.setSize(this._contentArea.width, this._contentArea.height);
+                this.$modalWaitPane.setXY(pt.x + this.$contentArea.x, pt.y + this.$contentArea.y);
+                this.$modalWaitPane.setSize(this.$contentArea.width, this.$contentArea.height);
+                if(msg && msg.length)
+                    this.$modalWaitPane.text = msg;
             }
             else
-                this._modalWaitPane.setSize(this.width, this.height);
+                this.$modalWaitPane.setSize(this.width, this.height);
         }
 
-        public closeModalWait(requestingCmd: number = 0): boolean {
-            if (requestingCmd != 0) {
-                if (this._requestingCmd != requestingCmd)
+        public closeModalWait(cmd: number = 0): boolean {
+            if (cmd != 0) {
+                if (this.$requestingCmd != cmd)
                     return false;
             }
-            this._requestingCmd = 0;
+            this.$requestingCmd = 0;
 
-            if (this._modalWaitPane && this._modalWaitPane.parent != null)
-                this.removeChild(this._modalWaitPane);
+            if (this.$modalWaitPane && this.$modalWaitPane.parent != null)
+                this.removeChild(this.$modalWaitPane);
 
             return true;
         }
 
         public get modalWaiting(): boolean {
-            return this._modalWaitPane && this._modalWaitPane.parent != null;
+            return this.$modalWaitPane && this.$modalWaitPane.parent != null;
         }
 
-
         public init(): void {
-            if (this._inited || this._loading)
+            if (this.$inited || this.$loading)
                 return;
 
-            if (this._uiSources.length > 0) {
-                this._loading = false;
-                var cnt: number = this._uiSources.length;
-                for (var i: number = 0; i < cnt; i++) {
-                    var lib: IUISource = this._uiSources[i];
-                    if (!lib.loaded) {
-                        lib.load(this.__uiLoadComplete, this);
-                        this._loading = true;
+            if (this.$uiSources.length > 0) {
+                this.$loading = false;
+                this.$uiSources.forEach(o => {
+                    if (!o.loaded) {
+                        o.load(this.$uiLoadComplete, this);
+                        this.$loading = true;
                     }
-                }
-
-                if (!this._loading)
-                    this._init();
+                }, this);
+                
+                if (!this.$loading)
+                    this.$init();
             }
             else
-                this._init();
+                this.$init();
         }
 
         protected onInit(): void {
@@ -238,20 +234,19 @@ module fgui {
             this.hideImmediately();
         }
 
-        private __uiLoadComplete(): void {
-            var cnt: number = this._uiSources.length;
-            for (var i: number = 0; i < cnt; i++) {
-                var lib: IUISource = this._uiSources[i];
-                if (!lib.loaded)
+        private $uiLoadComplete(): void {
+            let cnt: number = this.$uiSources.length;
+            for (let i: number = 0; i < cnt; i++) {
+                if (!this.$uiSources[i].loaded)
                     return;
             }
 
-            this._loading = false;
-            this._init();
+            this.$loading = false;
+            this.$init();
         }
 
-        private _init(): void {
-            this._inited = true;
+        private $init(): void {
+            this.$inited = true;
             this.onInit();
 
             if (this.isShowing)
@@ -259,39 +254,45 @@ module fgui {
         }
 
         public dispose(): void {
-            this.displayObject.removeEventListener(egret.Event.ADDED_TO_STAGE, this.__onShown, this);
-            this.displayObject.removeEventListener(egret.Event.REMOVED_FROM_STAGE, this.__onHidden, this);
+            this.off("added", this.$onShown, this);
+            this.off("removed", this.$onHidden, this);
+            this.off(InteractiveEvents.Down, this.$mouseDown, this);
+            if(this.$dragArea)
+                this.$dragArea.off(DragEvent.START, this.$dragStart, this);
+            
             if (this.parent != null)
                 this.hideImmediately();
 
+            if(this.$modalWaitPane) this.$modalWaitPane.dispose();
+            if(this.$contentPane) this.$contentPane.dispose();
+            
             super.dispose();
         }
 
-        protected closeEventHandler(evt: egret.Event): void {
+        protected closeEventHandler(evt: PIXI.InteractionEvent): void {
             this.hide();
         }
 
-        private __onShown(evt: egret.Event): void {
-            if (!this._inited)
+        private $onShown(target: PIXI.DisplayObject): void {
+            if (!this.$inited)
                 this.init();
             else
                 this.doShowAnimation();
         }
 
-        private __onHidden(evt: egret.Event): void {
+        private $onHidden(target: PIXI.DisplayObject): void {
             this.closeModalWait();
             this.onHide();
         }
 
-        private __mouseDown(evt: egret.Event): void {
-            if (this.isShowing && this.bringToFontOnClick)
+        private $mouseDown(evt: PIXI.InteractionEvent): void {
+            if (this.isShowing && this.bringToFrontOnClick)
                 this.bringToFront();
         }
 
-        private __dragStart(evt: DragEvent): void {
-            evt.preventDefault();
-
-            this.startDrag(evt.touchPointID);
+        private $dragStart(evt: PIXI.InteractionEvent): void {
+            GObject.castFromNativeObject(evt.currentTarget).stopDrag();
+            this.startDrag(evt.data.pointerId);
         }
     }
 }

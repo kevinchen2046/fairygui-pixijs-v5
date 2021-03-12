@@ -1,178 +1,220 @@
+/// <reference path="./GTextField.ts" />
+/// <reference path="./utils/InputDelegate.ts" />
+namespace fgui {
 
-module fgui {
+    export const enum InputType {
+        TEXT = "text",
+        PASSWORD = "password",
+        NUMBER = "number",
+        EMAIL = "email",
+        TEL = "tel",
+        URL = "url"
+    };
 
     export class GTextInput extends GTextField {
-        private _changed: boolean;
-        private _promptText: string;
-        private _password: boolean;
+        
+        protected $editable:boolean;
+        protected $util:utils.InputDelegate = null;
+
+        /**@internal */
+        $isTyping:boolean = false;
 
         public constructor() {
             super();
+            this.focusable = true;
+            this.editable = true;  //init
+            
+            this.type = InputType.TEXT;
 
-            this._widthAutoSize = false;
-            this._heightAutoSize = false;
-
-            (<egret.DisplayObjectContainer>this.displayObject).touchChildren = true;
-            this._textField.type = egret.TextFieldType.INPUT;
-            this._textField.addEventListener(egret.Event.CHANGE, this.__textChanged, this);
-            this._textField.addEventListener(egret.FocusEvent.FOCUS_IN, this.__focusIn, this);
-            this._textField.addEventListener(egret.FocusEvent.FOCUS_OUT, this.__focusOut, this);
+            this.on("removed", this.removed, this);
+            this.on("added", this.added, this);
+            this.$util.initialize();
         }
 
-        public dispose(): void {
-            super.dispose();
-        }
-
-        public set editable(val: boolean) {
-            if (val)
-                this._textField.type = egret.TextFieldType.INPUT;
-            else
-                this._textField.type = egret.TextFieldType.DYNAMIC;
-        }
-
-        public get editable(): boolean {
-            return this._textField.type == egret.TextFieldType.INPUT;
-        }
-
-        public set maxLength(val: number) {
-            this._textField.maxChars = val;
-        }
-
-        public get maxLength(): number {
-            return this._textField.maxChars;
-        }
-
-        public set promptText(val: string) {
-            this._promptText = val;
-            this.updateTextFieldText();
-        }
-
-        public get promptText(): string {
-            return this._promptText;
-        }
-
-        public set restrict(value: string) {
-            this._textField.restrict = value;
-        }
-
-        public get restrict(): string {
-            return this._textField.restrict;
-        }
-
-        public get password(): boolean {
-            return this._password;
-        }
-
-        public set password(val: boolean) {
-            if (this._password != val) {
-                this._password = val;
-                this._textField.displayAsPassword = this._password;
-                if (val)
-                    this._textField.inputType = egret.TextFieldInputType.PASSWORD;
-                else
-                    this._textField.inputType = egret.TextFieldInputType.TEXT;
-                this.render();
-            }
-        }
-
-        public get verticalAlign(): VertAlignType {
-            return this._verticalAlign;
-        }
-
-        public set verticalAlign(value: VertAlignType) {
-            if (this._verticalAlign != value) {
-                this._verticalAlign = value;
-                this.updateVertAlign();
-            }
-        }
-
-        private updateVertAlign(): void {
-            switch (this._verticalAlign) {
-                case VertAlignType.Top:
-                    this._textField.verticalAlign = egret.VerticalAlign.TOP;
-                    break;
-                case VertAlignType.Middle:
-                    this._textField.verticalAlign = egret.VerticalAlign.MIDDLE;
-                    break;
-
-                case VertAlignType.Bottom:
-                    this._textField.verticalAlign = egret.VerticalAlign.BOTTOM;
-                    break;
-            }
-        }
-
-        protected updateTextFieldText(): void {
-            if (!this._text && this._promptText) {
-                this._textField.displayAsPassword = false;
-                this._textField.textFlow = (new egret.HtmlTextParser).parser(ToolSet.parseUBB(this._promptText));
-            }
-            else {
-                this._textField.displayAsPassword = this._password;
-                if (this._ubbEnabled)
-                    this._textField.textFlow = (new egret.HtmlTextParser).parser(ToolSet.parseUBB(ToolSet.encodeHTML(this._text)));
-                else
-                    this._textField.text = this._text;
-            }
+        protected createDisplayObject(): void {
+            super.createDisplayObject();
+            this.$displayObject.hitArea = new PIXI.Rectangle();
         }
 
         protected handleSizeChanged(): void {
-            if (!this._updatingSize) {
-                this._textField.width = Math.ceil(this.width);
-                this._textField.height = Math.ceil(this.height);
+            super.handleSizeChanged();
+            let rect:PIXI.Rectangle = this.$displayObject.hitArea as PIXI.Rectangle;
+            rect.x = rect.y = 0;
+            rect.width = this.width;
+            rect.height = this.height;
+        }
+
+        private removed(disp: PIXI.DisplayObject):void {
+            if(this.$util)
+                this.$util.destroy();
+        }
+
+        private added(disp: PIXI.DisplayObject): void {
+            if (this.$util)
+                this.$util.initialize();
+        }
+
+        public requestFocus(): void {   //tab or call actively
+            this.root.focus = this;
+            this.$util.$onFocus();
+        }
+
+        public get editable(): boolean {
+            return this.$editable;
+        }
+
+        public set editable(v: boolean) {
+            if(v != this.$editable)
+            {
+                this.$editable = v;
+                
+                if(this.$editable) {
+                    if(!this.$util)
+                        this.$util = new utils.InputDelegate(this);
+                    this.$util.initialize();
+                }
+                else
+                {
+                    if(this.$util)
+                        this.$util.destroy();
+                }
+
+                this.touchable = this.$editable;
             }
         }
 
-        public setup_beforeAdd(buffer: ByteBuffer, beginPos: number): void {
-            super.setup_beforeAdd(buffer, beginPos);
-
-            buffer.seek(beginPos, 4);
-
-            var str: string = buffer.readS();
-            if (str != null)
-                this._promptText = str;
-
-            str = buffer.readS();
-            if (str != null)
-                this._textField.restrict = str;
-
-            var iv: number = buffer.readInt();
-            if (iv != 0)
-                this._textField.maxChars = iv;
-            iv = buffer.readInt();
-            if (iv != 0) {//keyboardType
+        private changeToPassText(text:string):string {
+            let passText: string = "";
+            for (let i: number = 0, num = text.length; i < num; i++) {
+                switch (text.charAt(i)) {
+                    case '\n':
+                        passText += "\n";
+                        break;
+                    case '\r':
+                        break;
+                    default:
+                        passText += '*';
+                }
             }
-            if (buffer.readBool())
+            return passText;
+        }
+
+        protected getText():string {
+            return this.$util.text;
+        }
+
+        protected setText(value:string):void {
+            if(value == null) value = "";
+            if (this.$text == value) return;
+            this.$util.text = value;
+            super.setText(value);
+        }
+
+        protected setColor(value:number):void {
+            super.setColor(value);
+            this.$util.setColor(value);
+        }
+
+        public get promptText(): string {
+            return this.$util.$getProperty("placeholder");
+        }
+
+        public set promptText(v: string) {
+            if(v == null) v = "";
+            this.$util.$setProperty("placeholder", v);
+        }
+
+        public get maxLength(): number {
+            return parseInt(this.$util.$getProperty("maxlength")) || 0;
+        }
+
+        public set maxLength(v: number) {
+            this.$util.$setProperty("maxlength", String(v));
+        }
+
+        public get restrict(): string {
+            return this.$util.$restrict;
+        }
+
+        public set restrict(v: string) {
+            this.$util.$restrict = v;
+        }
+
+        public get password(): boolean {
+            return this.type == InputType.PASSWORD;
+        }
+
+        public set password(v: boolean) {
+            this.type = InputType.PASSWORD;
+        }
+
+        public get type():InputType {
+            return this.$util.type;
+        }
+
+        public set type(t:InputType) {
+            this.$util.type = t;
+        }
+
+        public dispose():void {
+            super.dispose();
+            this.off("removed", this.removed, this);
+            this.off("added", this.added, this);
+            this.$util.destroy();
+            this.$util = null;
+        }
+
+        protected renderNow(updateBounds: boolean = true): void {
+            this.$requireRender = false;
+            this.$sizeDirty = false;
+            this.$util.$updateProperties();
+            if(this.$isTyping)
+                this.decorateInputbox();
+            let origText = this.$text;
+            if(this.type == InputType.PASSWORD)
+                this.$text = this.changeToPassText(this.$text);
+            super.renderNow(updateBounds);
+            this.$text = origText;
+        }
+
+        private decorateInputbox():void {
+            //draw underlines?
+        }
+
+        public setupBeforeAdd(xml: utils.XmlNode): void {
+            super.setupBeforeAdd(xml);
+
+            //this.promptText = xml.attributes.prompt;  //this will be available once UBB has implemented.
+            var str: string = xml.attributes.maxLength;
+            if (str != null)
+                this.maxLength = parseInt(str);
+            str = xml.attributes.restrict;
+            if (str != null)
+                this.restrict = str;
+            str = xml.attributes.password;
+            if (str == "true")
                 this.password = true;
-
-            this.updateVertAlign();
-        }
-
-        public setup_afterAdd(buffer: ByteBuffer, beginPos: number): void {
-            super.setup_afterAdd(buffer, beginPos);
-
-            if (!this._text && this._promptText) {
-                this._textField.displayAsPassword = false;
-                this._textField.textFlow = (new egret.HtmlTextParser).parser(ToolSet.parseUBB(ToolSet.encodeHTML(this._promptText)));
+            else
+            {
+                str = xml.attributes.keyboardType;
+                if(str == "4")
+                    this.type = InputType.NUMBER;
+                else if(str == "3")
+                    this.type = InputType.URL;
+                else if(str == "5")
+                    this.type = InputType.TEL;
+                else if(str == "6")
+                    this.type = InputType.EMAIL;
             }
         }
 
-        private __textChanged(evt: egret.Event): void {
-            this._text = this._textField.text;
-        }
-
-        private __focusIn(evt: egret.Event): void {
-            if (!this._text && this._promptText) {
-                this._textField.displayAsPassword = this._password;
-                this._textField.text = "";
+        /*public setupAfterAdd(xml: utils.XmlNode): void {
+            super.setupAfterAdd(xml);
+            f (!this.$text && this.promptText) {
+                if(this.type != InputType.PASSWORD) {
+                    this.$textField.text = this.promptText;  //take UBB into account
+                }
             }
-        }
-
-        private __focusOut(evt: egret.Event): void {
-            this._text = this._textField.text;
-            if (!this._text && this._promptText) {
-                this._textField.displayAsPassword = false;
-                this._textField.textFlow = (new egret.HtmlTextParser).parser(ToolSet.parseUBB(ToolSet.encodeHTML(this._promptText)));
-            }
-        }
+        }*/
     }
 }

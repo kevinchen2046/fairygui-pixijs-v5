@@ -1,31 +1,27 @@
+/// <reference path="./GComponent.ts" />
 
-/// <reference path="GComponent.ts" />
+namespace fgui {
 
-module fgui {
+    export class GButton extends GComponent implements IColorableTitle {
+        protected $titleObject: GObject;
+        protected $iconObject: GObject;
+        protected $relatedController: controller.Controller;
 
-    export class GButton extends GComponent {
-        protected _titleObject: GObject;
-        protected _iconObject: GObject;
+        private $mode: ButtonMode;
+        private $selected: boolean;
+        private $title: string;
+        private $selectedTitle: string;
+        private $icon: string;
+        private $selectedIcon: string;
+        private $pageOption: controller.PageOption;
+        private $buttonController: controller.Controller;
+        private $changeStateOnClick: boolean;
+        private $linkedPopup: GObject;
+        private $downEffect: number;
+        private $downEffectValue: number;
 
-        private _mode: ButtonMode;
-        private _selected: boolean;
-        private _title: string;
-        private _selectedTitle: string;
-        private _icon: string;
-        private _selectedIcon: string;
-        private _sound: string;
-        private _soundVolumeScale: number;
-        private _buttonController: Controller;
-        private _relatedController: Controller;
-        private _relatedPageId: string;
-        private _changeStateOnClick: boolean;
-        private _linkedPopup: GObject;
-        private _downEffect: number;
-        private _downEffectValue: number;
-        private _downScaled: boolean;
-
-        private _down: boolean;
-        private _over: boolean;
+        private $down: boolean;
+        private $over: boolean;
 
         public static UP: string = "up";
         public static DOWN: string = "down";
@@ -37,48 +33,52 @@ module fgui {
         public constructor() {
             super();
 
-            this._mode = ButtonMode.Common;
-            this._title = "";
-            this._icon = "";
-            this._sound = UIConfig.buttonSound;
-            this._soundVolumeScale = UIConfig.buttonSoundVolumeScale;
-            this._changeStateOnClick = true;
-            this._downEffect = 0;
-            this._downEffectValue = 0.8;
+            this.$mode = ButtonMode.Common;
+            this.$title = "";
+            this.$icon = "";
+            this.$pageOption = new controller.PageOption();
+            this.$changeStateOnClick = true;
+            this.$downEffect = 0;
+            this.$downEffectValue = 0.8;
+        }
+
+        protected setDisplayObject(value:PIXI.DisplayObject):void {
+            super.setDisplayObject(value);
+            this.$displayObject.buttonMode = true;
         }
 
         public get icon(): string {
-            return this._icon;
+            return this.$icon;
         }
 
         public set icon(value: string) {
-            this._icon = value;
-            value = (this._selected && this._selectedIcon) ? this._selectedIcon : this._icon;
-            if (this._iconObject != null)
-                this._iconObject.icon = value;
-            this.updateGear(7);
+            this.$icon = value;
+            value = (this.$selected && this.$selectedIcon) ? this.$selectedIcon : this.$icon;
+            if (this.$iconObject != null)
+                this.$iconObject.icon = value;
+            this.updateGear(GearType.Icon);
         }
 
         public get selectedIcon(): string {
-            return this._selectedIcon;
+            return this.$selectedIcon;
         }
 
         public set selectedIcon(value: string) {
-            this._selectedIcon = value;
-            value = (this._selected && this._selectedIcon) ? this._selectedIcon : this._icon;
-            if (this._iconObject != null)
-                this._iconObject.icon = value;
+            this.$selectedIcon = value;
+            value = (this.$selected && this.$selectedIcon) ? this.$selectedIcon : this.$icon;
+            if (this.$iconObject != null)
+                this.$iconObject.icon = value;
         }
 
         public get title(): string {
-            return this._title;
+            return this.$title;
         }
 
         public set title(value: string) {
-            this._title = value;
-            if (this._titleObject)
-                this._titleObject.text = (this._selected && this._selectedTitle) ? this._selectedTitle : this._title;
-            this.updateGear(6);
+            this.$title = value;
+            if (this.$titleObject)
+                this.$titleObject.text = (this.$selected && this.$selectedTitle) ? this.$selectedTitle : this.$title;
+            this.updateGear(GearType.Text);
         }
 
         public get text(): string {
@@ -90,231 +90,187 @@ module fgui {
         }
 
         public get selectedTitle(): string {
-            return this._selectedTitle;
+            return this.$selectedTitle;
         }
 
         public set selectedTitle(value: string) {
-            this._selectedTitle = value;
-            if (this._titleObject)
-                this._titleObject.text = (this._selected && this._selectedTitle) ? this._selectedTitle : this._title;
+            this.$selectedTitle = value;
+            if (this.$titleObject)
+                this.$titleObject.text = (this.$selected && this.$selectedTitle) ? this.$selectedTitle : this.$title;
         }
 
         public get titleColor(): number {
-            var tf: GTextField = this.getTextField();
-            if (tf != null)
-                return tf.color;
-            else
-                return 0;
+            if(fgui.isColorableTitle(this.$titleObject))
+                return this.$titleObject.titleColor;
+            return 0;
         }
 
         public set titleColor(value: number) {
-            var tf: GTextField = this.getTextField();
-            if (tf != null)
-                tf.color = value;
+            if(fgui.isColorableTitle(this.$titleObject))
+                this.$titleObject.titleColor = value;
         }
 
-        public get titleFontSize(): number {
-            var tf: GTextField = this.getTextField();
-            if (tf != null)
-                return tf.fontSize;
-            else
-                return 0;
-        }
-
-        public set titleFontSize(value: number) {
-            var tf: GTextField = this.getTextField();
-            if (tf != null)
-                tf.fontSize = value;
-        }
-        public get sound(): string {
-            return this._sound;
-        }
-
-        public set sound(val: string) {
-            this._sound = val;
-        }
-
-        public get soundVolumeScale(): number {
-            return this._soundVolumeScale;
-        }
-
-        public set soundVolumeScale(value: number) {
-            this._soundVolumeScale = value;
-        }
+        public get fontSize():number
+		{
+            if(fgui.isColorableTitle(this.$titleObject))
+                return this.$titleObject.fontSize;
+            return 0;
+		}
+		
+		public set fontSize(value:number)
+		{
+            if(fgui.isColorableTitle(this.$titleObject))
+                this.$titleObject.fontSize = value;
+		}
 
         public set selected(val: boolean) {
-            if (this._mode == ButtonMode.Common)
+            if (this.$mode == ButtonMode.Common)
                 return;
 
-            if (this._selected != val) {
-                this._selected = val;
-                if (this.grayed && this._buttonController && this._buttonController.hasPage(GButton.DISABLED)) {
-                    if (this._selected)
+            if (this.$selected != val) {
+                this.$selected = val;
+                if (this.grayed && this.$buttonController && this.$buttonController.hasPage(GButton.DISABLED)) {
+                    if (this.$selected)
                         this.setState(GButton.SELECTED_DISABLED);
                     else
                         this.setState(GButton.DISABLED);
                 }
                 else {
-                    if (this._selected)
-                        this.setState(this._over ? GButton.SELECTED_OVER : GButton.DOWN);
+                    if (this.$selected)
+                        this.setState(this.$over ? GButton.SELECTED_OVER : GButton.DOWN);
                     else
-                        this.setState(this._over ? GButton.OVER : GButton.UP);
+                        this.setState(this.$over ? GButton.OVER : GButton.UP);
                 }
-                if (this._selectedTitle && this._titleObject)
-                    this._titleObject.text = this._selected ? this._selectedTitle : this._title;
-                if (this._selectedIcon) {
-                    var str: string = this._selected ? this._selectedIcon : this._icon;
-                    if (this._iconObject != null)
-                        this._iconObject.icon = str;
+                if (this.$selectedTitle && this.$titleObject)
+                    this.$titleObject.text = this.$selected ? this.$selectedTitle : this.$title;
+                if (this.$selectedIcon) {
+                    let str: string = this.$selected ? this.$selectedIcon : this.$icon;
+                    if (this.$iconObject != null)
+                        this.$iconObject.icon = str;
                 }
-                if (this._relatedController
-                    && this._parent
-                    && !this._parent._buildingDisplayList) {
-                    if (this._selected) {
-                        this._relatedController.selectedPageId = this._relatedPageId;
-                        if (this._relatedController.autoRadioGroupDepth)
-                            this._parent.adjustRadioGroupDepth(this, this._relatedController);
+                if (this.$relatedController
+                    && this.$parent
+                    && !this.$parent.$buildingDisplayList) {
+                    if (this.$selected) {
+                        this.$relatedController.selectedPageId = this.$pageOption.id;
+                        if (this.$relatedController.$autoRadioGroupDepth)
+                            this.$parent.adjustRadioGroupDepth(this, this.$relatedController);
                     }
-                    else if (this._mode == ButtonMode.Check && this._relatedController.selectedPageId == this._relatedPageId)
-                        this._relatedController.oppositePageId = this._relatedPageId;
+                    else if (this.$mode == ButtonMode.Check && this.$relatedController.selectedPageId == this.$pageOption.id)
+                        this.$relatedController.oppositePageId = this.$pageOption.id;
                 }
             }
         }
 
         public get selected(): boolean {
-            return this._selected;
+            return this.$selected;
         }
 
         public get mode(): ButtonMode {
-            return this._mode;
+            return this.$mode;
         }
 
         public set mode(value: ButtonMode) {
-            if (this._mode != value) {
+            if (this.$mode != value) {
                 if (value == ButtonMode.Common)
                     this.selected = false;
-                this._mode = value;
+                this.$mode = value;
             }
         }
 
-        public get relatedController(): Controller {
-            return this._relatedController;
+        public get relatedController(): controller.Controller {
+            return this.$relatedController;
         }
 
-        public set relatedController(val: Controller) {
-            this._relatedController = val;
+        public set relatedController(val: controller.Controller) {
+            if (val != this.$relatedController) {
+                this.$relatedController = val;
+                this.$pageOption.controller = val;
+                this.$pageOption.clear();
+            }
         }
 
-        public get relatedPageId(): string {
-            return this._relatedPageId;
-        }
-
-        public set relatedPageId(val: string) {
-            this._relatedPageId = val;
+        public get pageOption(): controller.PageOption {
+            return this.$pageOption;
         }
 
         public get changeStateOnClick(): boolean {
-            return this._changeStateOnClick;
+            return this.$changeStateOnClick;
         }
 
         public set changeStateOnClick(value: boolean) {
-            this._changeStateOnClick = value;
+            this.$changeStateOnClick = value;
         }
 
         public get linkedPopup(): GObject {
-            return this._linkedPopup;
+            return this.$linkedPopup;
         }
 
         public set linkedPopup(value: GObject) {
-            this._linkedPopup = value;
+            this.$linkedPopup = value;
         }
 
-        public getTextField(): GTextField {
-            if (this._titleObject instanceof GTextField)
-                return (<GTextField>this._titleObject);
-            else if (this._titleObject instanceof GLabel)
-                return (<GLabel>this._titleObject).getTextField();
-            else if (this._titleObject instanceof GButton)
-                return (<GButton>this._titleObject).getTextField();
-            else
-                return null;
+        public addStateListener(listener: Function, thisObj?: any): void {
+            this.on(StateChangeEvent.CHANGED, listener, thisObj);
         }
 
-        public addStateListener(listener: Function, thisObj: any): void {
-            this.addEventListener(StateChangeEvent.CHANGED, listener, thisObj);
-        }
-
-        public removeStateListener(listener: Function, thisObj: any): void {
-            this.removeEventListener(StateChangeEvent.CHANGED, listener, thisObj);
+        public removeStateListener(listener: Function, thisObj?: any): void {
+            this.off(StateChangeEvent.CHANGED, listener, thisObj);
         }
 
         public fireClick(downEffect: boolean = true): void {
-            if (downEffect && this._mode == ButtonMode.Common) {
+            if (downEffect && this.$mode == ButtonMode.Common) {
                 this.setState(GButton.OVER);
-                GTimers.inst.add(100, 1, function () { this.setState(GButton.DOWN); }, this);
-                GTimers.inst.add(200, 1, function () { this.setState(GButton.UP); }, this);
+                GTimer.inst.add(100, 1, this.setState, this, GButton.DOWN);
+                GTimer.inst.add(200, 1, this.setState, this, GButton.UP);
             }
-            this.__click(null);
+            this.$click(null);
         }
 
         protected setState(val: string): void {
-            if (this._buttonController)
-                this._buttonController.selectedPage = val;
+            if (this.$buttonController)
+                this.$buttonController.selectedPage = val;
 
-            if (this._downEffect == 1) {
-                var cnt: number = this.numChildren;
+            if (this.$downEffect == 1) {
                 if (val == GButton.DOWN || val == GButton.SELECTED_OVER || val == GButton.SELECTED_DISABLED) {
-                    var r: number = this._downEffectValue * 255;
-                    var color: number = (r << 16) + (r << 8) + r;
-                    for (var i: number = 0; i < cnt; i++) {
-                        var obj: GObject = this.getChildAt(i);
-                        if (obj["color"] != undefined && !(obj instanceof GTextField))
-                            (<any>obj).color = color;
-                    }
+                    let r: number = this.$downEffectValue * 255;
+                    let color: number = (r << 16) + (r << 8) + r;
+                    this.$children.forEach(obj => {
+                        if (fgui.isColorGear(obj))
+                            obj.color = color;
+                    });
                 }
                 else {
-                    for (var i: number = 0; i < cnt; i++) {
-                        var obj: GObject = this.getChildAt(i);
-                        if (obj["color"] != undefined && !(obj instanceof GTextField))
-                            (<any>obj).color = 0xFFFFFF;
-                    }
+                    this.$children.forEach(obj => {
+                        if (fgui.isColorGear(obj))
+                            obj.color = 0xffffff;
+                    });
                 }
             }
-            else if (this._downEffect == 2) {
-                if (val == GButton.DOWN || val == GButton.SELECTED_OVER || val == GButton.SELECTED_DISABLED) {
-                    if (!this._downScaled) {
-                        this._downScaled = true;
-                        //复制缩放前的变换矩阵,解决缩放后的 container 计算hitTest.
-                        this._rootContainer.cacheHitArea(true);
-                        this.setScale(this.scaleX * this._downEffectValue, this.scaleY * this._downEffectValue);
-                    }
-                }
-                else {
-                    if (this._downScaled) {
-                        this._downScaled = false;
-                        this._rootContainer.cacheHitArea(false);
-                        this.setScale(this.scaleX / this._downEffectValue, this.scaleY / this._downEffectValue);
-                    }
-                }
+            else if (this.$downEffect == 2) {
+                if (val == GButton.DOWN || val == GButton.SELECTED_OVER || val == GButton.SELECTED_DISABLED)
+                    this.setScale(this.$downEffectValue, this.$downEffectValue);
+                else
+                    this.setScale(1, 1);
             }
         }
 
-        public handleControllerChanged(c: Controller): void {
+        public handleControllerChanged(c: controller.Controller): void {
             super.handleControllerChanged(c);
 
-            if (this._relatedController == c)
-                this.selected = this._relatedPageId == c.selectedPageId;
+            if (this.$relatedController == c)
+                this.selected = this.$pageOption.id == c.selectedPageId;
         }
 
         protected handleGrayedChanged(): void {
-            if (this._buttonController && this._buttonController.hasPage(GButton.DISABLED)) {
+            if (this.$buttonController && this.$buttonController.hasPage(GButton.DISABLED)) {
                 if (this.grayed) {
-                    if (this._selected && this._buttonController.hasPage(GButton.SELECTED_DISABLED))
+                    if (this.$selected && this.$buttonController.hasPage(GButton.SELECTED_DISABLED))
                         this.setState(GButton.SELECTED_DISABLED);
                     else
                         this.setState(GButton.DISABLED);
                 }
-                else if (this._selected)
+                else if (this.$selected)
                     this.setState(GButton.DOWN);
                 else
                     this.setState(GButton.UP);
@@ -323,175 +279,126 @@ module fgui {
                 super.handleGrayedChanged();
         }
 
-        public getProp(index: number): any {
-            switch (index) {
-                case ObjectPropID.Color:
-                    return this.titleColor;
-                case ObjectPropID.OutlineColor:
-                    {
-                        var tf: GTextField = this.getTextField();
-                        if (tf)
-                            return tf.strokeColor;
-                        else
-                            return 0;
-                    }
-                case ObjectPropID.FontSize:
-                    return this.titleFontSize;
-                case ObjectPropID.Selected:
-                    return this.selected;
-                default:
-                    return super.getProp(index);
-            }
-        }
+        protected constructFromXML(xml: utils.XmlNode): void {
+            super.constructFromXML(xml);
 
-        public setProp(index: number, value: any): void {
-            switch (index) {
-                case ObjectPropID.Color:
-                    this.titleColor = value;
-                    break;
-                case ObjectPropID.OutlineColor:
-                    {
-                        var tf: GTextField = this.getTextField();
-                        if (tf)
-                            tf.strokeColor = value;
-                    }
-                    break;
-                case ObjectPropID.FontSize:
-                    this.titleFontSize = value;
-                    break;
-                case ObjectPropID.Selected:
-                    this.selected = value;
-                    break;
-                default:
-                    super.setProp(index, value);
-                    break;
-            }
-        }
+            xml = utils.XmlParser.getChildNodes(xml, "Button")[0];
 
-        protected constructExtension(buffer: ByteBuffer): void {
-            buffer.seek(0, 6);
-
-            this._mode = buffer.readByte();
-            var str: string = buffer.readS();
+            let str: string;
+            str = xml.attributes.mode;
             if (str)
-                this._sound = str;
-            this._soundVolumeScale = buffer.readFloat();
-            this._downEffect = buffer.readByte();
-            this._downEffectValue = buffer.readFloat();
-            if (this._downEffect == 2)
-                this.setPivot(0.5, 0.5, this.pivotAsAnchor);
+                this.$mode = ParseButtonMode(str);
 
-            this._buttonController = this.getController("button");
-            this._titleObject = this.getChild("title");
-            this._iconObject = this.getChild("icon");
-            if (this._titleObject != null)
-                this._title = this._titleObject.text;
-            if (this._iconObject != null)
-                this._icon = this._iconObject.icon;
+            str = xml.attributes.downEffect;
+            if (str) {
+                this.$downEffect = str == "dark" ? 1 : (str == "scale" ? 2 : 0);
+                str = xml.attributes.downEffectValue;
+                this.$downEffectValue = parseFloat(str);
+                if(this.$downEffect == 2)
+                    this.setPivot(0.5, 0.5);
+            }
 
-            if (this._mode == ButtonMode.Common)
+            this.$buttonController = this.getController("button");
+            this.$titleObject = this.getChild("title");
+            this.$iconObject = this.getChild("icon");
+            if (this.$titleObject != null)
+                this.$title = this.$titleObject.text;
+            if (this.$iconObject != null)
+                this.$icon = this.$iconObject.icon;
+
+            if (this.$mode == ButtonMode.Common)
                 this.setState(GButton.UP);
 
-            this.addEventListener(egret.TouchEvent.TOUCH_BEGIN, this.__mousedown, this);
-            this.addEventListener(egret.TouchEvent.TOUCH_TAP, this.__click, this);
+            this.on(InteractiveEvents.Over, this.$rollover, this);
+            this.on(InteractiveEvents.Out, this.$rollout, this);
+            this.on(InteractiveEvents.Down, this.$mousedown, this);
+            this.on(InteractiveEvents.Click, this.$click, this);
         }
 
-        public setup_afterAdd(buffer: ByteBuffer, beginPos: number): void {
-            super.setup_afterAdd(buffer, beginPos);
+        public setupAfterAdd(xml: utils.XmlNode): void {
+            super.setupAfterAdd(xml);
 
-            if (!buffer.seek(beginPos, 6))
-                return;
-
-            if (buffer.readByte() != this.packageItem.objectType)
-                return;
-
-            var str: string;
-            var iv: number;
-
-            str = buffer.readS();
-            if (str != null)
-                this.title = str;
-            str = buffer.readS();
-            if (str != null)
-                this.selectedTitle = str;
-            str = buffer.readS();
-            if (str != null)
-                this.icon = str;
-            str = buffer.readS();
-            if (str != null)
-                this.selectedIcon = str;
-            if (buffer.readBool())
-                this.titleColor = buffer.readColor();
-            iv = buffer.readInt();
-            if (iv != 0)
-                this.titleFontSize = iv;
-            iv = buffer.readShort();
-            if (iv >= 0)
-                this._relatedController = this.parent.getControllerAt(iv);
-            this._relatedPageId = buffer.readS();
-
-            str = buffer.readS();
-            if (str != null)
-                this._sound = str;
-            if (buffer.readBool())
-                this._soundVolumeScale = buffer.readFloat();
-
-            this.selected = buffer.readBool();
+            xml = utils.XmlParser.getChildNodes(xml, "Button")[0];
+            if (xml) {
+                let str: string;
+                str = xml.attributes.title;
+                if (str)
+                    this.title = str;
+                str = xml.attributes.icon;
+                if (str)
+                    this.icon = str;
+                str = xml.attributes.selectedTitle;
+                if (str)
+                    this.selectedTitle = str;
+                str = xml.attributes.selectedIcon;
+                if (str)
+                    this.selectedIcon = str;
+                str = xml.attributes.titleColor;
+                if (str)
+                    this.titleColor = utils.StringUtil.convertFromHtmlColor(str);
+                str = xml.attributes.titleFontSize;
+				if(str)
+					this.fontSize = parseInt(str);
+                str = xml.attributes.controller;
+                if (str)
+                    this.$relatedController = this.$parent.getController(str);
+                else
+                    this.$relatedController = null;
+                this.$pageOption.id = xml.attributes.page;
+                this.selected = xml.attributes.checked == "true";
+            }
         }
 
-        private __rollover(evt: egret.TouchEvent): void {
-            if (!this._buttonController || !this._buttonController.hasPage(GButton.OVER))
+        private $rollover(evt: PIXI.InteractionEvent): void {
+            if (!this.$buttonController || !this.$buttonController.hasPage(GButton.OVER))
                 return;
 
-            this._over = true;
-            if (this._down)
+            this.$over = true;
+            if (this.$down)
                 return;
 
-            this.setState(this._selected ? GButton.SELECTED_OVER : GButton.OVER);
+            this.setState(this.$selected ? GButton.SELECTED_OVER : GButton.OVER);
         }
 
-        private __rollout(evt: egret.TouchEvent): void {
-            if (!this._buttonController || !this._buttonController.hasPage(GButton.OVER))
+        private $rollout(evt: PIXI.InteractionEvent): void {
+            if (!this.$buttonController || !this.$buttonController.hasPage(GButton.OVER))
                 return;
 
-            this._over = false;
-            if (this._down)
+            this.$over = false;
+            if (this.$down)
                 return;
 
-            this.setState(this._selected ? GButton.DOWN : GButton.UP);
+            this.setState(this.$selected ? GButton.DOWN : GButton.UP);
         }
 
-        private __mousedown(evt: egret.TouchEvent): void {
-            this._down = true;
-            GRoot.inst.nativeStage.addEventListener(egret.TouchEvent.TOUCH_END, this.__mouseup, this);
+        private $mousedown(evt: PIXI.InteractionEvent): void {
+            this.$down = true;
+            GRoot.inst.on(InteractiveEvents.Up, this.$mouseup, this);
 
-            if (this._mode == ButtonMode.Common) {
-                if (this.grayed && this._buttonController && this._buttonController.hasPage(GButton.DISABLED))
+            if (this.$mode == ButtonMode.Common) {
+                if (this.grayed && this.$buttonController && this.$buttonController.hasPage(GButton.DISABLED))
                     this.setState(GButton.SELECTED_DISABLED);
                 else
                     this.setState(GButton.DOWN);
             }
 
-            if (this._linkedPopup != null) {
-                if (this._linkedPopup instanceof Window)
-                    (<Window><any>(this._linkedPopup)).toggleStatus();
+            if (this.$linkedPopup != null) {
+                if (this.$linkedPopup instanceof Window)
+                    this.$linkedPopup.toggleVisible();
                 else
-                    this.root.togglePopup(this._linkedPopup, this);
+                    this.root.togglePopup(this.$linkedPopup, this);
             }
         }
 
-        private __mouseup(evt: egret.TouchEvent): void {
-            if (this._down) {
-                GRoot.inst.nativeStage.removeEventListener(egret.TouchEvent.TOUCH_END, this.__mouseup, this);
-                this._down = false;
+        private $mouseup(evt: PIXI.InteractionEvent): void {
+            if (this.$down) {
+                GRoot.inst.off(InteractiveEvents.Up, this.$mouseup, this);
+                this.$down = false;
 
-                if (this.displayObject == null)
-                    return;
-
-                if (this._mode == ButtonMode.Common) {
-                    if (this.grayed && this._buttonController && this._buttonController.hasPage(GButton.DISABLED))
+                if (this.$mode == ButtonMode.Common) {
+                    if (this.grayed && this.$buttonController && this.$buttonController.hasPage(GButton.DISABLED))
                         this.setState(GButton.DISABLED);
-                    else if (this._over)
+                    else if (this.$over)
                         this.setState(GButton.OVER);
                     else
                         this.setState(GButton.UP);
@@ -499,32 +406,27 @@ module fgui {
             }
         }
 
-        private __click(evt: egret.TouchEvent): void {
-            if (this._sound) {
-                var pi: PackageItem = UIPackage.getItemByURL(this._sound);
-                if (pi) {
-                    var sound: egret.Sound = <egret.Sound>pi.owner.getItemAsset(pi);
-                    if (sound)
-                        GRoot.inst.playOneShotSound(sound, this._soundVolumeScale);
-                }
-            }
+        private $click(evt: PIXI.InteractionEvent): void {
+            if (!this.$changeStateOnClick)
+                return;
 
-            if (this._mode == ButtonMode.Check) {
-                if (this._changeStateOnClick) {
-                    this.selected = !this._selected;
-                    this.dispatchEvent(new StateChangeEvent(StateChangeEvent.CHANGED));
-                }
+            if (this.$mode == ButtonMode.Check) {
+                this.selected = !this.$selected;
+                this.emit(StateChangeEvent.CHANGED, this);
             }
-            else if (this._mode == ButtonMode.Radio) {
-                if (this._changeStateOnClick && !this._selected) {
+            else if (this.$mode == ButtonMode.Radio) {
+                if (!this.$selected) {
                     this.selected = true;
-                    this.dispatchEvent(new StateChangeEvent(StateChangeEvent.CHANGED));
+                    this.emit(StateChangeEvent.CHANGED, this);
                 }
             }
-            else {
-                if (this._relatedController)
-                    this._relatedController.selectedPageId = this._relatedPageId;
-            }
+        }
+
+        public dispose():void {
+            GTimer.inst.remove(this.setState, this);
+            GTimer.inst.remove(this.setState, this);
+            GRoot.inst.off(InteractiveEvents.Up, this.$mouseup, this);
+            super.dispose();
         }
     }
 }

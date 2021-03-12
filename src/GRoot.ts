@@ -1,51 +1,148 @@
+namespace fgui {
 
-module fgui {
+    export class GRootMouseStatus {
+        public touchDown: boolean = false;
+        public mouseX: number = 0;
+        public mouseY: number = 0;
+    }
 
     export class GRoot extends GComponent {
-        public static contentScaleLevel: number = 0;
 
-        private _nativeStage: egret.Stage;
-        private _modalLayer: GGraph;
-        private _popupStack: Array<GObject>;
-        private _justClosedPopups: Array<GObject>;
-        private _modalWaitPane: GObject;
-        private _focusedObject: GObject;
-        private _tooltipWin: GObject;
-        private _defaultTooltipWin: GObject;
-        private _volumeScale: number;
+        private static uniqueID:number = 0;
 
-        private static _inst: GRoot;
+        private $uiStage: UIStage;
 
-        public static touchScreen: boolean;
-        public static contentScaleFactor: number = 1;
-        public static touchDown: boolean;
-        public static ctrlKeyDown: boolean;
-        public static shiftKeyDown: boolean;
-        public static mouseX: number;
-        public static mouseY: number;
+        private $modalLayer: GGraph;
+        private $popupStack: GObject[];
+        private $justClosedPopups: GObject[];
+        private $modalWaitPane: GObject;
+        private $focusedObject: GObject;
+        private $tooltipWin: GObject;
+        private $defaultTooltipWin: GObject;
+        private $checkingPopups:boolean;
+        private $uid:number;
 
-        public static FOCUS_CHANGED: string = "FocusChanged";
+        private static $inst: GRoot;
 
+        private static $gmStatus = new GRootMouseStatus();
+
+        /**
+         * the singleton instance of the GRoot object
+         */
         public static get inst(): GRoot {
-            if (GRoot._inst == null)
+            if (GRoot.$inst == null)
                 new GRoot();
-            return GRoot._inst;
+            return GRoot.$inst;
         }
 
+        /**
+         * the current mouse/pointer data
+         */
+        public static get globalMouseStatus(): GRootMouseStatus {
+            return GRoot.$gmStatus;
+        }
+        
+        /**
+         * the main entry to lauch the UI root, e.g.: GRoot.inst.attachTo(app, options)
+         * @param app your PIXI.Application instance to be used in this GRoot instance
+         * @param stageOptions stage rotation / resize options
+         */
+        public attachTo(app: PIXI.Application, stageOptions?: UIStageOptions): void {
+
+            createjs.Ticker = null;   //no need this one
+            GTimer.inst.setTicker(app.ticker);
+            
+            if (this.$uiStage) {
+                this.$uiStage.off(DisplayObjectEvent.SIZE_CHANGED, this.$winResize, this);
+                this.$uiStage.nativeStage.off(InteractiveEvents.Down, this.$stageDown, this);
+                this.$uiStage.nativeStage.off(InteractiveEvents.Up, this.$stageUp, this);
+                this.$uiStage.nativeStage.off(InteractiveEvents.Move, this.$stageMove, this);
+                this.$uiStage.nativeStage.removeChild(this.$displayObject);
+                this.$uiStage.dispose();
+            }
+
+            this.$uiStage = new UIStage(app, stageOptions);
+            this.$uiStage.on(DisplayObjectEvent.SIZE_CHANGED, this.$winResize, this);
+            this.$uiStage.nativeStage.on(InteractiveEvents.Down, this.$stageDown, this);
+            this.$uiStage.nativeStage.on(InteractiveEvents.Up, this.$stageUp, this);
+            this.$uiStage.nativeStage.on(InteractiveEvents.Move, this.$stageMove, this);
+            this.$uiStage.nativeStage.addChild(this.$displayObject);
+
+            this.$winResize(this.$uiStage);
+
+            if (!this.$modalLayer) {
+                this.$modalLayer = new GGraph();
+                this.$modalLayer.setSize(this.width, this.height);
+                this.$modalLayer.drawRect(0, 0, 0, UIConfig.modalLayerColor, UIConfig.modalLayerAlpha);
+                this.$modalLayer.addRelation(this, RelationType.Size);
+            }
+        }
+        
         public constructor() {
             super();
-            if (GRoot._inst == null)
-                GRoot._inst = this;
+            if (GRoot.$inst == null)
+                GRoot.$inst = this;
 
             this.opaque = false;
-            this._volumeScale = 1;
-            this._popupStack = new Array<GObject>();
-            this._justClosedPopups = new Array<GObject>();
-            this.displayObject.addEventListener(egret.Event.ADDED_TO_STAGE, this.__addedToStage, this);
+            this.$popupStack = []
+            this.$justClosedPopups = [];
+
+            this.$uid = GRoot.uniqueID++;
+
+            utils.DOMEventManager.inst.on(DisplayObjectEvent.MOUSE_WHEEL, this.dispatchMouseWheel, this);
         }
 
-        public get nativeStage(): egret.Stage {
-            return this._nativeStage;
+        public get uniqueID():number {
+            return this.$uid;
+        }
+
+        public get stageWidth(): number {
+            return this.$uiStage.stageWidth;
+        }
+
+        public get stageHeight(): number {
+            return this.$uiStage.stageHeight;
+        }
+
+        public get contentScaleFactor(): number {
+            return this.$uiStage.resolution;
+        }
+
+        public get applicationContext(): PIXI.Application {
+            return this.$uiStage.applicationContext;
+        }
+
+        public get nativeStage(): PIXI.Container {
+            return this.$uiStage.nativeStage;
+        }
+
+        public get orientation():StageOrientation {
+            return this.$uiStage.orientation;
+        }
+
+        public get stageWrapper(): UIStage {
+            return this.$uiStage;
+        }
+
+        protected dispatchMouseWheel(evt:any):void {
+            let childUnderMouse = this.getObjectUnderPoint(GRoot.globalMouseStatus.mouseX, GRoot.globalMouseStatus.mouseY);
+            if(childUnderMouse != null) { //bubble
+                while(childUnderMouse.parent && childUnderMouse.parent != this) {
+                    childUnderMouse.emit(DisplayObjectEvent.MOUSE_WHEEL, evt);
+                    childUnderMouse = childUnderMouse.parent;
+                }
+            }
+        }
+
+        /**
+         * get the objects which are placed underneath the given stage coordinate
+         * @param globalX the stage X
+         * @param globalY the stage Y
+         */
+        public getObjectUnderPoint(globalX:number, globalY:number):GObject {
+            GRoot.sHelperPoint.set(globalX, globalY);
+            let ret: PIXI.DisplayObject = this.$uiStage.applicationContext.renderer.plugins.interaction.hitTest(GRoot.sHelperPoint, this.nativeStage);
+            return GObject.castFromNativeObject(ret);
         }
 
         public showWindow(win: Window): void {
@@ -77,15 +174,14 @@ module fgui {
         }
 
         public bringToFront(win: Window): void {
-            var cnt: number = this.numChildren;
-            var i: number;
-            if (this._modalLayer.parent != null && !win.modal)
-                i = this.getChildIndex(this._modalLayer) - 1;
+            let i: number;
+            if (this.$modalLayer.parent != null && !win.modal)
+                i = this.getChildIndex(this.$modalLayer) - 1;
             else
-                i = cnt - 1;
+                i = this.numChildren - 1;
 
             for (; i >= 0; i--) {
-                var g: GObject = this.getChildAt(i);
+                let g: GObject = this.getChildAt(i);
                 if (g == win)
                     return;
                 if (g instanceof Window)
@@ -98,112 +194,91 @@ module fgui {
 
         public showModalWait(msg: string = null): void {
             if (UIConfig.globalModalWaiting != null) {
-                if (this._modalWaitPane == null)
-                    this._modalWaitPane = UIPackage.createObjectFromURL(UIConfig.globalModalWaiting);
-                this._modalWaitPane.setSize(this.width, this.height);
-                this._modalWaitPane.addRelation(this, RelationType.Size);
-
-                this.addChild(this._modalWaitPane);
-                this._modalWaitPane.text = msg;
+                if (this.$modalWaitPane == null) {
+                    this.$modalWaitPane = UIPackage.createObjectFromURL(UIConfig.globalModalWaiting);
+                    this.$modalWaitPane.addRelation(this, RelationType.Size);
+                }
+                this.$modalWaitPane.setSize(this.width, this.height);
+                this.addChild(this.$modalWaitPane);
+                this.$modalWaitPane.text = msg;
             }
         }
 
         public closeModalWait(): void {
-            if (this._modalWaitPane != null && this._modalWaitPane.parent != null)
-                this.removeChild(this._modalWaitPane);
+            if (this.$modalWaitPane != null && this.$modalWaitPane.parent != null)
+                this.removeChild(this.$modalWaitPane);
         }
 
         public closeAllExceptModals(): void {
-            var arr: Array<GObject> = this._children.slice();
-            var cnt: number = arr.length;
-            for (var i: number = 0; i < cnt; i++) {
-                var g: GObject = arr[i];
-                if ((g instanceof Window) && !(<Window><any>g).modal)
-                    (<Window><any>g).hide();
-            }
+            let arr: GObject[] = this.$children.slice();
+            arr.forEach(g => {
+                if ((g instanceof Window) && !(g as Window).modal)
+                    g.hide();
+            }, this);
         }
 
         public closeAllWindows(): void {
-            var arr: Array<GObject> = this._children.slice();
-            var cnt: number = arr.length;
-            for (var i: number = 0; i < cnt; i++) {
-                var g: GObject = arr[i];
+            let arr: GObject[] = this.$children.slice();
+            arr.forEach(g => {
                 if (g instanceof Window)
-                    (<Window><any>g).hide();
-            }
+                    g.hide();
+            }, this);
         }
 
         public getTopWindow(): Window {
-            var cnt: number = this.numChildren;
-            for (var i: number = cnt - 1; i >= 0; i--) {
-                var g: GObject = this.getChildAt(i);
+            let cnt: number = this.numChildren;
+            for (let i: number = cnt - 1; i >= 0; i--) {
+                let g: GObject = this.getChildAt(i);
                 if (g instanceof Window) {
-                    return <Window><any>g;
+                    return g as Window;
                 }
             }
 
             return null;
         }
 
-        public get modalLayer(): GGraph {
-            return this._modalLayer;
-        }
-
         public get hasModalWindow(): boolean {
-            return this._modalLayer.parent != null;
+            return this.$modalLayer.parent != null;
         }
 
         public get modalWaiting(): boolean {
-            return this._modalWaitPane && this._modalWaitPane.inContainer;
+            return this.$modalWaitPane && this.$modalWaitPane.inContainer;
         }
 
-        public showPopup(popup: GObject, target: GObject = null, downward: any = null): void {
-            if (this._popupStack.length > 0) {
-                var k: number = this._popupStack.indexOf(popup);
+        public showPopup(popup: GObject, target: GObject = null, dir: PopupDirection = PopupDirection.Auto): void {
+            if (this.$popupStack.length > 0) {
+                let k: number = this.$popupStack.indexOf(popup);
                 if (k != -1) {
-                    for (var i: number = this._popupStack.length - 1; i >= k; i--)
-                        this.removeChild(this._popupStack.pop());
+                    for (let i: number = this.$popupStack.length - 1; i >= k; i--)
+                        this.removeChild(this.$popupStack.pop());
                 }
             }
-            this._popupStack.push(popup);
-
-            if (target != null) {
-                var p: GObject = target;
-                while (p != null) {
-                    if (p.parent == this) {
-                        if (popup.sortingOrder < p.sortingOrder) {
-                            popup.sortingOrder = p.sortingOrder;
-                        }
-                        break;
-                    }
-                    p = p.parent;
-                }
-            }
+            this.$popupStack.push(popup);
 
             this.addChild(popup);
             this.adjustModalLayer();
 
-            var pos: egret.Point;
-            var sizeW: number = 0, sizeH: number = 0;
+            let pos: PIXI.Point;
+            let sizeW: number = 0, sizeH: number = 0;
             if (target) {
                 pos = target.localToRoot();
                 sizeW = target.width;
                 sizeH = target.height;
             }
-            else {
-                pos = this.globalToLocal(GRoot.mouseX, GRoot.mouseY);
-            }
-            var xx: number, yy: number;
+            else
+                pos = this.globalToLocal(GRoot.$gmStatus.mouseX, GRoot.$gmStatus.mouseY);
+
+            let xx: number, yy: number;
             xx = pos.x;
             if (xx + popup.width > this.width)
                 xx = xx + sizeW - popup.width;
             yy = pos.y + sizeH;
-            if ((downward == null && yy + popup.height > this.height)
-                || downward == false) {
+            if ((dir == PopupDirection.Auto && yy + popup.height > this.height)
+                || dir == PopupDirection.Up) {
                 yy = pos.y - popup.height - 1;
                 if (yy < 0) {
                     yy = 0;
-                    xx += sizeW / 2;
+                    xx += sizeW * .5;
                 }
             }
 
@@ -211,262 +286,216 @@ module fgui {
             popup.y = yy;
         }
 
-        public togglePopup(popup: GObject, target: GObject = null, downward: any = null): void {
-            if (this._justClosedPopups.indexOf(popup) != -1)
+        public togglePopup(popup: GObject, target: GObject = null, dir?: PopupDirection): void {
+            if (this.$justClosedPopups.indexOf(popup) != -1)
                 return;
-
-            this.showPopup(popup, target, downward);
+            this.showPopup(popup, target, dir);
         }
 
         public hidePopup(popup: GObject = null): void {
+            let i:number;
             if (popup != null) {
-                var k: number = this._popupStack.indexOf(popup);
+                let k: number = this.$popupStack.indexOf(popup);
                 if (k != -1) {
-                    for (var i: number = this._popupStack.length - 1; i >= k; i--)
-                        this.closePopup(this._popupStack.pop());
+                    for (i = this.$popupStack.length - 1; i >= k; i--)
+                        this.closePopup(this.$popupStack.pop());
                 }
             }
             else {
-                var cnt: number = this._popupStack.length;
+                let cnt: number = this.$popupStack.length;
                 for (i = cnt - 1; i >= 0; i--)
-                    this.closePopup(this._popupStack[i]);
-                this._popupStack.length = 0;
+                    this.closePopup(this.$popupStack[i]);
+                this.$popupStack.length = 0;
             }
         }
 
         public get hasAnyPopup(): boolean {
-            return this._popupStack.length != 0;
+            return this.$popupStack.length != 0;
         }
 
         private closePopup(target: GObject): void {
             if (target.parent != null) {
                 if (target instanceof Window)
-                    (<Window><any>target).hide();
+                    (target as Window).hide();
                 else
                     this.removeChild(target);
             }
         }
 
         public showTooltips(msg: string): void {
-            if (this._defaultTooltipWin == null) {
-                var resourceURL: string = UIConfig.tooltipsWin;
+            if (this.$defaultTooltipWin == null) {
+                let resourceURL: string = UIConfig.tooltipsWin;
                 if (!resourceURL) {
                     console.error("UIConfig.tooltipsWin not defined");
                     return;
                 }
 
-                this._defaultTooltipWin = UIPackage.createObjectFromURL(resourceURL);
+                this.$defaultTooltipWin = UIPackage.createObjectFromURL(resourceURL);
             }
 
-            this._defaultTooltipWin.text = msg;
-            this.showTooltipsWin(this._defaultTooltipWin);
+            this.$defaultTooltipWin.text = msg;
+            this.showTooltipsWin(this.$defaultTooltipWin);
         }
 
-        public showTooltipsWin(tooltipWin: GObject, position: egret.Point = null): void {
+        public showTooltipsWin(tooltipWin: GObject, position: PIXI.Point = null): void {
             this.hideTooltips();
 
-            this._tooltipWin = tooltipWin;
+            this.$tooltipWin = tooltipWin;
 
-            var xx: number = 0;
-            var yy: number = 0;
+            let xx: number = 0;
+            let yy: number = 0;
             if (position == null) {
-                xx = GRoot.mouseX + 10;
-                yy = GRoot.mouseY + 20;
+                xx = GRoot.$gmStatus.mouseX + 10;
+                yy = GRoot.$gmStatus.mouseY + 20;
             }
             else {
                 xx = position.x;
                 yy = position.y;
             }
-            var pt: egret.Point = this.globalToLocal(xx, yy);
+            let pt: PIXI.Point = this.globalToLocal(xx, yy);
             xx = pt.x;
             yy = pt.y;
 
-            if (xx + this._tooltipWin.width > this.width) {
-                xx = xx - this._tooltipWin.width - 1;
+            if (xx + this.$tooltipWin.width > this.width) {
+                xx = xx - this.$tooltipWin.width - 1;
                 if (xx < 0)
                     xx = 10;
             }
-            if (yy + this._tooltipWin.height > this.height) {
-                yy = yy - this._tooltipWin.height - 1;
-                if (xx - this._tooltipWin.width - 1 > 0)
-                    xx = xx - this._tooltipWin.width - 1;
+            if (yy + this.$tooltipWin.height > this.height) {
+                yy = yy - this.$tooltipWin.height - 1;
+                if (xx - this.$tooltipWin.width - 1 > 0)
+                    xx = xx - this.$tooltipWin.width - 1;
                 if (yy < 0)
                     yy = 10;
             }
 
-            this._tooltipWin.x = xx;
-            this._tooltipWin.y = yy;
-            this.addChild(this._tooltipWin);
+            this.$tooltipWin.x = xx;
+            this.$tooltipWin.y = yy;
+            this.addChild(this.$tooltipWin);
         }
 
         public hideTooltips(): void {
-            if (this._tooltipWin != null) {
-                if (this._tooltipWin.parent)
-                    this.removeChild(this._tooltipWin);
-                this._tooltipWin = null;
+            if (this.$tooltipWin != null) {
+                if (this.$tooltipWin.parent)
+                    this.removeChild(this.$tooltipWin);
+                this.$tooltipWin = null;
             }
         }
-
-        public getObjectUnderPoint(globalX: number, globalY: number): GObject {
-            var ret: egret.DisplayObject = this._nativeStage.$hitTest(globalX, globalY);
-            if (ret)
-                return ToolSet.displayObjectToGObject(ret);
-            else
-                return null;
-        }
-
+        
         public get focus(): GObject {
-            if (this._focusedObject && !this._focusedObject.onStage)
-                this._focusedObject = null;
+            if (this.$focusedObject && !this.$focusedObject.onStage)
+                this.$focusedObject = null;
 
-            return this._focusedObject;
+            return this.$focusedObject;
         }
 
         public set focus(value: GObject) {
             if (value && (!value.focusable || !value.onStage))
-                throw "invalid focus target";
+                throw new Error("Invalid target to focus");
 
             this.setFocus(value);
         }
 
         private setFocus(value: GObject) {
-            if (this._focusedObject != value) {
-                this._focusedObject = value;
-                this.dispatchEventWith(GRoot.FOCUS_CHANGED);
+            if (this.$focusedObject != value) {
+                this.$focusedObject = value;
+                this.emit(FocusEvent.CHANGED, this);
             }
         }
 
-        public get volumeScale(): number {
-            return this._volumeScale;
-        }
-
-        public set volumeScale(value: number) {
-            this._volumeScale = value;
-        }
-
-        public playOneShotSound(sound: egret.Sound, volumeScale: number = 1) {
-            var vs: number = this._volumeScale * volumeScale;
-            var channel: egret.SoundChannel = sound.play(0, 1);
-            channel.volume = vs;
-        }
-
         private adjustModalLayer(): void {
-            var cnt: number = this.numChildren;
+            let cnt: number = this.numChildren;
 
-            if (this._modalWaitPane != null && this._modalWaitPane.parent != null)
-                this.setChildIndex(this._modalWaitPane, cnt - 1);
+            if (this.$modalWaitPane != null && this.$modalWaitPane.parent != null)
+                this.setChildIndex(this.$modalWaitPane, cnt - 1);
 
-            for (var i: number = cnt - 1; i >= 0; i--) {
-                var g: GObject = this.getChildAt(i);
-                if ((g instanceof Window) && (<Window><any>g).modal) {
-                    if (this._modalLayer.parent == null)
-                        this.addChildAt(this._modalLayer, i);
+            for (let i: number = cnt - 1; i >= 0; i--) {
+                let g: GObject = this.getChildAt(i);
+                if ((g instanceof Window) && g.modal) {
+                    if (this.$modalLayer.parent == null)
+                        this.addChildAt(this.$modalLayer, i);
                     else
-                        this.setChildIndexBefore(this._modalLayer, i);
+                        this.setChildIndexBefore(this.$modalLayer, i);
                     return;
                 }
             }
 
-            if (this._modalLayer.parent != null)
-                this.removeChild(this._modalLayer);
+            if (this.$modalLayer.parent != null)
+                this.removeChild(this.$modalLayer);
         }
 
-        private __addedToStage(evt: egret.Event): void {
-            this.displayObject.removeEventListener(egret.Event.ADDED_TO_STAGE, this.__addedToStage, this);
+        private $stageDown(evt: PIXI.InteractionEvent): void {
+            GRoot.$gmStatus.mouseX = evt.data.global.x;
+            GRoot.$gmStatus.mouseY = evt.data.global.y;
+            GRoot.$gmStatus.touchDown = true;
 
-            this._nativeStage = this.displayObject.stage;
-
-            this._nativeStage.addEventListener(egret.TouchEvent.TOUCH_BEGIN, this.__stageMouseDownCapture, this, true);
-            this._nativeStage.addEventListener(egret.TouchEvent.TOUCH_END, this.__stageMouseUpCapture, this, true);
-            this._nativeStage.addEventListener(egret.TouchEvent.TOUCH_MOVE, this.__stageMouseMoveCapture, this, true);
-
-            this._modalLayer = new GGraph();
-            this._modalLayer.setSize(this.width, this.height);
-            this._modalLayer.drawRect(0, 0, 0, UIConfig.modalLayerColor, UIConfig.modalLayerAlpha);
-            this._modalLayer.addRelation(this, RelationType.Size);
-
-            this.displayObject.stage.addEventListener(egret.Event.RESIZE, this.__winResize, this);
-
-            this.__winResize(null);
-        }
-
-        private __stageMouseDownCapture(evt: egret.TouchEvent): void {
-            //GRoot.ctrlKeyDown = evt.ctrlKey;
-            //GRoot.shiftKeyDown = evt.shiftKey;
-            GRoot.mouseX = evt.stageX;
-            GRoot.mouseY = evt.stageY;
-            GRoot.touchDown = true;
-
-            var mc: egret.DisplayObject = <egret.DisplayObject><any>(evt.target);
-            while (mc != this.displayObject.stage && mc != null) {
-                if (mc["$owner"]) {
-                    var gg: GObject = <GObject><any>mc["$owner"];
-                    if (gg.touchable && gg.focusable) {
-                        this.setFocus(gg);
+            //check focus
+            let mc: PIXI.DisplayObject = evt.target;
+            while (mc && mc != this.nativeStage) {
+                if (fgui.isUIObject(mc)) {
+                    let g = mc.UIOwner;
+                    if (g.touchable && g.focusable) {
+                        this.setFocus(g);
                         break;
                     }
                 }
                 mc = mc.parent;
             }
-
-            if (this._tooltipWin != null)
+            
+            if (this.$tooltipWin != null)
                 this.hideTooltips();
 
-            this._justClosedPopups.length = 0;
-            if (this._popupStack.length > 0) {
-                mc = <egret.DisplayObject><any>(evt.target);
-                while (mc != this.displayObject.stage && mc != null) {
-                    if (mc["$owner"]) {
-                        var pindex: number = this._popupStack.indexOf(<GObject><any>mc["$owner"]);
-                        if (pindex != -1) {
-                            for (var i: number = this._popupStack.length - 1; i > pindex; i--) {
-                                var popup: GObject = this._popupStack.pop();
-                                this.closePopup(popup);
-                                this._justClosedPopups.push(popup);
-                            }
-                            return;
-                        }
-                    }
-                    mc = mc.parent;
-                }
+            this.checkPopups(evt.target);
+        }
 
-                var cnt: number = this._popupStack.length;
-                for (i = cnt - 1; i >= 0; i--) {
-                    popup = this._popupStack[i];
-                    this.closePopup(popup);
-                    this._justClosedPopups.push(popup);
-                }
-                this._popupStack.length = 0;
+        public checkPopups(target:PIXI.DisplayObject):void {
+            if(this.$checkingPopups)
+				return;
+			
+            this.$checkingPopups = true;
+            
+			this.$justClosedPopups.length = 0;
+			if (this.$popupStack.length > 0) {
+                let mc = target;
+                while (mc && mc != this.nativeStage) {
+					if (fgui.isUIObject(mc)) {
+						let pindex = this.$popupStack.indexOf(mc.UIOwner);
+						if (pindex != -1) {
+                            let popup:GObject;
+							for(let i = this.$popupStack.length - 1; i > pindex; i--) {
+								popup = this.$popupStack.pop();
+								this.closePopup(popup);
+								this.$justClosedPopups.push(popup);
+							}
+							return;
+						}
+					}
+					mc = mc.parent;
+				}
+				
+                let cnt = this.$popupStack.length;
+                let popup:GObject;
+				for(let i = cnt - 1; i >= 0; i--) {
+					popup = this.$popupStack[i];
+					this.closePopup(popup);
+					this.$justClosedPopups.push(popup);
+				}
+				this.$popupStack.length = 0;
             }
         }
 
-        private __stageMouseMoveCapture(evt: egret.TouchEvent): void {
-            //GRoot.ctrlKeyDown = evt.ctrlKey;
-            //GRoot.shiftKeyDown = evt.shiftKey;
-            GRoot.mouseX = evt.stageX;
-            GRoot.mouseY = evt.stageY;
+        private $stageMove(evt: PIXI.InteractionEvent): void {
+            GRoot.$gmStatus.mouseX = evt.data.global.x;
+            GRoot.$gmStatus.mouseY = evt.data.global.y;
         }
 
-        private __stageMouseUpCapture(evt: egret.TouchEvent): void {
-            GRoot.touchDown = false;
+        private $stageUp(evt: PIXI.InteractionEvent): void {
+            GRoot.$gmStatus.touchDown = false;
+            this.$checkingPopups = false;
         }
 
-        private __winResize(evt: egret.Event): void {
-            this.setSize(this._nativeStage.stageWidth, this._nativeStage.stageHeight);
-
-            //console.info("screen size=" + w + "x" + h + "/" + this.width + "x" + this.height);
-        }
-
-        private updateContentScaleLevel(): void {
-            var ss: number = 1;// Math.max(cc.view.getScaleX(), cc.view.getScaleY());
-            if (ss >= 3.5)
-                GRoot.contentScaleLevel = 3; //x4
-            else if (ss >= 2.5)
-                GRoot.contentScaleLevel = 2; //x3
-            else if (ss >= 1.5)
-                GRoot.contentScaleLevel = 1; //x2
-            else
-                GRoot.contentScaleLevel = 0;
+        private $winResize(stage: UIStage): void {
+            this.setSize(stage.stageWidth, stage.stageHeight);
         }
     }
 }

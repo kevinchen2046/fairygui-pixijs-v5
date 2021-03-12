@@ -1,95 +1,94 @@
-declare module fgui {
-    class AsyncOperation {
-        callback: Function;
-        callbackObj: any;
-        private _itemList;
-        private _objectPool;
-        private _index;
-        constructor();
-        createObject(pkgName: string, resName: string): void;
-        createObjectFromURL(url: string): void;
-        cancel(): void;
-        private internalCreateObject;
-        private collectComponentChildren;
-        private collectListChildren;
-        private run;
+declare namespace fgui {
+    type IndexedObject = {
+        [key: string]: any;
+    };
+    class InteractiveEvents {
+        static Down: string;
+        static Cancel: string;
+        static Up: string;
+        static Click: string;
+        static UpOutside: string;
+        static Move: string;
+        static Over: string;
+        static Out: string;
+        static RightDown: string;
+        static RightUp: string;
+        static RightClick: string;
+        static RightUpOutside: string;
     }
-}
-declare module fgui {
-    class Controller extends egret.EventDispatcher {
-        private _selectedIndex;
-        private _previousIndex;
-        private _pageIds;
-        private _pageNames;
-        private _actions;
-        name: string;
-        parent: GComponent;
-        autoRadioGroupDepth: boolean;
-        changing: boolean;
-        private static _nextPageId;
-        constructor();
-        dispose(): void;
-        selectedIndex: number;
-        setSelectedIndex(value?: number): void;
-        readonly previsousIndex: number;
-        selectedPage: string;
-        setSelectedPage(value: string): void;
-        readonly previousPage: string;
-        readonly pageCount: number;
-        getPageName(index?: number): string;
-        addPage(name?: string): void;
-        addPageAt(name: string, index?: number): void;
-        removePage(name: string): void;
-        removePageAt(index?: number): void;
-        clearPages(): void;
-        hasPage(aName: string): boolean;
-        getPageIndexById(aId: string): number;
-        getPageIdByName(aName: string): string;
-        getPageNameById(aId: string): string;
-        getPageId(index?: number): string;
-        selectedPageId: string;
-        oppositePageId: string;
-        readonly previousPageId: string;
-        runActions(): void;
-        setup(buffer: ByteBuffer): void;
+    const enum GearType {
+        Display = 0,
+        XY = 1,
+        Size = 2,
+        Look = 3,
+        Color = 4,
+        Animation = 5,
+        Text = 6,
+        Icon = 7,
+        Count = 8
     }
-}
-declare module fgui {
-    class DragDropManager {
-        private _agent;
-        private _sourceData;
-        private static _inst;
-        static readonly inst: DragDropManager;
-        constructor();
-        readonly dragAgent: GObject;
-        readonly dragging: boolean;
-        startDrag(source: GObject, icon: string, sourceData: any, touchPointID?: number): void;
-        cancel(): void;
-        private __dragEnd;
+    type GearNameMap = {
+        [key: string]: number;
+    };
+    let GearXMLNodeNameMap: GearNameMap;
+    let BlendModeMap: string[];
+    const enum ScrollPaneFlags {
+        DisplayOnLeft = 1,
+        SnapToItem = 2,
+        DisplayOnDemand = 4,
+        PageMode = 8,
+        TouchEffect = 16,
+        DisableTouchEffect = 32,
+        BounceEffect = 64,
+        DisableBounceEffect = 128,
+        DisableInertia = 256,
+        DisableScissorRect = 512
     }
-}
-declare module fgui {
-    enum ButtonMode {
+    const enum PopupDirection {
+        Auto = 0,
+        Down = 1,
+        Up = 2
+    }
+    const enum ScrollBarDisplayType {
+        Default = 0,
+        Visible = 1,
+        Auto = 2,
+        Hidden = 3
+    }
+    const enum OverflowType {
+        Visible = 0,
+        Hidden = 1,
+        Scroll = 2,
+        Scale = 3,
+        ScaleFree = 4
+    }
+    const enum ScrollType {
+        Horizontal = 0,
+        Vertical = 1,
+        Both = 2
+    }
+    const enum ButtonMode {
         Common = 0,
         Check = 1,
         Radio = 2
     }
-    enum AutoSizeType {
+    const enum AutoSizeType {
         None = 0,
         Both = 1,
-        Height = 2
+        Height = 2,
+        Shrink = 3
     }
-    enum AlignType {
-        Left = 0,
-        Center = 1,
-        Right = 2
+    const enum AlignType {
+        Left = "left",
+        Center = "center",
+        Right = "right"
     }
-    enum VertAlignType {
+    const enum VertAlignType {
         Top = 0,
         Middle = 1,
         Bottom = 2
     }
-    enum LoaderFillType {
+    const enum LoaderFillType {
         None = 0,
         Scale = 1,
         ScaleMatchHeight = 2,
@@ -97,94 +96,73 @@ declare module fgui {
         ScaleFree = 4,
         ScaleNoBorder = 5
     }
-    enum ListLayoutType {
+    const enum ListLayoutType {
         SingleColumn = 0,
         SingleRow = 1,
         FlowHorizontal = 2,
         FlowVertical = 3,
         Pagination = 4
     }
-    enum ListSelectionMode {
+    const enum ListSelectionMode {
         Single = 0,
         Multiple = 1,
         Multiple_SingleClick = 2,
         None = 3
     }
-    enum OverflowType {
-        Visible = 0,
-        Hidden = 1,
-        Scroll = 2
-    }
-    enum PackageItemType {
+    const enum PackageItemType {
         Image = 0,
-        MovieClip = 1,
-        Sound = 2,
-        Component = 3,
-        Atlas = 4,
-        Font = 5,
-        Swf = 6,
-        Misc = 7,
-        Unknown = 8
+        Swf = 1,
+        MovieClip = 2,
+        Sound = 3,
+        Component = 4,
+        Misc = 5,
+        Font = 6,
+        Atlas = 7
     }
-    enum ObjectType {
-        Image = 0,
-        MovieClip = 1,
-        Swf = 2,
-        Graph = 3,
-        Loader = 4,
-        Group = 5,
-        Text = 6,
-        RichText = 7,
-        InputText = 8,
-        Component = 9,
-        List = 10,
-        Label = 11,
-        Button = 12,
-        ComboBox = 13,
-        ProgressBar = 14,
-        Slider = 15,
-        ScrollBar = 16,
-        Tree = 17
-    }
-    enum ProgressTitleType {
+    const enum ProgressTitleType {
         Percent = 0,
         ValueAndMax = 1,
         Value = 2,
         Max = 3
     }
-    enum ScrollBarDisplayType {
-        Default = 0,
-        Visible = 1,
-        Auto = 2,
-        Hidden = 3
+    const enum Keys {
+        Up = 38,
+        Down = 40,
+        Left = 37,
+        Right = 39,
+        Shift = 16,
+        Alt = 18,
+        Ctrl = 17
     }
-    enum ScrollType {
-        Horizontal = 0,
-        Vertical = 1,
-        Both = 2
-    }
-    enum FlipType {
+    const enum FlipType {
         None = 0,
         Horizontal = 1,
         Vertical = 2,
         Both = 3
     }
-    enum ChildrenRenderOrder {
-        Ascent = 0,
-        Descent = 1,
-        Arch = 2
+    const enum TextureFillMode {
+        NONE = 0,
+        HORZ = 1,
+        VERT = 2,
+        DEG90 = 3,
+        DEG180 = 4,
+        DEG360 = 5
     }
-    enum GroupLayoutType {
-        None = 0,
-        Horizontal = 1,
-        Vertical = 2
+    const enum TextureFillBegin {
+        L = 0,
+        R = 1,
+        T = 2,
+        B = 3,
+        LT = 4,
+        RT = 5,
+        LB = 6,
+        RB = 7
     }
-    enum PopupDirection {
-        Auto = 0,
-        Up = 1,
-        Down = 2
+    const enum TextureFillDirection {
+        CW = 0,
+        CCW = 1
     }
-    enum RelationType {
+    const enum RelationType {
         Left_Left = 0,
         Left_Center = 1,
         Left_Right = 2,
@@ -211,117 +189,90 @@ declare module fgui {
         BottomExt_Bottom = 23,
         Size = 24
     }
-    enum FillMethod {
-        None = 0,
-        Horizontal = 1,
-        Vertical = 2,
-        Radial90 = 3,
-        Radial180 = 4,
-        Radial360 = 5
+    const enum ListChildrenRenderOrder {
+        Ascent = 0,
+        Descent = 1,
+        Arch = 2
     }
-    enum FillOrigin {
-        Top = 0,
-        Bottom = 1,
-        Left = 2,
-        Right = 3,
-        TopLeft = 0,
-        TopRight = 1,
-        BottomLeft = 2,
-        BottomRight = 3
-    }
-    enum FillOrigin90 {
-        TopLeft = 0,
-        TopRight = 1,
-        BottomLeft = 2,
-        BottomRight = 3
-    }
-    enum ObjectPropID {
-        Text = 0,
-        Icon = 1,
-        Color = 2,
-        OutlineColor = 3,
-        Playing = 4,
-        Frame = 5,
-        DeltaTime = 6,
-        TimeScale = 7,
-        FontSize = 8,
-        Selected = 9
-    }
+    function ParseOverflowType(value: string): OverflowType;
+    function ParseScrollType(value: string): ScrollType;
+    function ParseLoaderFillType(value: string): LoaderFillType;
+    function ParseListLayoutType(value: string): ListLayoutType;
+    function ParseListSelectionMode(value: string): ListSelectionMode;
+    function ParsePackageItemType(value: string): PackageItemType;
+    function ParseProgressTitleType(value: string): ProgressTitleType;
+    function ParseScrollBarDisplayType(value: string): ScrollBarDisplayType;
+    function ParseFlipType(value: string): FlipType;
+    function ParseButtonMode(value: string): ButtonMode;
+    function ParseAutoSizeType(value: string): AutoSizeType;
+    function ParseAlignType(value: string): AlignType;
+    function ParseVertAlignType(value: string): VertAlignType;
+    function ParseListChildrenRenderOrder(value: string): ListChildrenRenderOrder;
+    function ParseEaseType(name: string): (t: number) => number;
 }
-declare module fgui {
-    class GObject extends egret.EventDispatcher {
+declare namespace fgui {
+    class GObject {
         data: any;
+        protected $x: number;
+        protected $y: number;
+        protected $width: number;
+        protected $height: number;
+        protected $alpha: number;
+        protected $rotation: number;
+        protected $visible: boolean;
+        protected $touchable: boolean;
+        protected $grayed: boolean;
+        protected $draggable: boolean;
+        protected $scaleX: number;
+        protected $scaleY: number;
+        protected $skewX: number;
+        protected $skewY: number;
+        protected $pivot: PIXI.Point;
+        protected $pivotAsAnchor: boolean;
+        protected $pivotOffset: PIXI.Point;
+        protected $sortingOrder: number;
+        protected $internalVisible: boolean;
+        protected $focusable: boolean;
+        protected $tooltips: string;
+        protected $pixelSnapping: boolean;
+        protected $relations: Relations;
+        protected $group: GGroup;
+        protected $gears: GearBase<GObject>[];
+        protected $displayObject: PIXI.DisplayObject;
+        protected $dragBounds: PIXI.Rectangle;
+        protected $handlingController: boolean;
+        private static $colorHelper;
+        protected $colorFilter: PIXI.filters.ColorMatrixFilter;
+        protected $lastColorComponents: number[];
+        protected $parent: GComponent;
+        $inProgressBuilding: boolean;
+        $rawWidth: number;
+        $rawHeight: number;
+        $gearLocked: boolean;
+        $initWidth: number;
+        $initHeight: number;
+        protected $sourceWidth: number;
+        protected $sourceHeight: number;
+        protected $id: string;
+        protected $name: string;
         packageItem: PackageItem;
-        static draggingObject: GObject;
-        private _x;
-        private _y;
-        private _alpha;
-        private _rotation;
-        private _visible;
-        private _touchable;
-        private _grayed;
-        private _draggable;
-        private _scaleX;
-        private _scaleY;
-        private _skewX;
-        private _skewY;
-        private _pivotX;
-        private _pivotY;
-        private _pivotAsAnchor;
-        private _pivotOffsetX;
-        private _pivotOffsetY;
-        private _sortingOrder;
-        private _internalVisible;
-        private _handlingController;
-        private _focusable;
-        private _tooltips;
-        private _pixelSnapping;
-        private _disposed;
-        private _relations;
-        private _group;
-        private _gears;
-        private _displayObject;
-        private _dragBounds;
-        private _colorFilter;
-        sourceWidth: number;
-        sourceHeight: number;
-        initWidth: number;
-        initHeight: number;
-        minWidth: number;
-        minHeight: number;
-        maxWidth: number;
-        maxHeight: number;
-        _parent: GComponent;
-        _width: number;
-        _height: number;
-        _rawWidth: number;
-        _rawHeight: number;
-        _id: string;
-        _name: string;
-        _underConstruct: boolean;
-        _gearLocked: boolean;
-        _sizePercentInGroup: number;
-        _treeNode: GTreeNode;
-        static _gInstanceCounter: number;
-        static XY_CHANGED: string;
-        static SIZE_CHANGED: string;
-        static SIZE_DELAY_CHANGE: string;
-        static GEAR_STOP: string;
+        private static gInstanceCounter;
         constructor();
         readonly id: string;
         name: string;
         x: number;
         y: number;
         setXY(xv: number, yv: number): void;
-        xMin: number;
-        yMin: number;
         pixelSnapping: boolean;
         center(restraint?: boolean): void;
         width: number;
         height: number;
         setSize(wv: number, hv: number, ignorePivot?: boolean): void;
-        makeFullScreen(): void;
         ensureSizeCorrect(): void;
+        readonly sourceHeight: number;
+        readonly sourceWidth: number;
+        readonly initHeight: number;
+        readonly initWidth: number;
         readonly actualWidth: number;
         readonly actualHeight: number;
         scaleX: number;
@@ -330,10 +281,11 @@ declare module fgui {
         skewX: number;
         skewY: number;
         setSkew(xv: number, yv: number): void;
+        protected mapPivotWidth(scale: number): number;
+        protected mapPivotHeight(scale: number): number;
         pivotX: number;
         pivotY: number;
-        setPivot(xv: number, yv?: number, asAnchor?: boolean): void;
-        readonly pivotAsAnchor: boolean;
+        setPivot(xv: number, yv: number, asAnchor?: boolean): void;
         protected internalSetPivot(xv: number, yv: number, asAnchor: boolean): void;
         private updatePivotOffset;
         private applyPivot;
@@ -343,130 +295,115 @@ declare module fgui {
         rotation: number;
         readonly normalizeRotation: number;
         alpha: number;
+        protected updateAlpha(): void;
         visible: boolean;
-        readonly internalVisible: boolean;
-        readonly internalVisible2: boolean;
-        readonly internalVisible3: boolean;
+        internalVisible: boolean;
+        readonly finalVisible: boolean;
         sortingOrder: number;
         focusable: boolean;
         readonly focused: boolean;
         requestFocus(): void;
         tooltips: string;
         blendMode: string;
-        filters: egret.Filter[];
+        filters: PIXI.Filter[];
         readonly inContainer: boolean;
+        static isDisplayObjectOnStage(display: PIXI.DisplayObject): boolean;
         readonly onStage: boolean;
         readonly resourceURL: string;
         group: GGroup;
-        getGear(index: number): GearBase;
-        protected updateGear(index: number): void;
-        checkGearController(index: number, c: Controller): boolean;
-        updateGearFromRelations(index: number, dx: number, dy: number): void;
-        addDisplayLock(): number;
-        releaseDisplayLock(token: number): void;
-        private checkGearDisplay;
+        getGear(index: number | GearType): GearBase<GObject>;
+        protected updateGear(index: GearType): void;
+        updateGearFromRelations(index: GearType, dx: number, dy: number): void;
+        hasGearController(index: number, c: controller.Controller): boolean;
+        lockGearDisplay(): number;
+        releaseGearDisplay(token: number): void;
+        private checkGearVisible;
         readonly gearXY: GearXY;
         readonly gearSize: GearSize;
         readonly gearLook: GearLook;
         readonly relations: Relations;
         addRelation(target: GObject, relationType: number, usePercent?: boolean): void;
         removeRelation(target: GObject, relationType?: number): void;
-        readonly displayObject: egret.DisplayObject;
-        protected setDisplayObject(value: egret.DisplayObject): void;
+        readonly displayObject: PIXI.DisplayObject;
+        protected createDisplayObject(): void;
+        protected setDisplayObject(value: PIXI.DisplayObject): void;
         parent: GComponent;
         removeFromParent(): void;
         readonly root: GRoot;
-        readonly asCom: GComponent;
-        readonly asButton: GButton;
-        readonly asLabel: GLabel;
-        readonly asProgress: GProgressBar;
-        readonly asTextField: GTextField;
-        readonly asRichTextField: GRichTextField;
-        readonly asTextInput: GTextInput;
-        readonly asLoader: GLoader;
-        readonly asList: GList;
-        readonly asTree: GTree;
-        readonly asGraph: GGraph;
-        readonly asGroup: GGroup;
-        readonly asSlider: GSlider;
-        readonly asComboBox: GComboBox;
-        readonly asImage: GImage;
-        readonly asMovieClip: GMovieClip;
-        static cast(obj: egret.DisplayObject): GObject;
         text: string;
         icon: string;
-        readonly isDisposed: boolean;
-        readonly treeNode: GTreeNode;
         dispose(): void;
-        addClickListener(listener: Function, thisObj: any): void;
-        removeClickListener(listener: Function, thisObj: any): void;
-        hasClickListener(): boolean;
-        addEventListener(type: string, listener: Function, thisObject: any): void;
-        removeEventListener(type: string, listener: Function, thisObject: any): void;
-        private _reDispatch;
+        click(listener: Function, thisObj?: any): this;
+        removeClick(listener: Function, thisObj?: any): this;
+        hasClick(fn?: Function): boolean;
+        on(type: string, listener: Function, thisObject?: any): this;
+        off(type: string, listener: Function, thisObject?: any): this;
+        once(type: string, listener: Function, thisObject?: any): this;
+        hasListener(event: string, handler?: Function): boolean;
+        emit(event: string, ...args: any[]): boolean;
+        removeAllListeners(type?: string): void;
         draggable: boolean;
-        dragBounds: egret.Rectangle;
+        dragBounds: PIXI.Rectangle;
         startDrag(touchPointID?: number): void;
         stopDrag(): void;
         readonly dragging: boolean;
-        localToGlobal(ax?: number, ay?: number, resultPoint?: egret.Point): egret.Point;
-        globalToLocal(ax?: number, ay?: number, resultPoint?: egret.Point): egret.Point;
-        localToRoot(ax?: number, ay?: number, resultPoint?: egret.Point): egret.Point;
-        rootToLocal(ax?: number, ay?: number, resultPoint?: egret.Point): egret.Point;
-        localToGlobalRect(ax?: number, ay?: number, aWidth?: number, aHeight?: number, resultRect?: egret.Rectangle): egret.Rectangle;
-        globalToLocalRect(ax?: number, ay?: number, aWidth?: number, aHeight?: number, resultRect?: egret.Rectangle): egret.Rectangle;
-        handleControllerChanged(c: Controller): void;
-        protected createDisplayObject(): void;
-        protected switchDisplayObject(newObj: egret.DisplayObject): void;
+        localToGlobal(ax?: number, ay?: number, resultPoint?: PIXI.Point): PIXI.Point;
+        globalToLocal(ax?: number, ay?: number, resultPoint?: PIXI.Point): PIXI.Point;
+        localToRoot(ax?: number, ay?: number, resultPoint?: PIXI.Point): PIXI.Point;
+        rootToLocal(ax?: number, ay?: number, resultPoint?: PIXI.Point): PIXI.Point;
+        localToGlobalRect(ax?: number, ay?: number, aWidth?: number, aHeight?: number, resultRect?: PIXI.Rectangle): PIXI.Rectangle;
+        globalToLocalRect(ax?: number, ay?: number, aWidth?: number, aHeight?: number, resultRect?: PIXI.Rectangle): PIXI.Rectangle;
+        handleControllerChanged(c: controller.Controller): void;
+        protected switchDisplayObject(newObj: PIXI.DisplayObject): void;
         protected handleXYChanged(): void;
         protected handleSizeChanged(): void;
         protected handleScaleChanged(): void;
+        protected readonly colorFilter: PIXI.filters.ColorMatrixFilter;
+        updateColorComponents(brightness: number, contrast: number, saturate: number, hue: number): void;
         protected handleGrayedChanged(): void;
-        protected handleAlphaChanged(): void;
-        handleVisibleChanged(): void;
-        getProp(index: number): any;
-        setProp(index: number, value: any): void;
         constructFromResource(): void;
-        setup_beforeAdd(buffer: ByteBuffer, beginPos: number): void;
-        setup_afterAdd(buffer: ByteBuffer, beginPos: number): void;
-        private static sGlobalDragStart;
-        private static sGlobalRect;
-        private static sHelperPoint;
-        private static sDragHelperRect;
-        private static sUpdateInDragging;
-        private _touchDownPoint;
+        setupBeforeAdd(xml: utils.XmlNode): void;
+        setupAfterAdd(xml: utils.XmlNode): void;
+        static castFromNativeObject(disp: PIXI.DisplayObject): GObject;
+        protected static sGlobalDragStart: PIXI.Point;
+        protected static sGlobalRect: PIXI.Rectangle;
+        protected static sHelperPoint: PIXI.Point;
+        protected static sDragHelperRect: PIXI.Rectangle;
+        protected static sUpdatingWhileDragging: boolean;
+        private static $dragBeginCancelled;
+        protected $touchDownPoint: PIXI.Point;
+        static draggingObject: GObject;
         private initDrag;
         private dragBegin;
         private dragEnd;
         private reset;
-        private __begin;
-        private __end;
-        private __moving;
-        private __moving2;
-        private __end2;
+        private $touchBegin;
+        private $end;
+        private $moving;
+        private $moving2;
+        private $end2;
     }
 }
-declare module fgui {
+declare namespace fgui {
     class GComponent extends GObject {
-        private _sortingChildCount;
-        private _applyingController;
-        protected _margin: Margin;
-        protected _trackBounds: boolean;
-        protected _boundsChanged: boolean;
-        protected _childrenRenderOrder: ChildrenRenderOrder;
-        protected _apexIndex: number;
-        _buildingDisplayList: boolean;
-        _children: Array<GObject>;
-        _controllers: Array<Controller>;
-        _transitions: Array<Transition>;
-        _rootContainer: UIContainer;
-        _container: egret.DisplayObjectContainer;
-        _scrollPane: ScrollPane;
-        _alignOffset: egret.Point;
+        protected $sortingChildCount: number;
+        protected $opaque: boolean;
+        protected $margin: utils.Margin;
+        protected $trackBounds: boolean;
+        protected $boundsChanged: boolean;
+        protected $children: GObject[];
+        protected $applyingController: controller.Controller;
+        $buildingDisplayList: boolean;
+        $controllers: controller.Controller[];
+        $transitions: Transition[];
+        $rootContainer: UIContainer;
+        $container: PIXI.Container;
+        $scrollPane: ScrollPane;
+        $alignOffset: PIXI.Point;
         constructor();
         protected createDisplayObject(): void;
         dispose(): void;
-        readonly displayListContainer: egret.DisplayObjectContainer;
+        readonly displayListContainer: PIXI.Container;
         addChild(child: GObject): GObject;
         addChildAt(child: GObject, index?: number): GObject;
         private getInsertPosForSortingChild;
@@ -475,86 +412,75 @@ declare module fgui {
         removeChildren(beginIndex?: number, endIndex?: number, dispose?: boolean): void;
         getChildAt(index?: number): GObject;
         getChild(name: string): GObject;
-        getChildByPath(path: String): GObject;
-        getVisibleChild(name: string): GObject;
         getChildInGroup(name: string, group: GGroup): GObject;
         getChildById(id: string): GObject;
         getChildIndex(child: GObject): number;
         setChildIndex(child: GObject, index?: number): void;
         setChildIndexBefore(child: GObject, index: number): number;
-        private _setChildIndex;
+        protected $setChildIndex(child: GObject, oldIndex: number, index?: number): number;
         swapChildren(child1: GObject, child2: GObject): void;
         swapChildrenAt(index1: number, index2?: number): void;
         readonly numChildren: number;
         isAncestorOf(child: GObject): boolean;
-        addController(controller: Controller): void;
-        getControllerAt(index: number): Controller;
-        getController(name: string): Controller;
-        removeController(c: Controller): void;
-        readonly controllers: Array<Controller>;
+        addController(controller: controller.Controller): void;
+        getControllerAt(index: number): controller.Controller;
+        getController(name: string): controller.Controller;
+        removeController(c: controller.Controller): void;
+        readonly controllers: controller.Controller[];
         childStateChanged(child: GObject): void;
-        private buildNativeDisplayList;
-        applyController(c: Controller): void;
+        applyController(c: controller.Controller): void;
         applyAllControllers(): void;
-        adjustRadioGroupDepth(obj: GObject, c: Controller): void;
+        adjustRadioGroupDepth(obj: GObject, c: controller.Controller): void;
         getTransitionAt(index: number): Transition;
         getTransition(transName: string): Transition;
         isChildInView(child: GObject): boolean;
         getFirstChildInView(): number;
         readonly scrollPane: ScrollPane;
         opaque: boolean;
-        margin: Margin;
-        childrenRenderOrder: ChildrenRenderOrder;
-        apexIndex: number;
-        mask: egret.DisplayObject | egret.Rectangle;
-        readonly baseUserData: string;
+        margin: utils.Margin;
+        mask: PIXI.Container | PIXI.MaskData;
+        protected updateOpaque(): void;
         protected updateScrollRect(): void;
-        protected setupScroll(buffer: ByteBuffer): void;
+        protected setupScroll(scrollBarMargin: utils.Margin, scroll: ScrollType, scrollBarDisplay: ScrollBarDisplayType, flags: number, vtScrollBarRes: string, hzScrollBarRes: string, headerRes: string, footerRes: string): void;
         protected setupOverflow(overflow: OverflowType): void;
         protected handleSizeChanged(): void;
         protected handleGrayedChanged(): void;
-        handleControllerChanged(c: Controller): void;
         setBoundsChangedFlag(): void;
-        private __render;
+        private $validate;
         ensureBoundsCorrect(): void;
         protected updateBounds(): void;
         setBounds(ax: number, ay: number, aw: number, ah?: number): void;
         viewWidth: number;
         viewHeight: number;
-        getSnappingPosition(xValue: number, yValue: number, resultPoint?: egret.Point): egret.Point;
+        getSnappingPosition(xValue: number, yValue: number, resultPoint?: PIXI.Point): PIXI.Point;
         childSortingOrderChanged(child: GObject, oldValue: number, newValue?: number): void;
         constructFromResource(): void;
-        constructFromResource2(objectPool: Array<GObject>, poolIndex: number): void;
-        protected onConstruct(): void;
-        protected constructExtension(buffer: ByteBuffer): void;
-        protected constructFromXML(xml: any): void;
-        setup_afterAdd(buffer: ByteBuffer, beginPos: number): void;
-        private ___added;
-        private ___removed;
+        private constructInternal;
+        protected appendChildrenList(): void;
+        protected constructFromXML(xml: utils.XmlNode): void;
+        private $added;
+        private $removed;
     }
 }
-declare module fgui {
-    class GButton extends GComponent {
-        protected _titleObject: GObject;
-        protected _iconObject: GObject;
-        private _mode;
-        private _selected;
-        private _title;
-        private _selectedTitle;
-        private _icon;
-        private _selectedIcon;
-        private _sound;
-        private _soundVolumeScale;
-        private _buttonController;
-        private _relatedController;
-        private _relatedPageId;
-        private _changeStateOnClick;
-        private _linkedPopup;
-        private _downEffect;
-        private _downEffectValue;
-        private _downScaled;
-        private _down;
-        private _over;
+declare namespace fgui {
+    class GButton extends GComponent implements IColorableTitle {
+        protected $titleObject: GObject;
+        protected $iconObject: GObject;
+        protected $relatedController: controller.Controller;
+        private $mode;
+        private $selected;
+        private $title;
+        private $selectedTitle;
+        private $icon;
+        private $selectedIcon;
+        private $pageOption;
+        private $buttonController;
+        private $changeStateOnClick;
+        private $linkedPopup;
+        private $downEffect;
+        private $downEffectValue;
+        private $down;
+        private $over;
         static UP: string;
         static DOWN: string;
         static OVER: string;
@@ -562,231 +488,187 @@ declare module fgui {
         static DISABLED: string;
         static SELECTED_DISABLED: string;
         constructor();
+        protected setDisplayObject(value: PIXI.DisplayObject): void;
         icon: string;
         selectedIcon: string;
         title: string;
         text: string;
         selectedTitle: string;
         titleColor: number;
-        titleFontSize: number;
-        sound: string;
-        soundVolumeScale: number;
+        fontSize: number;
         selected: boolean;
         mode: ButtonMode;
-        relatedController: Controller;
-        relatedPageId: string;
+        relatedController: controller.Controller;
+        readonly pageOption: controller.PageOption;
         changeStateOnClick: boolean;
         linkedPopup: GObject;
-        getTextField(): GTextField;
-        addStateListener(listener: Function, thisObj: any): void;
-        removeStateListener(listener: Function, thisObj: any): void;
+        addStateListener(listener: Function, thisObj?: any): void;
+        removeStateListener(listener: Function, thisObj?: any): void;
         fireClick(downEffect?: boolean): void;
         protected setState(val: string): void;
-        handleControllerChanged(c: Controller): void;
+        handleControllerChanged(c: controller.Controller): void;
         protected handleGrayedChanged(): void;
-        getProp(index: number): any;
-        setProp(index: number, value: any): void;
-        protected constructExtension(buffer: ByteBuffer): void;
-        setup_afterAdd(buffer: ByteBuffer, beginPos: number): void;
-        private __rollover;
-        private __rollout;
-        private __mousedown;
-        private __mouseup;
-        private __click;
+        protected constructFromXML(xml: utils.XmlNode): void;
+        setupAfterAdd(xml: utils.XmlNode): void;
+        private $rollover;
+        private $rollout;
+        private $mousedown;
+        private $mouseup;
+        private $click;
+        dispose(): void;
     }
 }
-declare module fgui {
+declare namespace fgui {
     class GComboBox extends GComponent {
-        dropdown: GComponent;
-        protected _titleObject: GObject;
-        protected _iconObject: GObject;
-        protected _list: GList;
-        private _items;
-        private _values;
-        private _icons;
-        private _visibleItemCount;
-        private _itemsUpdated;
-        private _selectedIndex;
-        private _buttonController;
-        private _popupDirection;
-        private _selectionController;
-        private _over;
-        private _down;
+        protected $dropdown: GComponent;
+        protected $titleObject: GObject;
+        protected $iconObject: GObject;
+        protected $list: GList;
+        private $items;
+        private $values;
+        private $icons;
+        private $visibleItemCount;
+        private $itemsUpdated;
+        private $selectedIndex;
+        private $buttonController;
+        private $popupDir;
+        private $over;
+        private $down;
         constructor();
         text: string;
         icon: string;
         titleColor: number;
-        titleFontSize: number;
         visibleItemCount: number;
         popupDirection: PopupDirection;
         items: Array<string>;
-        icons: Array<string>;
-        values: Array<string>;
+        icons: string[];
+        values: string[];
         selectedIndex: number;
         value: string;
-        selectionController: Controller;
-        getTextField(): GTextField;
         protected setState(val: string): void;
-        getProp(index: number): any;
-        setProp(index: number, value: any): void;
-        protected constructExtension(buffer: ByteBuffer): void;
-        handleControllerChanged(c: Controller): void;
-        private updateSelectionController;
+        protected constructFromXML(xml: utils.XmlNode): void;
         dispose(): void;
-        setup_afterAdd(buffer: ByteBuffer, beginPos: number): void;
+        setupAfterAdd(xml: utils.XmlNode): void;
         protected showDropdown(): void;
-        private __popupWinClosed;
-        private __clickItem;
-        private __clickItem2;
-        private __rollover;
-        private __rollout;
-        private __mousedown;
-        private __mouseup;
+        private $popupWinClosed;
+        private $clickItem;
+        private delayedClickItem;
+        private $rollover;
+        private $rollout;
+        private $mousedown;
+        private $mouseup;
     }
 }
-declare module fgui {
-    class GGraph extends GObject {
-        private _graphics;
-        private _type;
-        private _lineSize;
-        private _lineColor;
-        private _lineAlpha;
-        private _fillColor;
-        private _fillAlpha;
-        private _cornerRadius;
-        private _sides;
-        private _startAngle;
-        private _polygonPoints;
-        private _distances;
+declare namespace fgui {
+    class GGraph extends GObject implements IColorGear {
+        private $type;
+        private $lineSize;
+        private $lineColor;
+        private $lineAlpha;
+        private $fillColor;
+        private $fillAlpha;
+        private $corner;
         constructor();
-        readonly graphics: egret.Graphics;
-        drawRect(lineSize: number, lineColor: number, lineAlpha: number, fillColor: number, fillAlpha: number, corner?: Array<number>): void;
+        drawRect(lineSize: number, lineColor: number, lineAlpha: number, fillColor: number, fillAlpha: number, corner?: number[]): void;
         drawEllipse(lineSize: number, lineColor: number, lineAlpha: number, fillColor: number, fillAlpha: number): void;
-        drawRegularPolygon(lineSize: number, lineColor: number, lineAlpha: number, fillColor: number, fillAlpha: number, sides: number, startAngle?: number, distances?: number[]): void;
-        drawPolygon(lineSize: number, lineColor: number, lineAlpha: number, fillColor: number, fillAlpha: number, points: any[]): void;
-        distances: number[];
-        clearGraphics(): void;
         color: number;
-        private updateGraph;
+        private drawGraph;
         replaceMe(target: GObject): void;
         addBeforeMe(target: GObject): void;
         addAfterMe(target: GObject): void;
-        setNativeObject(obj: egret.DisplayObject): void;
+        setNativeObject(obj: PIXI.DisplayObject): void;
         protected createDisplayObject(): void;
-        getProp(index: number): any;
-        setProp(index: number, value: any): void;
         protected handleSizeChanged(): void;
-        setup_beforeAdd(buffer: ByteBuffer, beginPos: number): void;
+        setupBeforeAdd(xml: utils.XmlNode): void;
     }
 }
 declare namespace fgui {
     class GGroup extends GObject {
-        private _layout;
-        private _lineGap;
-        private _columnGap;
-        private _excludeInvisibles;
-        private _autoSizeDisabled;
-        private _mainGridIndex;
-        private _mainGridMinSize;
-        private _boundsChanged;
-        private _percentReady;
-        private _mainChildIndex;
-        private _totalSize;
-        private _numChildren;
-        _updating: number;
-        constructor();
-        dispose(): void;
-        layout: number;
-        lineGap: number;
-        columnGap: number;
-        excludeInvisibles: boolean;
-        autoSizeDisabled: boolean;
-        mainGridMinSize: number;
-        mainGridIndex: number;
-        setBoundsChangedFlag(positionChangedOnly?: boolean): void;
-        ensureSizeCorrect(): void;
-        ensureBoundsCorrect(): void;
-        private updateBounds;
-        private handleLayout;
+        protected $empty: boolean;
+        $updating: boolean;
+        protected createDisplayObject(): void;
+        updateBounds(): void;
+        setXY(xv: number, yv: number): void;
         moveChildren(dx: number, dy: number): void;
-        resizeChildren(dw: number, dh: number): void;
-        handleAlphaChanged(): void;
-        handleVisibleChanged(): void;
-        setup_beforeAdd(buffer: ByteBuffer, beginPos: number): void;
-        setup_afterAdd(buffer: ByteBuffer, beginPos: number): void;
+        protected updateAlpha(): void;
     }
 }
-declare module fgui {
-    class GImage extends GObject {
-        private _content;
-        private _flip;
+declare namespace fgui {
+    class GImage extends GObject implements IColorGear {
+        private $content;
+        private $flip;
         constructor();
+        touchable: boolean;
         color: number;
         flip: FlipType;
-        fillMethod: number;
-        fillOrigin: number;
-        fillClockwise: boolean;
-        fillAmount: number;
-        texture: egret.Texture;
+        texture: PIXI.Texture;
         protected createDisplayObject(): void;
+        dispose(): void;
         constructFromResource(): void;
         protected handleXYChanged(): void;
-        getProp(index: number): any;
-        setProp(index: number, value: any): void;
-        setup_beforeAdd(buffer: ByteBuffer, beginPos: number): void;
+        protected handleSizeChanged(): void;
+        setupBeforeAdd(xml: utils.XmlNode): void;
     }
 }
-declare module fgui {
-    class GLabel extends GComponent {
-        protected _titleObject: GObject;
-        protected _iconObject: GObject;
+declare namespace fgui {
+    class GLabel extends GComponent implements IColorableTitle {
+        protected $titleObject: GObject;
+        protected $iconObject: GObject;
         constructor();
         icon: string;
         title: string;
         text: string;
         titleColor: number;
-        titleFontSize: number;
+        fontSize: number;
         editable: boolean;
-        getTextField(): GTextField;
-        getProp(index: number): any;
-        setProp(index: number, value: any): void;
-        protected constructExtension(buffer: ByteBuffer): void;
-        setup_afterAdd(buffer: ByteBuffer, beginPos: number): void;
+        protected constructFromXML(xml: utils.XmlNode): void;
+        setupAfterAdd(xml: utils.XmlNode): void;
     }
 }
-declare module fgui {
+declare namespace fgui {
+    type GListRenderer = (index: number, item: GObject) => void;
+    type GListItemProvider = (index: number) => string;
     class GList extends GComponent {
-        itemRenderer: Function;
-        itemProvider: Function;
-        callbackThisObj: any;
+        itemRenderer: GListRenderer;
+        itemProvider: GListItemProvider;
         scrollItemToViewOnClick: boolean;
         foldInvisibleItems: boolean;
-        private _layout;
-        private _lineCount;
-        private _columnCount;
-        private _lineGap;
-        private _columnGap;
-        private _defaultItem;
-        private _autoResizeItem;
-        private _selectionMode;
-        private _align;
-        private _verticalAlign;
-        private _selectionController;
-        private _lastSelectedIndex;
-        private _pool;
-        private _virtual;
-        private _loop;
-        private _numItems;
-        private _realNumItems;
-        private _firstIndex;
-        private _curLineItemCount;
-        private _curLineItemCount2;
-        private _itemSize;
-        private _virtualListChanged;
-        private _virtualItems;
-        private _eventLocked;
-        private itemInfoVer;
+        private $layout;
+        private $lineCount;
+        private $columnCount;
+        private $lineGap;
+        private $columnGap;
+        private $defaultItem;
+        private $autoResizeItem;
+        private $selectionMode;
+        private $align;
+        private $verticalAlign;
+        private $selectionController;
+        private $lastSelectedIndex;
+        private $pool;
+        private $virtual;
+        private $loop;
+        private $numItems;
+        private $realNumItems;
+        private $firstIndex;
+        private $curLineItemCount;
+        private $curLineItemCount2;
+        private $itemSize;
+        private $virtualListChanged;
+        private $virtualItems;
+        private $eventLocked;
+        protected $apexIndex: number;
+        private $childrenRenderOrder;
+        private $itemInfoVer;
+        private $enterCounter;
+        private static $lastPosHelper;
         constructor();
+        childrenRenderOrder: ListChildrenRenderOrder;
+        apexIndex: number;
+        protected appendChildrenList(): void;
+        setXY(xv: number, yv: number): void;
+        protected $setChildIndex(child: GObject, oldIndex: number, index?: number): number;
+        childStateChanged(child: GObject): void;
         dispose(): void;
         layout: ListLayoutType;
         lineCount: number;
@@ -795,58 +677,56 @@ declare module fgui {
         columnGap: number;
         align: AlignType;
         verticalAlign: VertAlignType;
-        virtualItemSize: egret.Point;
+        virtualItemSize: PIXI.Point;
         defaultItem: string;
         autoResizeItem: boolean;
         selectionMode: ListSelectionMode;
-        selectionController: Controller;
-        readonly itemPool: GObjectPool;
+        selectionController: controller.Controller;
+        readonly itemPool: utils.GObjectRecycler;
         getFromPool(url?: string): GObject;
         returnToPool(obj: GObject): void;
         addChildAt(child: GObject, index?: number): GObject;
         addItem(url?: string): GObject;
         addItemFromPool(url?: string): GObject;
         removeChildAt(index: number, dispose?: boolean): GObject;
-        removeChildToPoolAt(index?: number): void;
+        removeChildToPoolAt(index: number): void;
         removeChildToPool(child: GObject): void;
         removeChildrenToPool(beginIndex?: number, endIndex?: number): void;
         selectedIndex: number;
-        getSelection(result?: number[]): number[];
-        addSelection(index: number, scrollItToView?: boolean): void;
+        getSelection(): number[];
+        addSelection(index: number, scrollIntoView?: boolean): void;
         removeSelection(index: number): void;
         clearSelection(): void;
         private clearSelectionExcept;
         selectAll(): void;
         selectNone(): void;
         selectReverse(): void;
-        handleArrowKey(dir?: number): void;
-        private __clickItem;
-        protected dispatchItemEvent(evt: ItemEvent): void;
+        handleArrowKey(key: Keys): void;
+        private $clickItem;
         private setSelectionOnEvent;
         resizeToFit(itemCount?: number, minSize?: number): void;
         getMaxItemWidth(): number;
         protected handleSizeChanged(): void;
-        handleControllerChanged(c: Controller): void;
+        handleControllerChanged(c: controller.Controller): void;
         private updateSelectionController;
-        getSnappingPosition(xValue: number, yValue: number, resultPoint?: egret.Point): egret.Point;
-        scrollToView(index: number, ani?: boolean, setFirst?: boolean): void;
+        getSnappingPosition(xValue: number, yValue: number, resultPoint?: PIXI.Point): PIXI.Point;
+        scrollToView(index: number, ani?: boolean, snapToFirst?: boolean): void;
         getFirstChildInView(): number;
         childIndexToItemIndex(index: number): number;
         itemIndexToChildIndex(index: number): number;
         setVirtual(): void;
         setVirtualAndLoop(): void;
-        private _setVirtual;
+        private $setVirtual;
         numItems: number;
         refreshVirtualList(): void;
         private checkVirtualList;
         private setVirtualListChangedFlag;
-        private _refreshVirtualList;
-        private __scrolled;
+        private $refreshVirtualList;
+        private $scrolled;
         private getIndexOnPos1;
         private getIndexOnPos2;
         private getIndexOnPos3;
         private handleScroll;
-        private static pos_param;
         private handleScroll1;
         private handleScroll2;
         private handleScroll3;
@@ -854,43 +734,52 @@ declare module fgui {
         private handleArchOrder2;
         private handleAlign;
         protected updateBounds(): void;
-        setup_beforeAdd(buffer: ByteBuffer, beginPos: number): void;
-        protected readItems(buffer: ByteBuffer): void;
-        protected setupItem(buffer: ByteBuffer, obj: GObject): void;
-        setup_afterAdd(buffer: ByteBuffer, beginPos: number): void;
+        setupBeforeAdd(xml: utils.XmlNode): void;
+        setupAfterAdd(xml: utils.XmlNode): void;
     }
 }
-declare module fgui {
-    class GObjectPool {
-        private _pool;
-        private _count;
+declare namespace fgui.utils {
+    abstract class Recycler<T> {
+        protected $pool: {
+            [name: string]: T[];
+        };
+        protected $count: number;
+        constructor();
+        readonly count: number;
+        clear(): void;
+        get(id: string): T;
+        protected abstract createObject(id: string): T;
+        recycle(id: string, obj: T): void;
+    }
+}
+declare namespace fgui.utils {
+    class GObjectRecycler extends Recycler<GObject> {
         constructor();
         clear(): void;
-        readonly count: number;
-        getObject(url: string): GObject;
-        returnObject(obj: GObject): void;
+        protected createObject(id: string): GObject;
     }
 }
-declare module fgui {
-    class GLoader extends GObject {
-        private _url;
-        private _align;
-        private _verticalAlign;
-        private _autoSize;
-        private _fill;
-        private _shrinkOnly;
-        private _showErrorSign;
-        private _contentItem;
-        private _contentSourceWidth;
-        private _contentSourceHeight;
-        private _contentWidth;
-        private _contentHeight;
-        private _container;
-        private _content;
-        private _errorSign;
-        private _content2;
-        private _updatingLayout;
-        private static _errorSignPool;
+declare namespace fgui {
+    class GLoader extends GObject implements IAnimationGear, IColorGear {
+        protected $url: string;
+        protected $align: AlignType;
+        protected $verticalAlign: VertAlignType;
+        protected $autoSize: boolean;
+        protected $fill: LoaderFillType;
+        protected $showErrorSign: boolean;
+        protected $playing: boolean;
+        protected $frame: number;
+        protected $color: number;
+        private $contentItem;
+        private $contentSourceWidth;
+        private $contentSourceHeight;
+        private $contentWidth;
+        private $contentHeight;
+        protected $container: UIContainer;
+        protected $content: UIImage | MovieClip;
+        protected $errorSign: GObject;
+        private $updatingLayout;
+        private static $errorSignPool;
         constructor();
         protected createDisplayObject(): void;
         dispose(): void;
@@ -899,151 +788,82 @@ declare module fgui {
         align: AlignType;
         verticalAlign: VertAlignType;
         fill: LoaderFillType;
-        shrinkOnly: boolean;
         autoSize: boolean;
         playing: boolean;
         frame: number;
         color: number;
+        private applyColor;
         showErrorSign: boolean;
-        readonly content: MovieClip;
-        readonly component: GComponent;
-        texture: egret.Texture;
+        readonly content: UIImage | MovieClip;
+        texture: PIXI.Texture;
         protected loadContent(): void;
         protected loadFromPackage(itemURL: string): void;
+        private switchToMovieMode;
+        private $loadingTexture;
         protected loadExternal(): void;
-        protected freeExternal(texture: egret.Texture): void;
-        protected onExternalLoadSuccess(texture: egret.Texture): void;
+        protected freeExternal(texture: PIXI.Texture): void;
+        private $loadResCompleted;
+        protected onExternalLoadSuccess(texture: PIXI.Texture): void;
         protected onExternalLoadFailed(): void;
-        private __getResCompleted;
         private setErrorState;
         private clearErrorState;
         private updateLayout;
         private clearContent;
         protected handleSizeChanged(): void;
-        getProp(index: number): any;
-        setProp(index: number, value: any): void;
-        setup_beforeAdd(buffer: ByteBuffer, beginPos: number): void;
+        setupBeforeAdd(xml: utils.XmlNode): void;
     }
 }
-declare module fgui {
-    class GMovieClip extends GObject {
-        private _content;
+declare namespace fgui {
+    class GMovieClip extends GObject implements IAnimationGear, IColorGear {
+        private $movieClip;
         constructor();
+        protected mapPivotWidth(scale: number): number;
+        protected mapPivotHeight(scale: number): number;
+        protected handleSizeChanged(): void;
+        handleScaleChanged(): void;
+        touchable: boolean;
         color: number;
         protected createDisplayObject(): void;
         playing: boolean;
         frame: number;
-        timeScale: number;
-        rewind(): void;
-        syncStatus(anotherMc: GMovieClip): void;
-        advance(timeInMiniseconds: number): void;
-        setPlaySettings(start?: number, end?: number, times?: number, endAt?: number, endCallback?: Function, callbackObj?: any): void;
-        getProp(index: number): any;
-        setProp(index: number, value: any): void;
+        setPlaySettings(...args: any[]): void;
         constructFromResource(): void;
-        setup_beforeAdd(buffer: ByteBuffer, beginPos: number): void;
+        setupBeforeAdd(xml: utils.XmlNode): void;
     }
 }
-declare module fgui {
+declare namespace fgui {
     class GProgressBar extends GComponent {
-        private _min;
-        private _max;
-        private _value;
-        private _titleType;
-        private _reverse;
-        private _titleObject;
-        private _aniObject;
-        private _barObjectH;
-        private _barObjectV;
-        private _barMaxWidth;
-        private _barMaxHeight;
-        private _barMaxWidthDelta;
-        private _barMaxHeightDelta;
-        private _barStartX;
-        private _barStartY;
+        private $max;
+        private $value;
+        private $titleType;
+        private $reverse;
+        private $titleObject;
+        private $aniObject;
+        private $barObjectH;
+        private $barObjectV;
+        private $barMaxWidth;
+        private $barMaxHeight;
+        private $barMaxWidthDelta;
+        private $barMaxHeightDelta;
+        private $barStartX;
+        private $barStartY;
+        private $tweener;
+        private $tweenValue;
+        private static easeLinear;
         constructor();
         titleType: ProgressTitleType;
-        min: number;
         max: number;
         value: number;
-        tweenValue(value: number, duration: number): GTweener;
-        update(newValue: number): void;
-        protected constructExtension(buffer: ByteBuffer): void;
+        tweenValue(value: number, duration: number): createjs.Tween;
+        private onUpdateTween;
+        update(val: number): void;
+        protected constructFromXML(xml: utils.XmlNode): void;
         protected handleSizeChanged(): void;
-        setup_afterAdd(buffer: ByteBuffer, beginPos: number): void;
+        setupAfterAdd(xml: utils.XmlNode): void;
+        dispose(): void;
     }
 }
-declare module fgui {
-    class GTextField extends GObject {
-        protected _textField: egret.TextField;
-        protected _bitmapContainer: egret.DisplayObjectContainer;
-        protected _font: string;
-        protected _fontSize: number;
-        protected _align: AlignType;
-        protected _verticalAlign: VertAlignType;
-        protected _color: number;
-        protected _leading: number;
-        protected _letterSpacing: number;
-        protected _underline: boolean;
-        protected _text: string;
-        protected _ubbEnabled: boolean;
-        protected _templateVars: any;
-        protected _autoSize: AutoSizeType;
-        protected _widthAutoSize: boolean;
-        protected _heightAutoSize: boolean;
-        protected _updatingSize: boolean;
-        protected _sizeDirty: boolean;
-        protected _textWidth: number;
-        protected _textHeight: number;
-        protected _requireRender: boolean;
-        protected _bitmapFont: BitmapFont;
-        protected _lines: Array<LineInfo>;
-        protected _bitmapPool: Array<egret.Bitmap>;
-        protected static GUTTER_X: number;
-        protected static GUTTER_Y: number;
-        protected static _htmlParser: egret.HtmlTextParser;
-        constructor();
-        protected createDisplayObject(): void;
-        private switchBitmapMode;
-        dispose(): void;
-        text: string;
-        protected updateTextFieldText(): void;
-        font: string;
-        fontSize: number;
-        color: number;
-        align: AlignType;
-        verticalAlign: VertAlignType;
-        private getAlignTypeString;
-        private getVertAlignTypeString;
-        leading: number;
-        letterSpacing: number;
-        underline: boolean;
-        bold: boolean;
-        italic: boolean;
-        singleLine: boolean;
-        stroke: number;
-        strokeColor: number;
-        ubbEnabled: boolean;
-        autoSize: AutoSizeType;
-        readonly textWidth: number;
-        ensureSizeCorrect(): void;
-        protected updateTextFormat(): void;
-        protected render(): void;
-        private __render;
-        protected renderNow(updateBounds?: boolean): void;
-        private renderWithBitmapFont;
-        protected handleSizeChanged(): void;
-        protected parseTemplate(template: string): string;
-        templateVars: any;
-        setVar(name: string, value: string): GTextField;
-        flushVars(): void;
-        protected handleGrayedChanged(): void;
-        private doAlign;
-        getProp(index: number): any;
-        setProp(index: number, value: any): void;
-        setup_beforeAdd(buffer: ByteBuffer, beginPos: number): void;
-        setup_afterAdd(buffer: ByteBuffer, beginPos: number): void;
-    }
+declare namespace fgui {
     class LineInfo {
         width: number;
         height: number;
@@ -1051,42 +871,131 @@ declare module fgui {
         text: string;
         y: number;
         private static pool;
-        static borrow(): LineInfo;
-        static returns(value: LineInfo): void;
-        static returnList(value: Array<LineInfo>): void;
+        static get(): LineInfo;
+        static recycle(value: LineInfo): void;
+        static recycleMany(value: LineInfo[]): void;
+    }
+    class GTextField extends GObject implements IColorGear, IColorableTitle {
+        protected $textField: UITextField;
+        protected $btContainer: UIContainer;
+        protected $bitmapFont: BitmapFont;
+        protected $lines: LineInfo[];
+        protected $bitmapPool: PIXI.Sprite[];
+        protected $font: string;
+        protected $style: PIXI.TextStyle;
+        protected $verticalAlign: VertAlignType;
+        protected $offset: PIXI.Point;
+        protected $color: number;
+        protected $singleLine: boolean;
+        protected $text: string;
+        protected $fontProperties: PIXI.IFontMetrics;
+        protected $autoSize: AutoSizeType;
+        protected $widthAutoSize: boolean;
+        protected $heightAutoSize: boolean;
+        protected $requireRender: boolean;
+        protected $updatingSize: boolean;
+        protected $sizeDirty: boolean;
+        protected $textWidth: number;
+        protected $textHeight: number;
+        static GUTTER_X: number;
+        static GUTTER_Y: number;
         constructor();
+        protected createDisplayObject(): void;
+        private switchBitmapMode;
+        dispose(): void;
+        text: string;
+        protected setText(value: string): void;
+        protected getText(): string;
+        color: number;
+        protected getColor(): number;
+        protected setColor(value: number): void;
+        titleColor: number;
+        lineHeight: number;
+        font: string;
+        fontSize: number;
+        align: AlignType;
+        verticalAlign: VertAlignType;
+        leading: number;
+        letterSpacing: number;
+        underline: boolean;
+        bold: boolean;
+        weight: string;
+        variant: string;
+        italic: boolean;
+        multipleLine: boolean;
+        stroke: number;
+        strokeColor: number | string;
+        autoSize: AutoSizeType;
+        readonly textWidth: number;
+        readonly textHeight: number;
+        ensureSizeCorrect(): void;
+        protected render(): void;
+        private applyStyle;
+        private $render;
+        protected renderNow(updateBounds?: boolean): void;
+        private renderWithBitmapFont;
+        localToGlobal(ax?: number, ay?: number, resultPoint?: PIXI.Point): PIXI.Point;
+        globalToLocal(ax?: number, ay?: number, resultPoint?: PIXI.Point): PIXI.Point;
+        protected handleSizeChanged(): void;
+        protected shrinkTextField(): void;
+        protected layoutAlign(): void;
+        private updatePosition;
+        protected handleXYChanged(): void;
+        setupBeforeAdd(xml: utils.XmlNode): void;
+        setupAfterAdd(xml: utils.XmlNode): void;
     }
 }
-declare module fgui {
+declare namespace fgui {
+    class TextBlock {
+        text: string;
+        style: PIXI.TextStyle;
+    }
     class GRichTextField extends GTextField {
+        protected $ubbEnabled: boolean;
+        protected $textFlow: TextBlock[];
+        ubbEnabled: boolean;
+        setupBeforeAdd(xml: utils.XmlNode): void;
         constructor();
-        protected updateTextFieldText(): void;
+        textFlow: TextBlock[];
+        text: string;
+        private $clickLink;
+        dispose(): void;
     }
 }
-declare module fgui {
+declare namespace fgui {
+    class GRootMouseStatus {
+        touchDown: boolean;
+        mouseX: number;
+        mouseY: number;
+    }
     class GRoot extends GComponent {
-        static contentScaleLevel: number;
-        private _nativeStage;
-        private _modalLayer;
-        private _popupStack;
-        private _justClosedPopups;
-        private _modalWaitPane;
-        private _focusedObject;
-        private _tooltipWin;
-        private _defaultTooltipWin;
-        private _volumeScale;
-        private static _inst;
-        static touchScreen: boolean;
-        static contentScaleFactor: number;
-        static touchDown: boolean;
-        static ctrlKeyDown: boolean;
-        static shiftKeyDown: boolean;
-        static mouseX: number;
-        static mouseY: number;
-        static FOCUS_CHANGED: string;
+        private static uniqueID;
+        private $uiStage;
+        private $modalLayer;
+        private $popupStack;
+        private $justClosedPopups;
+        private $modalWaitPane;
+        private $focusedObject;
+        private $tooltipWin;
+        private $defaultTooltipWin;
+        private $checkingPopups;
+        private $uid;
+        private static $inst;
+        private static $gmStatus;
         static readonly inst: GRoot;
+        static readonly globalMouseStatus: GRootMouseStatus;
+        attachTo(app: PIXI.Application, stageOptions?: UIStageOptions): void;
         constructor();
-        readonly nativeStage: egret.Stage;
+        readonly uniqueID: number;
+        readonly stageWidth: number;
+        readonly stageHeight: number;
+        readonly contentScaleFactor: number;
+        readonly applicationContext: PIXI.Application;
+        readonly nativeStage: PIXI.Container;
+        readonly orientation: StageOrientation;
+        readonly stageWrapper: UIStage;
+        protected dispatchMouseWheel(evt: any): void;
+        getObjectUnderPoint(globalX: number, globalY: number): GObject;
         showWindow(win: Window): void;
         hideWindow(win: Window): void;
         hideWindowImmediately(win: Window): void;
@@ -1096,273 +1005,328 @@ declare module fgui {
         closeAllExceptModals(): void;
         closeAllWindows(): void;
         getTopWindow(): Window;
-        readonly modalLayer: GGraph;
         readonly hasModalWindow: boolean;
         readonly modalWaiting: boolean;
-        showPopup(popup: GObject, target?: GObject, downward?: any): void;
-        togglePopup(popup: GObject, target?: GObject, downward?: any): void;
+        showPopup(popup: GObject, target?: GObject, dir?: PopupDirection): void;
+        togglePopup(popup: GObject, target?: GObject, dir?: PopupDirection): void;
         hidePopup(popup?: GObject): void;
         readonly hasAnyPopup: boolean;
         private closePopup;
         showTooltips(msg: string): void;
-        showTooltipsWin(tooltipWin: GObject, position?: egret.Point): void;
+        showTooltipsWin(tooltipWin: GObject, position?: PIXI.Point): void;
         hideTooltips(): void;
-        getObjectUnderPoint(globalX: number, globalY: number): GObject;
         focus: GObject;
         private setFocus;
-        volumeScale: number;
-        playOneShotSound(sound: egret.Sound, volumeScale?: number): void;
         private adjustModalLayer;
-        private __addedToStage;
-        private __stageMouseDownCapture;
-        private __stageMouseMoveCapture;
-        private __stageMouseUpCapture;
-        private __winResize;
-        private updateContentScaleLevel;
+        private $stageDown;
+        checkPopups(target: PIXI.DisplayObject): void;
+        private $stageMove;
+        private $stageUp;
+        private $winResize;
     }
 }
-declare module fgui {
+declare namespace fgui {
     class GScrollBar extends GComponent {
-        private _grip;
-        private _arrowButton1;
-        private _arrowButton2;
-        private _bar;
-        private _target;
-        private _vertical;
-        private _scrollPerc;
-        private _fixedGripSize;
-        private _dragOffset;
-        private _gripDragging;
+        private $grip;
+        private $arrowButton1;
+        private $arrowButton2;
+        private $bar;
+        private $target;
+        private $vertical;
+        private $scrollPerc;
+        private $fixedGripSize;
+        private $dragOffset;
         constructor();
         setScrollPane(target: ScrollPane, vertical: boolean): void;
-        setDisplayPerc(value: number): void;
-        setScrollPerc(val: number): void;
+        displayPerc: number;
+        scrollPerc: number;
         readonly minSize: number;
-        readonly gripDragging: boolean;
-        protected constructExtension(buffer: ByteBuffer): void;
-        private __gripMouseDown;
+        protected constructFromXML(xml: utils.XmlNode): void;
+        private $gripMouseDown;
         private static sScrollbarHelperPoint;
-        private __gripMouseMove;
-        private __gripMouseUp;
-        private __arrowButton1Click;
-        private __arrowButton2Click;
-        private __barMouseDown;
+        private $gripDragging;
+        private $gripDraggingEnd;
+        private $arrowButton1Click;
+        private $arrowButton2Click;
+        private $barMouseDown;
+        dispose(): void;
     }
 }
-declare module fgui {
+declare namespace fgui {
     class GSlider extends GComponent {
-        private _min;
-        private _max;
-        private _value;
-        private _titleType;
-        private _reverse;
-        private _wholeNumbers;
-        private _titleObject;
-        private _barObjectH;
-        private _barObjectV;
-        private _barMaxWidth;
-        private _barMaxHeight;
-        private _barMaxWidthDelta;
-        private _barMaxHeightDelta;
-        private _gripObject;
-        private _clickPos;
-        private _clickPercent;
-        private _barStartX;
-        private _barStartY;
-        changeOnClick: boolean;
-        canDrag: boolean;
+        protected $max: number;
+        protected $value: number;
+        protected $titleType: ProgressTitleType;
+        protected $titleObject: GTextField;
+        protected $aniObject: GObject;
+        protected $barObjectH: GObject;
+        protected $barObjectV: GObject;
+        protected $barMaxWidth: number;
+        protected $barMaxHeight: number;
+        protected $barMaxWidthDelta: number;
+        protected $barMaxHeightDelta: number;
+        protected $gripObject: GObject;
+        private $clickPos;
+        private $clickPercent;
         constructor();
         titleType: ProgressTitleType;
-        wholeNumbers: boolean;
-        min: number;
         max: number;
         value: number;
         update(): void;
-        private updateWithPercent;
-        protected constructExtension(buffer: ByteBuffer): void;
+        private updateWidthPercent;
         protected handleSizeChanged(): void;
-        setup_afterAdd(buffer: ByteBuffer, beginPos: number): void;
-        private __gripMouseDown;
+        setupAfterAdd(xml: utils.XmlNode): void;
+        protected constructFromXML(xml: utils.XmlNode): void;
+        private $gripMouseDown;
         private static sSilderHelperPoint;
-        private __gripMouseMove;
-        private __gripMouseUp;
-        private __barMouseDown;
+        private $gripMouseMove;
+        private $gripMouseUp;
+        dispose(): void;
     }
 }
-declare module fgui {
+declare namespace fgui.utils {
+    class InputDelegate {
+        protected $inited: boolean;
+        protected $textField: GTextInput;
+        protected $input: InputElement;
+        protected $restrictString: string;
+        protected $restrictRegex: RegExp;
+        protected $type: InputType;
+        private $focused;
+        constructor(tf: GTextInput);
+        initialize(): void;
+        private textFieldDownHandler;
+        destroy(): void;
+        text: string;
+        setColor(v: number): void;
+        private updateText;
+        private onStageDown;
+        private focusHandler;
+        readonly isFocused: boolean;
+        $getProperty(name: string): string;
+        $setProperty(name: string, value: string): void;
+        $restrict: string;
+        type: InputType;
+        private tryHideInput;
+        $updateProperties(): void;
+        $onFocus(): void;
+    }
+}
+declare namespace fgui {
+    const enum InputType {
+        TEXT = "text",
+        PASSWORD = "password",
+        NUMBER = "number",
+        EMAIL = "email",
+        TEL = "tel",
+        URL = "url"
+    }
     class GTextInput extends GTextField {
-        private _changed;
-        private _promptText;
-        private _password;
+        protected $editable: boolean;
+        protected $util: utils.InputDelegate;
+        $isTyping: boolean;
         constructor();
-        dispose(): void;
+        protected createDisplayObject(): void;
+        protected handleSizeChanged(): void;
+        private removed;
+        private added;
+        requestFocus(): void;
         editable: boolean;
-        maxLength: number;
+        private changeToPassText;
+        protected getText(): string;
+        protected setText(value: string): void;
+        protected setColor(value: number): void;
         promptText: string;
+        maxLength: number;
         restrict: string;
         password: boolean;
-        verticalAlign: VertAlignType;
-        private updateVertAlign;
-        protected updateTextFieldText(): void;
-        protected handleSizeChanged(): void;
-        setup_beforeAdd(buffer: ByteBuffer, beginPos: number): void;
-        setup_afterAdd(buffer: ByteBuffer, beginPos: number): void;
-        private __textChanged;
-        private __focusIn;
-        private __focusOut;
+        type: InputType;
+        dispose(): void;
+        protected renderNow(updateBounds?: boolean): void;
+        private decorateInputbox;
+        setupBeforeAdd(xml: utils.XmlNode): void;
     }
 }
 declare namespace fgui {
-    class GTree extends GList {
-        treeNodeRender: (node: GTreeNode, obj: GComponent) => void;
-        treeNodeWillExpand: (node: GTreeNode, expanded: boolean) => void;
-        private _indent;
-        private _clickToExpand;
-        private _rootNode;
-        private _expandedStatusInEvt;
-        private static helperIntList;
+    class GTimer {
+        private $items;
+        private $itemPool;
+        private $enumIdx;
+        private $enumCount;
+        private $curTime;
+        private $ticker;
+        static inst: GTimer;
         constructor();
-        readonly rootNode: GTreeNode;
-        indent: number;
-        clickToExpand: number;
-        getSelectedNode(): GTreeNode;
-        getSelectedNodes(result?: Array<GTreeNode>): Array<GTreeNode>;
-        selectNode(node: GTreeNode, scrollItToView?: boolean): void;
-        unselectNode(node: GTreeNode): void;
-        expandAll(folderNode?: GTreeNode): void;
-        collapseAll(folderNode?: GTreeNode): void;
-        private createCell;
-        _afterInserted(node: GTreeNode): void;
-        private getInsertIndexForNode;
-        _afterRemoved(node: GTreeNode): void;
-        _afterExpanded(node: GTreeNode): void;
-        _afterCollapsed(node: GTreeNode): void;
-        _afterMoved(node: GTreeNode): void;
-        private getFolderEndIndex;
-        private checkChildren;
-        private hideFolderNode;
-        private removeNode;
-        private __cellMouseDown;
-        private __expandedStateChanged;
-        protected dispatchItemEvent(evt: ItemEvent): void;
-        setup_beforeAdd(buffer: ByteBuffer, beginPos: number): void;
-        protected readItems(buffer: ByteBuffer): void;
+        private getItem;
+        private findItem;
+        add(delayInMs: number, repeat: number, callback: (...args: any[]) => void, thisObj: any, callbackParam?: any): void;
+        addLoop(delayInMs: number, callback: (...args: any[]) => void, thisObj: any, callbackParam?: any): void;
+        callLater(callback: (...args: any[]) => void, thisObj: any, callbackParam?: any): void;
+        callDelay(delayInMs: number, callback: (...args: any[]) => void, thisObj: any, callbackParam?: any): void;
+        exists(callback: (...args: any[]) => void, thisObj: any): boolean;
+        remove(callback: (...args: any[]) => void, thisObj: any): void;
+        readonly ticker: PIXI.Ticker;
+        readonly curTime: number;
+        advance(): void;
+        tickTween(): void;
+        setTicker(ticker: PIXI.Ticker): void;
     }
 }
 declare namespace fgui {
-    class GTreeNode {
-        data: any;
-        private _parent;
-        private _children;
-        private _expanded;
-        private _level;
-        private _tree;
-        _cell: GComponent;
-        _resURL: string;
-        constructor(hasChild: boolean, resURL?: string);
-        expanded: boolean;
-        readonly isFolder: boolean;
-        readonly parent: GTreeNode;
-        text: string;
-        icon: string;
-        readonly cell: GComponent;
-        readonly level: number;
-        _setLevel(value: number): void;
-        addChild(child: GTreeNode): GTreeNode;
-        addChildAt(child: GTreeNode, index: number): GTreeNode;
-        removeChild(child: GTreeNode): GTreeNode;
-        removeChildAt(index: number): GTreeNode;
-        removeChildren(beginIndex?: number, endIndex?: number): void;
-        getChildAt(index: number): GTreeNode;
-        getChildIndex(child: GTreeNode): number;
-        getPrevSibling(): GTreeNode;
-        getNextSibling(): GTreeNode;
-        setChildIndex(child: GTreeNode, index: number): void;
-        swapChildren(child1: GTreeNode, child2: GTreeNode): void;
-        swapChildrenAt(index1: number, index2: number): void;
-        readonly numChildren: number;
-        expandToRoot(): void;
-        readonly tree: GTree;
-        _setTree(value: GTree): void;
-    }
-}
-declare module fgui {
-    interface IUISource {
-        fileName: string;
-        loaded: boolean;
-        load(callback: Function, thisObj: any): void;
-    }
-}
-declare module fgui {
-    class Margin {
-        left: number;
-        right: number;
-        top: number;
-        bottom: number;
-        constructor();
-        copy(source: Margin): void;
+    class GearBase<T> {
+        static disableAllTweenEffect: boolean;
+        protected $tween: boolean;
+        protected $easeType: (t: number) => number;
+        protected $tweenTime: number;
+        protected $tweenDelay: number;
+        protected $lockToken: number;
+        protected $owner: GObject & T;
+        protected $controller: controller.Controller;
+        constructor(owner: GObject & T);
+        controller: controller.Controller;
+        tween: boolean;
+        tweenDelay: number;
+        tweenTime: number;
+        easeType: (t: number) => number;
+        setup(xml: utils.XmlNode): void;
+        updateFromRelations(dx: number, dy: number): void;
+        protected addStatus(pageId: string, value: string): void;
+        protected init(): void;
+        apply(): void;
+        updateState(): void;
     }
 }
 declare namespace fgui {
-    class PixelHitTest {
-        private _data;
-        offsetX: number;
-        offsetY: number;
-        scaleX: number;
-        scaleY: number;
-        constructor(data: PixelHitTestData, offsetX?: number, offsetY?: number);
-        contains(x: number, y: number): boolean;
-    }
-    class PixelHitTestData {
-        pixelWidth: number;
-        scale: number;
-        pixels: number[];
-        constructor();
-        load(ba: ByteBuffer): void;
+    class GearAnimation extends GearBase<IAnimationGear> {
+        private $storage;
+        private $default;
+        constructor(owner: GObject & IAnimationGear);
+        protected init(): void;
+        protected addStatus(pageId: string, value: string): void;
+        apply(): void;
+        updateState(): void;
     }
 }
-declare module fgui {
-    class PackageItem {
-        owner: UIPackage;
-        type: PackageItemType;
-        objectType: ObjectType;
-        id: string;
-        name: string;
-        width: number;
-        height: number;
-        file: string;
-        decoded: boolean;
-        rawData: ByteBuffer;
-        highResolution: Array<string>;
-        branches: Array<string>;
-        scale9Grid: egret.Rectangle;
-        scaleByTile: boolean;
-        tileGridIndice: number;
-        smoothing: boolean;
-        texture: egret.Texture;
-        pixelHitTestData: PixelHitTestData;
-        interval: number;
-        repeatDelay: number;
-        swing: boolean;
-        frames: Array<Frame>;
-        extensionType: any;
-        sound: egret.Sound;
-        bitmapFont: BitmapFont;
-        constructor();
-        load(): any;
-        getBranch(): PackageItem;
-        getHighResolution(): PackageItem;
-        toString(): string;
+declare namespace fgui {
+    class GearColor extends GearBase<IColorGear> {
+        private $storage;
+        private $default;
+        constructor(owner: GObject & IColorGear);
+        protected init(): void;
+        protected addStatus(pageId: string, value: string): void;
+        apply(): void;
+        updateState(): void;
     }
 }
-declare module fgui {
+declare namespace fgui {
+    class GearDisplay extends GearBase<GObject> {
+        private $vid;
+        pages: string[];
+        constructor(owner: GObject);
+        protected init(): void;
+        lock(): number;
+        release(token: number): void;
+        readonly connected: boolean;
+        apply(): void;
+    }
+}
+declare namespace fgui {
+    class GearIcon extends GearBase<GObject> {
+        private $storage;
+        private $default;
+        constructor(owner: GObject);
+        protected init(): void;
+        protected addStatus(pageId: string, value: string): void;
+        apply(): void;
+        updateState(): void;
+    }
+}
+declare namespace fgui {
+    class GearLook extends GearBase<GObject> {
+        private $tweener;
+        private $storage;
+        private $default;
+        private $tweenValue;
+        private $tweenTarget;
+        constructor(owner: GObject);
+        protected init(): void;
+        protected addStatus(pageId: string, value: string): void;
+        apply(): void;
+        private tweenComplete;
+        updateState(): void;
+    }
+}
+declare namespace fgui {
+    class GearSize extends GearBase<GObject> {
+        private $tweener;
+        private $storage;
+        private $default;
+        private $tweenValue;
+        private $tweenTarget;
+        constructor(owner: GObject);
+        protected init(): void;
+        protected addStatus(pageId: string, value: string): void;
+        apply(): void;
+        private tweenComplete;
+        updateState(): void;
+        updateFromRelations(dx: number, dy: number): void;
+    }
+}
+declare namespace fgui {
+    class GearText extends GearBase<GObject> {
+        private $storage;
+        private $default;
+        constructor(owner: GObject);
+        protected init(): void;
+        protected addStatus(pageId: string, value: string): void;
+        apply(): void;
+        updateState(): void;
+    }
+}
+declare namespace fgui {
+    class GearXY extends GearBase<GObject> {
+        private $tweener;
+        private $storage;
+        private $default;
+        private $tweenValue;
+        private $tweenTarget;
+        constructor(owner: GObject);
+        protected init(): void;
+        protected addStatus(pageId: string, value: string): void;
+        apply(): void;
+        private tweenComplete;
+        updateState(): void;
+        updateFromRelations(dx: number, dy: number): void;
+    }
+}
+declare namespace fgui {
+    interface IAnimationGear {
+        playing: boolean;
+        frame: number;
+    }
+    let isAnimationGear: (obj: any) => obj is IAnimationGear;
+}
+declare namespace fgui {
+    interface IColorGear {
+        color: number;
+    }
+    let isColorGear: (obj: any) => obj is IColorGear;
+}
+declare namespace fgui {
+    interface IColorableTitle {
+        titleColor: number;
+        fontSize: number;
+    }
+    let isColorableTitle: (obj: any) => obj is IColorableTitle;
+}
+declare namespace fgui {
     class PopupMenu {
-        protected _contentPane: GComponent;
-        protected _list: GList;
+        protected $contentPane: GComponent;
+        protected $list: GList;
         constructor(resourceURL?: string);
         dispose(): void;
-        addItem(caption: string, callback?: Function): GButton;
-        addItemAt(caption: string, index: number, callback?: Function): GButton;
+        addItem(caption: string, handler?: Function): GButton;
+        addItemAt(caption: string, index: number, handler?: Function): GButton;
         addSeperator(): void;
         getItemName(index: number): string;
         setItemText(name: string, caption: string): void;
@@ -1373,150 +1337,148 @@ declare module fgui {
         isItemChecked(name: string): boolean;
         removeItem(name: string): boolean;
         clearItems(): void;
-        readonly itemCount: number;
+        readonly itemCount: Number;
         readonly contentPane: GComponent;
         readonly list: GList;
-        show(target?: GObject, downward?: any): void;
-        private __clickItem;
-        private __clickItem2;
-        private __addedToStage;
+        show(target?: GObject, dir?: PopupDirection): void;
+        private $clickItem;
+        private $delayClickItem;
+        private $addedToStage;
     }
 }
-declare module fgui {
+declare namespace fgui {
     class RelationItem {
-        private _owner;
-        private _target;
-        private _defs;
-        private _targetX;
-        private _targetY;
-        private _targetWidth;
-        private _targetHeight;
+        protected $owner: GObject;
+        protected $target: GObject;
+        protected $targetX: number;
+        protected $targetY: number;
+        protected $targetWidth: number;
+        protected $targetHeight: number;
+        protected $defs: RelationDef[];
         constructor(owner: GObject);
         readonly owner: GObject;
         target: GObject;
         add(relationType: number, usePercent: boolean): void;
-        internalAdd(relationType: number, usePercent: boolean): void;
+        private internalAdd;
         remove(relationType?: number): void;
         copyFrom(source: RelationItem): void;
         dispose(): void;
         readonly isEmpty: boolean;
-        applyOnSelfResized(dWidth: number, dHeight: number, applyPivot: boolean): void;
+        applyOnSelfResized(dWidth: number, dHeight: number): void;
         private applyOnXYChanged;
         private applyOnSizeChanged;
         private addRefTarget;
         private releaseRefTarget;
-        private __targetXYChanged;
-        private __targetSizeChanged;
-        private __targetSizeWillChange;
+        private $targetXYChanged;
+        private $targetSizeChanged;
+        private $targetSizeWillChange;
     }
     class RelationDef {
         percent: boolean;
         type: number;
-        axis: number;
-        constructor();
         copyFrom(source: RelationDef): void;
     }
 }
-declare module fgui {
+declare namespace fgui {
     class Relations {
-        private _owner;
-        private _items;
-        handling: GObject;
+        protected $owner: GObject;
+        protected $items: RelationItem[];
         sizeDirty: boolean;
+        $dealing: GObject;
+        private static RELATION_NAMES;
         constructor(owner: GObject);
         add(target: GObject, relationType: number, usePercent?: boolean): void;
+        addItems(target: GObject, sidePairs: string): void;
         remove(target: GObject, relationType?: number): void;
         contains(target: GObject): boolean;
         clearFor(target: GObject): void;
         clearAll(): void;
         copyFrom(source: Relations): void;
         dispose(): void;
-        onOwnerSizeChanged(dWidth: number, dHeight: number, applyPivot: boolean): void;
+        onOwnerSizeChanged(dWidth: number, dHeight: number): void;
         ensureRelationsSizeCorrect(): void;
         readonly empty: boolean;
-        setup(buffer: ByteBuffer, parentToChild: boolean): void;
+        setup(xml: utils.XmlNode): void;
     }
 }
-declare module fgui {
-    class ScrollPane extends egret.EventDispatcher {
-        private _owner;
-        private _container;
-        private _maskContainer;
-        private _alignContainer;
-        private _scrollType;
-        private _scrollStep;
-        private _decelerationRate;
-        private _scrollBarMargin;
-        private _bouncebackEffect;
-        private _touchEffect;
-        private _scrollBarDisplayAuto;
-        private _vScrollNone;
-        private _hScrollNone;
-        private _needRefresh;
-        private _refreshBarAxis;
-        private _displayOnLeft;
-        private _snapToItem;
-        _displayInDemand: boolean;
-        private _pageMode;
-        private _inertiaDisabled;
-        private _floating;
-        private _xPos;
-        private _yPos;
-        private _viewSize;
-        private _contentSize;
-        private _overlapSize;
-        private _pageSize;
-        private _containerPos;
-        private _beginTouchPos;
-        private _lastTouchPos;
-        private _lastTouchGlobalPos;
-        private _velocity;
-        private _velocityScale;
-        private _lastMoveTime;
-        private _isHoldAreaDone;
-        private _aniFlag;
-        _loop: number;
-        private _headerLockedSize;
-        private _footerLockedSize;
-        private _refreshEventDispatching;
-        private _dragged;
-        private _tweening;
-        private _tweenTime;
-        private _tweenDuration;
-        private _tweenStart;
-        private _tweenChange;
-        private _pageController;
-        private _hzScrollBar;
-        private _vtScrollBar;
-        private _header;
-        private _footer;
+declare namespace fgui {
+    class ScrollPane extends PIXI.utils.EventEmitter {
+        private static $easeTypeFunc;
+        private $owner;
+        private $maskContainer;
+        private $container;
+        private $alignContainer;
+        private $scrollType;
+        private $scrollSpeed;
+        private $mouseWheelSpeed;
+        private $decelerationRate;
+        private $scrollBarMargin;
+        private $bouncebackEffect;
+        private $touchEffect;
+        private $scrollBarDisplayAuto;
+        private $vScrollNone;
+        private $hScrollNone;
+        private $needRefresh;
+        private $refreshBarAxis;
+        private $displayOnLeft;
+        private $snapToItem;
+        private $displayOnDemand;
+        private $mouseWheelEnabled;
+        private $pageMode;
+        private $inertiaDisabled;
+        private $xPos;
+        private $yPos;
+        private $viewSize;
+        private $contentSize;
+        private $overlapSize;
+        private $pageSize;
+        private $containerPos;
+        private $beginTouchPos;
+        private $lastTouchPos;
+        private $lastTouchGlobalPos;
+        private $velocity;
+        private $velocityScale;
+        private $lastMoveTime;
+        private $isHoldAreaDone;
+        private $aniFlag;
+        private $scrollBarVisible;
+        private $headerLockedSize;
+        private $footerLockedSize;
+        private $refreshEventDispatching;
+        private $tweening;
+        private $tweenTime;
+        private $tweenDuration;
+        private $tweenStart;
+        private $tweenChange;
+        private $pageController;
+        private $hzScrollBar;
+        private $vtScrollBar;
+        private $header;
+        private $footer;
+        private $isDragging;
         static draggingPane: ScrollPane;
-        private static _gestureFlag;
-        static SCROLL: string;
-        static SCROLL_END: string;
-        static PULL_DOWN_RELEASE: string;
-        static PULL_UP_RELEASE: string;
-        static TWEEN_TIME_GO: number;
-        static TWEEN_TIME_DEFAULT: number;
-        static PULL_RATIO: number;
+        private static $gestureFlag;
         private static sHelperPoint;
         private static sHelperRect;
         private static sEndPos;
         private static sOldChange;
-        constructor(owner: GComponent);
-        setup(buffer: ByteBuffer): void;
+        static TWEEN_DEFAULT_DURATION: number;
+        static TWEEN_MANUALLY_SET_DURATION: number;
+        static PULL_DIST_RATIO: number;
+        $loop: number;
+        constructor(owner: GComponent, scrollType: number, scrollBarMargin: utils.Margin, scrollBarDisplay: number, flags: number, vtScrollBarRes: string, hzScrollBarRes: string, headerRes: string, footerRes: string);
         dispose(): void;
         readonly owner: GComponent;
-        readonly hzScrollBar: GScrollBar;
-        readonly vtScrollBar: GScrollBar;
+        readonly horzScrollBar: GScrollBar;
+        readonly vertScrollBar: GScrollBar;
         readonly header: GComponent;
         readonly footer: GComponent;
         bouncebackEffect: boolean;
         touchEffect: boolean;
-        scrollStep: number;
-        decelerationRate: number;
+        scrollSpeed: number;
         snapToItem: boolean;
-        readonly isDragged: boolean;
+        mouseWheelEnabled: boolean;
+        decelerationRate: number;
         percX: number;
         setPercX(value: number, ani?: boolean): void;
         percY: number;
@@ -1531,11 +1493,9 @@ declare module fgui {
         viewHeight: number;
         currentPageX: number;
         currentPageY: number;
-        setCurrentPageX(value: number, ani?: boolean): void;
-        setCurrentPageY(value: number, ani?: boolean): void;
         readonly isBottomMost: boolean;
         readonly isRightMost: boolean;
-        pageController: Controller;
+        pageController: controller.Controller;
         readonly scrollingPosX: number;
         readonly scrollingPosY: number;
         scrollTop(ani?: boolean): void;
@@ -1544,30 +1504,33 @@ declare module fgui {
         scrollDown(ratio?: number, ani?: boolean): void;
         scrollLeft(ratio?: number, ani?: boolean): void;
         scrollRight(ratio?: number, ani?: boolean): void;
-        scrollToView(target: any, ani?: boolean, setFirst?: boolean): void;
+        scrollToView(target: Object, ani?: boolean, snapToFirst?: boolean): void;
         isChildInView(obj: GObject): boolean;
         cancelDragging(): void;
+        readonly isDragging: boolean;
         lockHeader(size: number): void;
         lockFooter(size: number): void;
         onOwnerSizeChanged(): void;
-        handleControllerChanged(c: Controller): void;
+        handleControllerChanged(c: controller.Controller): void;
         private updatePageController;
         adjustMaskContainer(): void;
-        setSize(aWidth: number, aHeight: number): void;
-        setContentSize(aWidth: number, aHeight: number): void;
+        setSize(width: number, height: number): void;
+        setContentSize(w: number, h: number): void;
         changeContentSizeOnScrolling(deltaWidth: number, deltaHeight: number, deltaPosX: number, deltaPosY: number): void;
         private handleSizeChanged;
         private posChanged;
         private refresh;
         private refresh2;
-        private __touchBegin;
-        private __touchMove;
-        private __touchEnd;
-        private __touchTap;
-        private updateScrollBarPos;
-        updateScrollBarVisible(): void;
-        private updateScrollBarVisible2;
-        private __barTweenComplete;
+        private syncScrollBar;
+        private $mouseDown;
+        private $mouseMove;
+        private $mouseUp;
+        private $click;
+        private $mouseWheel;
+        private $rollOver;
+        private $rollOut;
+        private showScrollBar;
+        private setScrollBarVisible;
         private getLoopPartSize;
         private loopCheckingCurrent;
         private loopCheckingTarget;
@@ -1578,188 +1541,146 @@ declare module fgui {
         private updateTargetAndDuration;
         private updateTargetAndDuration2;
         private fixDuration;
-        private startTween;
         private killTween;
         private checkRefreshBar;
         private tweenUpdate;
         private runTween;
-        private static easeFunc;
     }
 }
-declare module fgui {
+declare namespace fgui {
+    const enum TransitionActionType {
+        XY = 0,
+        Size = 1,
+        Scale = 2,
+        Pivot = 3,
+        Alpha = 4,
+        Rotation = 5,
+        Color = 6,
+        Animation = 7,
+        Visible = 8,
+        Sound = 9,
+        Transition = 10,
+        Shake = 11,
+        ColorFilter = 12,
+        Skew = 13,
+        Unknown = 14
+    }
+    interface TransitionPlaySetting {
+        onComplete?: (...args: any[]) => void;
+        onCompleteObj?: any;
+        onCompleteParam?: any;
+        times: number;
+        delay: number;
+    }
     class Transition {
         name: string;
-        private _owner;
-        private _ownerBaseX;
-        private _ownerBaseY;
-        private _items;
-        private _totalTimes;
-        private _totalTasks;
-        private _playing;
-        private _paused;
-        private _onComplete;
-        private _onCompleteCaller;
-        private _onCompleteParam;
-        private _options;
-        private _reversed;
-        private _totalDuration;
-        private _autoPlay;
-        private _autoPlayTimes;
-        private _autoPlayDelay;
-        private _timeScale;
-        private _startTime;
-        private _endTime;
+        autoPlayRepeat: number;
+        autoPlayDelay: number;
+        private $owner;
+        private $ownerBaseX;
+        private $ownerBaseY;
+        private $items;
+        private $totalTimes;
+        private $totalTasks;
+        private $playing;
+        private $onComplete;
+        private $onCompleteObj;
+        private $onCompleteParam;
+        private $options;
+        private $reversed;
+        private $maxTime;
+        private $autoPlay;
         static OPTION_IGNORE_DISPLAY_CONTROLLER: number;
         static OPTION_AUTO_STOP_DISABLED: number;
         static OPTION_AUTO_STOP_AT_END: number;
+        private static FRAME_RATE;
         constructor(owner: GComponent);
-        play(onComplete?: Function, onCompleteObj?: any, onCompleteParam?: any, times?: number, delay?: number, startTime?: number, endTime?: number): void;
-        playReverse(onComplete?: Function, onCompleteObj?: any, onCompleteParam?: any, times?: number, delay?: number): void;
-        changePlayTimes(value: number): void;
-        setAutoPlay(value: boolean, times?: number, delay?: number): void;
-        private _play;
+        private $ownerVisibleChanged;
+        autoPlay: boolean;
+        changeRepeat(value: number): void;
+        play(...args: any[]): void;
+        playReverse(...args: any[]): void;
+        private $play;
         stop(setToComplete?: boolean, processCallback?: boolean): void;
         private stopItem;
-        setPaused(paused: boolean): void;
         dispose(): void;
         readonly playing: boolean;
         setValue(label: string, ...args: any[]): void;
-        setHook(label: string, callback: Function, caller: any): void;
+        setHook(label: string, callback: () => void, thisObj?: any): void;
         clearHooks(): void;
         setTarget(label: string, newTarget: GObject): void;
         setDuration(label: string, value: number): void;
-        getLabelTime(label: string): number;
-        timeScale: number;
         updateFromRelations(targetId: string, dx: number, dy: number): void;
-        onOwnerAddedToStage(): void;
-        onOwnerRemovedFromStage(): void;
-        private onDelayedPlay;
         private internalPlay;
-        private playItem;
-        private skipAnimations;
-        private onDelayedPlayItem;
-        private onTweenStart;
-        private onTweenUpdate;
-        private onTweenComplete;
-        private onPlayTransCompleted;
-        private callHook;
+        private prepareValue;
+        private startTween;
+        private $delayCall;
+        private $delayCall2;
+        private $tweenUpdate;
+        private $tweenComplete;
+        private $tweenRepeatComplete;
+        private disposeTween;
+        private $playTransComplete;
         private checkAllComplete;
         private applyValue;
-        setup(buffer: ByteBuffer): void;
+        $shakeItem(item: TransitionItem, elapsedMS: number): void;
+        setup(xml: utils.XmlNode): void;
         private decodeValue;
     }
-}
-declare module fgui {
-    class TranslationHelper {
-        static strings: Object;
-        static loadFromXML(source: string): void;
-        static translateComponent(item: PackageItem): void;
-    }
-}
-declare module fgui {
-    class UIConfig {
+    class TransitionItem {
+        time: number;
+        targetId: string;
+        type: number;
+        duration: number;
+        value: TransitionValue;
+        startValue: TransitionValue;
+        endValue: TransitionValue;
+        easeType: (t: number) => number;
+        repeat: number;
+        yoyo: boolean;
+        tween: boolean;
+        label: string;
+        label2: string;
+        hook: () => void;
+        hookObj: any;
+        hook2: () => void;
+        hook2Obj: any;
+        tweenTimes: number;
+        tweener: createjs.Tween;
+        completed: boolean;
+        target: GObject;
+        filterCreated: boolean;
+        lockToken: number;
         constructor();
-        static defaultFont: string;
-        static windowModalWaiting: string;
-        static globalModalWaiting: string;
-        static modalLayerColor: number;
-        static modalLayerAlpha: number;
-        static buttonSound: string;
-        static buttonSoundVolumeScale: number;
-        static horizontalScrollBar: string;
-        static verticalScrollBar: string;
-        static defaultScrollStep: number;
-        static defaultScrollDecelerationRate: number;
-        static defaultScrollBarDisplay: number;
-        static defaultScrollTouchEffect: boolean;
-        static defaultScrollBounceEffect: boolean;
-        static popupMenu: string;
-        static popupMenu_seperator: string;
-        static loaderErrorSign: string;
-        static tooltipsWin: string;
-        static defaultComboBoxVisibleItemCount: number;
-        static touchScrollSensitivity: number;
-        static touchDragSensitivity: number;
-        static clickDragSensitivity: number;
-        static bringWindowToFrontOnClick: boolean;
-        static frameTimeForAsyncUIConstruction: number;
+        $shake(trans: Transition, elapsedMS: number): void;
+    }
+    class TransitionValue {
+        f1: number;
+        f2: number;
+        f3: number;
+        f4: number;
+        i: number;
+        c: number;
+        b: boolean;
+        s: string;
+        b1: boolean;
+        b2: boolean;
     }
 }
-declare module fgui {
-    class UIObjectFactory {
-        static extensions: any;
-        private static loaderType;
-        constructor();
-        static setExtension(url: string, type: any): void;
-        static setPackageItemExtension(url: string, type: any): void;
-        static setLoaderExtension(type: any): void;
-        static resolvePackageItemExtension(pi: PackageItem): void;
-        static newObject(pi: PackageItem, userClass?: any): GObject;
-        static newObject2(type: ObjectType): GObject;
-    }
-}
-declare module fgui {
-    class UIPackage {
-        private _id;
-        private _name;
-        private _items;
-        private _itemsById;
-        private _itemsByName;
-        private _resKey;
-        private _customId;
-        private _sprites;
-        private _dependencies;
-        private _branches;
-        _branchIndex: number;
-        static _constructing: number;
-        private static _instById;
-        private static _instByName;
-        private static _branch;
-        private static _vars;
-        constructor();
-        static branch: string;
-        static getVar(key: string): any;
-        static setVar(key: string, value: any): void;
-        static getById(id: string): UIPackage;
-        static getByName(name: string): UIPackage;
-        static loadPackage(resKey: string): Promise<UIPackage>;
-        static addPackage(resKey: string, descData?: ArrayBuffer): UIPackage;
-        static removePackage(packageIdOrName: string): void;
-        static createObject(pkgName: string, resName: string, userClass?: any): GObject;
-        static createObjectFromURL(url: string, userClass?: any): GObject;
-        static getItemURL(pkgName: string, resName: string): string;
-        static getItemByURL(url: string): PackageItem;
-        static normalizeURL(url: string): string;
-        static setStringsSource(source: string): void;
-        private loadPackage;
-        dispose(): void;
-        readonly id: string;
-        readonly name: string;
-        customId: string;
-        createObject(resName: string, userClass?: any): GObject;
-        internalCreateObject(item: PackageItem, userClass?: any): GObject;
-        getItemById(itemId: string): PackageItem;
-        getItemByName(resName: string): PackageItem;
-        getItemAssetByName(resName: string): any;
-        getItemAsset(item: PackageItem): any;
-        private loadMovieClip;
-        private loadFont;
-    }
-}
-declare module fgui {
+declare namespace fgui {
     class Window extends GComponent {
-        private _contentPane;
-        private _modalWaitPane;
-        private _closeButton;
-        private _dragArea;
-        private _contentArea;
-        private _frame;
-        private _modal;
-        private _uiSources;
-        private _inited;
-        private _loading;
-        protected _requestingCmd: number;
-        bringToFontOnClick: boolean;
+        private $contentPane;
+        private $modalWaitPane;
+        private $closeButton;
+        private $dragArea;
+        private $contentArea;
+        private $frame;
+        private $modal;
+        private $uiSources;
+        private $inited;
+        private $loading;
+        protected $requestingCmd: number;
+        bringToFrontOnClick: boolean;
         constructor();
         addUISource(source: IUISource): void;
         contentPane: GComponent;
@@ -1771,15 +1692,15 @@ declare module fgui {
         showOn(root: GRoot): void;
         hide(): void;
         hideImmediately(): void;
-        centerOn(r: GRoot, restraint?: boolean): void;
-        toggleStatus(): void;
+        centerOn(r: GRoot, autoUpdate?: boolean): void;
+        toggleVisible(): void;
         readonly isShowing: boolean;
         readonly isTop: boolean;
         modal: boolean;
         bringToFront(): void;
-        showModalWait(requestingCmd?: number): void;
-        protected layoutModalWaitPane(): void;
-        closeModalWait(requestingCmd?: number): boolean;
+        showModalWait(msg?: string, cmd?: number): void;
+        protected layoutModalWaitPane(msg?: string): void;
+        closeModalWait(cmd?: number): boolean;
         readonly modalWaiting: boolean;
         init(): void;
         protected onInit(): void;
@@ -1787,626 +1708,832 @@ declare module fgui {
         protected onHide(): void;
         protected doShowAnimation(): void;
         protected doHideAnimation(): void;
-        private __uiLoadComplete;
-        private _init;
+        private $uiLoadComplete;
+        private $init;
         dispose(): void;
-        protected closeEventHandler(evt: egret.Event): void;
-        private __onShown;
-        private __onHidden;
-        private __mouseDown;
-        private __dragStart;
+        protected closeEventHandler(evt: PIXI.InteractionEvent): void;
+        private $onShown;
+        private $onHidden;
+        private $mouseDown;
+        private $dragStart;
     }
 }
-declare module fgui {
-    class ControllerAction {
+declare namespace PIXI.extras {
+    class InteractionManager extends PIXI.InteractionManager {
+        stageRotation: number;
+        stageScaleX: number;
+        stageScaleY: number;
+        constructor(renderer: PIXI.Renderer, options?: {
+            autoPreventDefault?: boolean;
+            interactionFrequency?: number;
+            useSystemTicker?: number;
+        });
+        mapPositionToPoint(point: PIXI.Point, x: number, y: number): void;
+    }
+}
+declare namespace PIXI.extras {
+    class NineSlicePlane extends PIXI.NineSlicePlane {
+        protected $flipX: boolean;
+        protected $flipY: boolean;
+        updateHorizontalVertices(): void;
+        updateVerticalVertices(): void;
+        _refresh(): void;
+        flipX: boolean;
+        flipY: boolean;
+    }
+}
+declare namespace PIXI.extras {
+    class Sprite extends PIXI.Sprite {
+        protected $flipX: boolean;
+        protected $flipY: boolean;
+        protected $frameId: string;
+        protected static $cachedTexturePool: {
+            [key: string]: {
+                refCount: number;
+                texture: PIXI.Texture;
+            };
+        };
+        constructor(frameId?: string, tex?: PIXI.Texture);
+        flipX: boolean;
+        flipY: boolean;
+        private combineCacheId;
+        private getTextureFromCache;
+        private tryRemoveTextureCache;
+        private createFlippedTexture;
+        private updateUvs;
+        destroy(options?: PIXI.destoryOptions): void;
+    }
+}
+declare namespace PIXI.extras {
+    class TilingSprite extends PIXI.TilingSprite {
+        protected $flipX: boolean;
+        protected $flipY: boolean;
+        protected $frameId: string;
+        protected static $cachedTexturePool: {
+            [key: string]: {
+                refCount: number;
+                texture: PIXI.Texture;
+            };
+        };
+        constructor(frameId?: string, tex?: PIXI.Texture);
+        flipX: boolean;
+        flipY: boolean;
+        private combineCacheId;
+        private getTextureFromCache;
+        private tryRemoveTextureCache;
+        private createFlippedTexture;
+        private updateUvs;
+        destroy(options?: PIXI.destoryOptions): void;
+    }
+}
+declare namespace fgui {
+    class UIConfig {
+        static defaultFont: string;
+        static windowModalWaiting: string;
+        static globalModalWaiting: string;
+        static modalLayerColor: number;
+        static modalLayerAlpha: number;
+        static horizontalScrollBar: string;
+        static verticalScrollBar: string;
+        static defaultScrollSpeed: number;
+        static defaultScrollBarDisplay: number;
+        static defaultScrollTouchEffect: boolean;
+        static defaultScrollBounceEffect: boolean;
+        static defaultScrollDecelerationRate: number;
+        static popupMenu: string;
+        static popupMenuSeperator: string;
+        static loaderErrorSign: string;
+        static tooltipsWin: string;
+        static defaultComboBoxVisibleItemCount: number;
+        static touchScrollSensitivity: number;
+        static touchDragSensitivity: number;
+        static bringWindowToFrontOnClick: boolean;
+    }
+}
+declare namespace fgui.controller {
+    class Action {
         fromPage: string[];
         toPage: string[];
-        static createAction(type: number): ControllerAction;
-        constructor();
-        run(controller: Controller, prevPage: string, curPage: string): void;
+        static create(type: string): Action;
+        execute(controller: Controller, prevPage: string, curPage: string): void;
         protected enter(controller: Controller): void;
         protected leave(controller: Controller): void;
-        setup(buffer: ByteBuffer): void;
+        setup(xml: utils.XmlNode): void;
     }
 }
-declare module fgui {
-    class ChangePageAction extends ControllerAction {
+declare namespace fgui.controller {
+    class ChangePageAction extends Action {
         objectId: string;
         controllerName: string;
         targetPage: string;
-        constructor();
         protected enter(controller: Controller): void;
-        setup(buffer: ByteBuffer): void;
+        setup(xml: utils.XmlNode): void;
     }
 }
-declare module fgui {
-    class PlayTransitionAction extends ControllerAction {
+declare namespace fgui {
+    class StateChangeEvent {
+        static CHANGED: string;
+    }
+}
+declare namespace fgui.controller {
+    class Controller extends PIXI.utils.EventEmitter {
+        private $name;
+        private $selectedIndex;
+        private $previousIndex;
+        private $pageIds;
+        private $pageNames;
+        private $actions;
+        $parent: GComponent;
+        $autoRadioGroupDepth: boolean;
+        $updating: boolean;
+        private static $nextPageId;
+        constructor();
+        name: string;
+        readonly parent: GComponent;
+        selectedIndex: number;
+        setSelectedIndex(value?: number): void;
+        readonly previsousIndex: number;
+        selectedPage: string;
+        setSelectedPage(value: string): void;
+        readonly previousPage: string;
+        readonly pageCount: number;
+        getPageName(index?: number): string;
+        addPage(name?: string): void;
+        addPageAt(name: string, index?: number): void;
+        removePage(name: string): void;
+        removePageAt(index?: number): void;
+        clearPages(): void;
+        hasPage(aName: string): boolean;
+        getPageIndexById(aId: string): number;
+        getPageIdByName(aName: string): string;
+        getPageNameById(aId: string): string;
+        getPageId(index?: number): string;
+        selectedPageId: string;
+        oppositePageId: string;
+        readonly previousPageId: string;
+        executeActions(): void;
+        setup(xml: utils.XmlNode): void;
+    }
+}
+declare namespace fgui.controller {
+    class PageOption {
+        private $controller;
+        private $id;
+        controller: Controller;
+        name: string;
+        index: number;
+        clear(): void;
+        id: string;
+    }
+}
+declare namespace fgui.utils {
+    type AttributeDictionary = {
+        [key: string]: string;
+    };
+    class XmlNode {
+        context: Node;
+        nodeName: string;
+        type: number;
+        text: string;
+        private $children;
+        private $attributes;
+        constructor(ele: Node);
+        readonly children: XmlNode[];
+        readonly attributes: AttributeDictionary;
+    }
+    class XmlParser {
+        private static $parser;
+        static tryParse(xmlstring: string, mimeType?: any): XmlNode;
+        static getXmlRoot(xml: XmlNode): XmlNode;
+        static getChildNodes(xml: XmlNode, matchName?: string): XmlNode[];
+        static getNodeAttributes(xml: XmlNode): AttributeDictionary;
+    }
+}
+declare namespace fgui.controller {
+    class PlayTransitionAction extends Action {
         transitionName: string;
-        playTimes: number;
+        repeat: number;
         delay: number;
         stopOnExit: boolean;
-        private _currentTransition;
-        constructor();
+        private $currentTransition;
         protected enter(controller: Controller): void;
         protected leave(controller: Controller): void;
-        setup(buffer: ByteBuffer): void;
+        setup(xml: utils.XmlNode): void;
     }
 }
-declare module fgui {
-    class BitmapFont {
-        id: string;
-        size: number;
-        ttf: boolean;
-        glyphs: any;
-        resizable: boolean;
-        tint: boolean;
-        constructor();
-    }
+declare namespace fgui {
     class BMGlyph {
         x: number;
         y: number;
+        offsetX: number;
+        offsetY: number;
         width: number;
         height: number;
         advance: number;
         lineHeight: number;
         channel: number;
-        texture: egret.Texture;
+        texture: PIXI.Texture;
+    }
+}
+declare namespace fgui {
+    type GlyphDictionary = {
+        [key: string]: BMGlyph;
+    };
+    class BitmapFont {
+        id: string;
+        size: number;
+        ttf: boolean;
+        glyphs: GlyphDictionary;
+        resizable: boolean;
+        colorable: boolean;
         constructor();
     }
 }
 declare namespace fgui {
-    class FillUtils {
-        static fill(w: number, h: number, method: number, origin: number, clockwise: boolean, amount: number): any[];
-        static fillHorizontal(w: number, h: number, origin: number, amount: number): any[];
-        static fillVertical(w: number, h: number, origin: number, amount: number): any[];
-        static fillRadial90(w: number, h: number, origin: number, clockwise: boolean, amount: number): any[];
-        private static movePoints;
-        static fillRadial180(w: number, h: number, origin: number, clockwise: boolean, amount: number): any[];
-        static fillRadial360(w: number, h: number, origin: number, clockwise: boolean, amount: number): any[];
-    }
-}
-declare module fgui {
-    class Image extends egret.Bitmap {
-        private _fillMethod;
-        private _fillOrigin;
-        private _fillAmount;
-        private _fillClockwise;
-        private _mask;
-        private _maskDirtyFlag;
-        private _color;
-        constructor();
-        color: number;
-        $setX(value: number): boolean;
-        $setY(value: number): boolean;
-        fillMethod: FillMethod;
-        fillOrigin: number;
-        fillClockwise: boolean;
+    class FillSprite extends PIXI.Sprite {
+        protected _fillMode: TextureFillMode;
+        protected _fillBegin: TextureFillBegin;
+        protected _fillDir: TextureFillDirection;
+        protected _fillAmount: number;
+        protected _flip: FlipType;
+        protected _percent: number;
+        constructor(texture?: PIXI.Texture);
+        flip: FlipType;
         fillAmount: number;
-        private markChanged;
-        private doFill;
+        fillBegin: TextureFillBegin;
+        fillMode: TextureFillMode;
+        fillDirection: TextureFillDirection;
+        private checkAndFixFillBegin;
+        amount: number;
     }
 }
-declare module fgui {
+declare namespace fgui {
     class Frame {
         addDelay: number;
-        texture: egret.Texture;
-        constructor();
+        texture: PIXI.Texture;
     }
-    class MovieClip extends Image {
+}
+declare namespace fgui.utils {
+    class StringUtil {
+        static encodeHTML(str: string): string;
+        static getFileName(source: string): string;
+        static startsWith(source: string, str: string, ignoreCase?: boolean): boolean;
+        static endsWith(source: string, str: string, ignoreCase?: boolean): boolean;
+        static trim(targetString: string): string;
+        static trimLeft(targetString: string): string;
+        static trimRight(targetString: string): string;
+        static convertToHtmlColor(argb: number, hasAlpha?: boolean): string;
+        static convertFromHtmlColor(str: string, hasAlpha?: boolean): number;
+    }
+}
+declare namespace fgui.utils {
+    class Binder {
+        static create<T extends Function>(func: Function, context: any, ...args: any[]): T;
+    }
+}
+declare namespace fgui {
+    class FocusEvent {
+        static CHANGED: string;
+    }
+}
+declare namespace fgui {
+    class InputElement extends PIXI.utils.EventEmitter {
+        private htmlInput;
+        private $requestToShow;
+        private inputElement;
+        private inputDiv;
+        private $scaleX;
+        private $scaleY;
+        private textValue;
+        private colorValue;
+        protected $textfield: GTextInput;
+        constructor(tf: GTextInput);
+        $addToStage(): void;
+        private initElement;
+        readonly textField: GTextField;
+        $show(): void;
+        onBlurHandler(): void;
+        $hide(): void;
+        text: string;
+        setColor(value: number): void;
+        $onBlur(): void;
+        onInputHandler(): void;
+        private setAreaHeight;
+        private getVAlignFactor;
+        onClickHandler(e: Event): void;
+        onDisconnect(): void;
+        private setElementStyle;
+        private $attrsCache;
+        setAttribute(name: string, value: string): void;
+        getAttribute(name: string): string;
+        $removeFromStage(): void;
+        resetInput(): void;
+    }
+}
+declare namespace fgui {
+    class HTMLInput {
+        private $input;
+        private $singleLine;
+        private $multiLine;
+        private $curEle;
+        $wrapper: HTMLDivElement;
+        private $delegateDiv;
+        private $canvas;
+        $requestToShow: boolean;
+        $scaleX: number;
+        $scaleY: number;
+        static isTyping: boolean;
+        private constructor();
+        private static $instance;
+        static readonly inst: HTMLInput;
+        initialize(container: HTMLElement, view: HTMLCanvasElement): void;
+        isInputOn(): boolean;
+        private canvasClickHandler;
+        isInputShown(): boolean;
+        isCurrentInput(input: InputElement): boolean;
+        private initDomPos;
+        private setTransform;
+        updateSize(sx: number, sy: number): void;
+        private initInputElement;
+        show(): void;
+        disconnect(ele: InputElement): void;
+        clearAttributes(obj: any): void;
+        clearInputElement(): void;
+        requestInput(ele: InputElement): HTMLInputElement | HTMLTextAreaElement;
+    }
+}
+declare namespace fgui {
+    interface IUIObject {
+        UIOwner: GObject;
+    }
+    let isUIObject: (obj: any) => obj is IUIObject;
+}
+declare namespace fgui {
+    interface IUISource {
+        fileName: string;
+        loaded: boolean;
+        load(callback: () => void, thisObj: any): void;
+    }
+}
+declare namespace fgui {
+    interface MovieClipSettings {
+        startFrame?: number;
+        endFrame?: number;
+        repeatCount?: number;
+        loopEndAt?: number;
+        endCallback?: (target?: MovieClip) => void;
+        endCallbackContext?: any;
+        [key: string]: any;
+    }
+    class DefaultMovieClipSettings implements MovieClipSettings {
+        startFrame: number;
+        endFrame: number;
+        repeatCount: number;
+        loopEndAt: number;
+        endCallback: (target?: MovieClip) => void;
+        endCallbackContext: any;
+        mix(other: MovieClipSettings): MovieClipSettings;
+    }
+}
+declare namespace fgui {
+    class MovieClipData {
+        reachesEnd: boolean;
+        reversed: boolean;
+        repeatedCount: number;
+        private $curFrame;
+        private $lastTime;
+        private $curFrameDelay;
+        constructor();
+        update(mc: MovieClip): void;
+        currentFrame: number;
+        rewind(): void;
+        reset(): void;
+        copy(src: MovieClipData): void;
+    }
+}
+declare namespace fgui.utils {
+    class NumberUtil {
+        static RADIAN: number;
+        static clamp(value: number, min: number, max: number): number;
+        static clamp01(value: number): number;
+        static isNumber(n: any): n is number;
+        static sign(x: number): number;
+        static angleToRadian(n: number): number;
+        static lerp(s: number, e: number, p: number): number;
+    }
+}
+declare namespace fgui {
+    class MovieClip extends PIXI.Sprite implements IUIObject {
         interval: number;
         swing: boolean;
         repeatDelay: number;
-        timeScale: number;
-        private _playing;
-        private _frameCount;
-        private _frames;
-        private _frame;
-        private _start;
-        private _end;
-        private _times;
-        private _endAt;
-        private _status;
-        private _callback;
-        private _callbackObj;
-        private _smoothing;
-        private _frameElapsed;
-        private _reversed;
-        private _repeatedCount;
-        constructor();
-        frames: Array<Frame>;
+        private $playing;
+        private $frameCount;
+        private $frames;
+        private $currentFrame;
+        private $status;
+        private $settings;
+        private data;
+        UIOwner: GObject;
+        constructor(owner: GObject);
+        frames: Frame[];
         readonly frameCount: number;
-        frame: number;
+        boundsRect: PIXI.Rectangle;
+        currentFrame: number;
         playing: boolean;
-        smoothing: boolean;
-        rewind(): void;
-        syncStatus(anotherMc: MovieClip): void;
-        advance(timeInMiniseconds: number): void;
-        setPlaySettings(start?: number, end?: number, times?: number, endAt?: number, endCallback?: Function, callbackObj?: any): void;
+        setPlaySettings(...args: any[]): void;
         private update;
-        private drawFrame;
-        private checkTimer;
-        $onAddToStage(stage: egret.Stage, nestLevel: number): void;
-        $onRemoveFromStage(): void;
-    }
-}
-declare module fgui {
-    class UIContainer extends egret.DisplayObjectContainer {
-        private _hitArea;
-        private _cachedMatrix;
-        private _cachedHitArea;
-        private _opaque;
-        constructor();
-        cacheHitArea(value: boolean): void;
-        hitArea: PixelHitTest | egret.DisplayObject;
-        opaque: boolean;
-        $hitTest(stageX: number, stageY: number): egret.DisplayObject;
-    }
-}
-declare module fgui {
-    class DragEvent extends egret.Event {
-        stageX: number;
-        stageY: number;
-        touchPointID: number;
-        private _prevented;
-        static DRAG_START: string;
-        static DRAG_END: string;
-        static DRAG_MOVING: string;
-        constructor(type: string, stageX?: number, stageY?: number, touchPointID?: number);
-        preventDefault(): void;
-        isDefaultPrevented(): boolean;
-    }
-}
-declare module fgui {
-    class DropEvent extends egret.Event {
-        source: any;
-        static DROP: string;
-        constructor(type: string, source?: any);
-    }
-}
-declare module fgui {
-    class ItemEvent extends egret.Event {
-        itemObject: GObject;
-        stageX: number;
-        stageY: number;
-        static CLICK: string;
-        constructor(type: string, itemObject?: GObject, stageX?: number, stageY?: number);
-    }
-}
-declare module fgui {
-    class StateChangeEvent extends egret.Event {
-        static CHANGED: string;
-        constructor(type: string);
+        private $playEnd;
+        private setFrame;
+        private added;
+        private removed;
+        destroy(): void;
     }
 }
 declare namespace fgui {
-    class GearBase {
-        static disableAllTweenEffect: boolean;
-        protected _owner: GObject;
-        protected _controller: Controller;
-        protected _tweenConfig: GearTweenConfig;
-        private static Classes;
-        static create(owner: GObject, index: number): GearBase;
-        constructor(owner: GObject);
+    class UIContainer extends PIXI.Container implements IUIObject {
+        protected $scrollRect: PIXI.Rectangle;
+        protected $rectMask: PIXI.Graphics;
+        UIOwner: GObject;
+        constructor(owner?: GObject);
+        scrollRect: PIXI.Rectangle;
+    }
+}
+declare namespace fgui {
+    class UIImage extends PIXI.Container implements IUIObject {
+        UIOwner: GObject;
+        protected $disp: PIXI.extras.TilingSprite | PIXI.extras.NineSlicePlane | PIXI.extras.Sprite;
+        constructor(owner?: GObject);
+        $initDisp(item?: PackageItem): void;
+        tint: number;
+        height: number;
+        width: number;
+        texture: PIXI.Texture;
+        scale9Grid: PIXI.Rectangle;
+        tiledSlices: number;
+        flipX: boolean;
+        flipY: boolean;
+        destroy(options?: PIXI.destoryOptions): void;
+    }
+}
+declare namespace fgui {
+    class UISprite extends PIXI.Graphics implements IUIObject {
+        UIOwner: GObject;
+        constructor(owner?: GObject);
+    }
+}
+declare namespace fgui.utils {
+    class DOMEventManager extends PIXI.utils.EventEmitter {
+        static inst: DOMEventManager;
+        constructor();
+        private notifyResizeEvents;
+        private onMouseWheel;
+        private retEvent;
+        private lowestDelta;
+        private nullLowestDeltaTimeout;
+        private nullLowestDelta;
+        private $pressedKeys;
+        private $releasedKeys;
+        private $downKeys;
+        isKeyDown(key: number): boolean;
+        isKeyPressed(key: number): boolean;
+        isKeyReleased(key: number): boolean;
+        private onWindowKeyDown;
+        private onWindowKeyUp;
+    }
+}
+declare namespace fgui {
+    const enum StageOrientation {
+        AUTO = "auto",
+        PORTRAIT = "portrait",
+        LANDSCAPE = "landscape"
+    }
+    const enum StageScaleMode {
+        NO_SCALE = "noScale",
+        SHOW_ALL = "showAll",
+        NO_BORDER = "noBorder",
+        EXACT_FIT = "exactFit",
+        FIXED_WIDTH = "fixedWidth",
+        FIXED_HEIGHT = "fixedHeight",
+        FIXED_AUTO = "fixedAuto"
+    }
+    const enum StageAlign {
+        LEFT = 0,
+        CENTER = 1,
+        RIGHT = 2,
+        TOP = 3,
+        MIDDLE = 4,
+        BOTTOM = 5
+    }
+    interface UIStageOptions {
+        scaleMode?: StageScaleMode;
+        orientation?: StageOrientation;
+        resolution?: number;
+        designWidth: number;
+        designHeight: number;
+        alignV?: StageAlign;
+        alignH?: StageAlign;
+        fallbackWidth?: number;
+        fallbackHeight?: number;
+        [key: string]: string | number;
+    }
+    class DefaultUIStageOptions implements UIStageOptions {
+        scaleMode?: StageScaleMode;
+        orientation?: StageOrientation;
+        resolution?: number;
+        designWidth: number;
+        designHeight: number;
+        alignV: StageAlign;
+        alignH: StageAlign;
+        fallbackWidth: number;
+        fallbackHeight: number;
+        [key: string]: string | number;
+    }
+    class UIStage extends PIXI.utils.EventEmitter {
+        protected $appContext: PIXI.Application;
+        protected $appStage: PIXI.Container;
+        protected $options: UIStageOptions;
+        protected $width: number;
+        protected $height: number;
+        protected $scaleX: number;
+        protected $scaleY: number;
+        protected $canvasMatrix: PIXI.Matrix;
+        offsetX: number;
+        offsetY: number;
+        private $sizeCalcer;
+        constructor(app: PIXI.Application, stageOptions?: UIStageOptions);
+        readonly orientation: StageOrientation;
+        readonly stageWidth: number;
+        readonly stageHeight: number;
+        readonly applicationContext: PIXI.Application;
+        readonly nativeStage: PIXI.Container;
+        resolution: number;
+        readonly scaleX: number;
+        readonly scaleY: number;
+        readonly designWidth: number;
+        readonly designHeight: number;
+        setDesignSize(width: number, height: number): void;
+        protected calculateStageSize(scaleMode: string, screenWidth: number, screenHeight: number, contentWidth: number, contentHeight: number): {
+            stageWidth: number;
+            stageHeight: number;
+            displayWidth: number;
+            displayHeight: number;
+        };
+        updateScreenSize(): void;
+        private formatData;
         dispose(): void;
-        controller: Controller;
-        readonly tweenConfig: GearTweenConfig;
-        setup(buffer: ByteBuffer): void;
-        updateFromRelations(dx: number, dy: number): void;
-        protected addStatus(pageId: string, buffer: ByteBuffer): void;
-        protected init(): void;
-        apply(): void;
-        updateState(): void;
     }
-    class GearTweenConfig {
-        tween: boolean;
-        easeType: number;
-        duration: number;
-        delay: number;
-        _displayLockToken: number;
-        _tweener: GTweener;
+}
+declare namespace fgui {
+    class UITextField extends PIXI.Text implements IUIObject {
+        UIOwner: GObject;
+        protected $minHeight: number;
+        protected $minHeightID: number;
+        protected _width: number;
+        protected _height: number;
+        constructor(owner?: GObject);
+        readonly minHeight: number;
+        $updateMinHeight(): void;
+        protected updateFrame(): void;
+        private internalUpdateFrame;
+        protected _onTextureUpdate(): void;
+        width: number;
+        height: number;
+        textHeight: number;
+        textWidth: number;
+    }
+}
+declare namespace fgui {
+    class DisplayObjectEvent {
+        static XY_CHANGED: string;
+        static SIZE_CHANGED: string;
+        static VISIBLE_CHANGED: string;
+        static SIZE_DELAY_CHANGE: string;
+        static MOUSE_WHEEL: string;
+    }
+}
+declare namespace fgui {
+    class DragEvent {
+        static START: string;
+        static END: string;
+        static MOVING: string;
+        static DROP: string;
+    }
+}
+declare namespace fgui {
+    class GearEvent {
+        static GEAR_STOP: string;
+    }
+}
+declare namespace fgui {
+    class ListEvent {
+        static ItemClick: string;
+    }
+}
+declare namespace fgui {
+    class ScrollEvent {
+        static SCROLL: string;
+        static SCROLL_END: string;
+        static PULL_DOWN_RELEASE: string;
+        static PULL_UP_RELEASE: string;
+    }
+}
+declare namespace fgui {
+    class TextEvent {
+        static LinkClick: string;
+        static Change: string;
+        static FocusIn: string;
+        static FocusOut: string;
+    }
+}
+declare namespace fgui {
+    class DisplayListItem {
+        packageItem: PackageItem;
+        type: string;
+        desc: utils.XmlNode;
+        listItemCount: number;
+        constructor(packageItem: PackageItem, type: string);
+    }
+}
+declare namespace fgui {
+    class PackageItem {
+        owner: UIPackage;
+        type: PackageItemType;
+        id: string;
+        name: string;
+        width: number;
+        height: number;
+        file: string;
+        decoded: boolean;
+        scale9Grid: PIXI.Rectangle;
+        scaleByTile: boolean;
+        tiledSlices: number;
+        texture: PIXI.Texture;
+        interval: number;
+        repeatDelay: number;
+        swing: boolean;
+        frames: Frame[];
+        componentData: utils.XmlNode;
+        displayList: DisplayListItem[];
+        bitmapFont: BitmapFont;
+        load(): AssetTypes;
+        toString(): string;
+    }
+}
+declare namespace fgui {
+    class UIObjectFactory {
+        private static packageItemExtensions;
+        private static loaderExtension;
+        static setPackageItemExtension(url: string, type: {
+            new (): GComponent;
+        }): void;
+        static setLoaderExtension(type: {
+            new (): GLoader;
+        }): void;
+        static newObject(pi: PackageItem): GObject;
+        static newObjectDirectly(type: string): GObject;
+    }
+}
+declare namespace fgui {
+    type AssetTypes = PIXI.Texture | BitmapFont | Frame[] | utils.XmlNode | PIXI.LoaderResource;
+    class UIPackage {
+        private $id;
+        private $name;
+        private $resKey;
+        private $items;
+        private $itemsById;
+        private $itemsByName;
+        private $resData;
+        private $customId;
+        private $atlasConfigs;
+        static $constructingObjects: number;
+        private static $packageInstById;
+        private static $packageInstByName;
+        private static $bitmapFonts;
+        private static $stringsSource;
+        private static sep0;
+        private static sep1;
+        private static sep2;
+        private static sep3;
         constructor();
+        static getById(id: string): UIPackage;
+        static getByName(name: string): UIPackage;
+        static addPackage(resKey: string): UIPackage;
+        static removePackage(packageId: string): void;
+        static createObject(pkgName: string, resName: string, userClass?: {
+            new (): GObject;
+        }): GObject;
+        static createObjectFromURL(url: string, userClass?: {
+            new (): GObject;
+        }): GObject;
+        static getItemURL(pkgName: string, resName: string): string;
+        static getItemByURL(url: string): PackageItem;
+        static getBitmapFontByURL(url: string): BitmapFont;
+        static setStringsSource(source: string): void;
+        static normalizeURL(url: string): string;
+        private create;
+        private decompressPackage;
+        dispose(): void;
+        readonly id: string;
+        readonly name: string;
+        customId: string;
+        createObject(resName: string, userClass?: {
+            new (): GObject;
+        }): GObject;
+        internalCreateObject(item: PackageItem, userClass?: {
+            new (): GObject;
+        }): GObject;
+        getItemById(itemId: string): PackageItem;
+        getItemByName(resName: string): PackageItem;
+        getItemAssetByName(resName: string): AssetTypes;
+        private createSpriteTexture;
+        getItemAsset(item: PackageItem): AssetTypes;
+        private loadComponentChildren;
+        private getResDescriptor;
+        private loadComponentTranslation;
+        private loadMovieClip;
+        private loadFont;
     }
 }
-declare namespace fgui {
-    class GearAnimation extends GearBase {
-        private _storage;
-        private _default;
-        constructor(owner: GObject);
-        protected init(): void;
-        protected addStatus(pageId: string, buffer: ByteBuffer): void;
-        apply(): void;
-        updateState(): void;
+declare namespace fgui.utils {
+    class AssetLoader extends PIXI.Loader {
+        protected static $resources: PIXI.IResourceDictionary;
+        constructor(baseUrl?: string, concurrency?: number);
+        protected _onComplete(): void;
+        static readonly resourcesPool: PIXI.IResourceDictionary;
+        static destroyResource(key: string): void;
+        static addResources(res: PIXI.IResourceDictionary): void;
     }
 }
-declare namespace fgui {
-    class GearColor extends GearBase {
-        private _storage;
-        private _default;
-        constructor(owner: GObject);
-        protected init(): void;
-        protected addStatus(pageId: string, buffer: ByteBuffer): void;
-        apply(): void;
-        updateState(): void;
-    }
-}
-declare namespace fgui {
-    class GearDisplay extends GearBase {
-        pages: string[];
-        private _visible;
-        private _displayLockToken;
-        constructor(owner: GObject);
-        protected init(): void;
-        apply(): void;
-        addLock(): number;
-        releaseLock(token: number): void;
-        readonly connected: boolean;
-    }
-}
-declare namespace fgui {
-    class GearDisplay2 extends GearBase {
-        pages: string[];
-        condition: number;
-        private _visible;
-        constructor(owner: GObject);
-        protected init(): void;
-        apply(): void;
-        evaluate(connected: boolean): boolean;
-    }
-}
-declare namespace fgui {
-    class GearFontSize extends GearBase {
-        private _storage;
-        private _default;
-        constructor(owner: GObject);
-        protected init(): void;
-        protected addStatus(pageId: string, buffer: ByteBuffer): void;
-        apply(): void;
-        updateState(): void;
-    }
-}
-declare namespace fgui {
-    class GearIcon extends GearBase {
-        private _storage;
-        private _default;
-        constructor(owner: GObject);
-        protected init(): void;
-        protected addStatus(pageId: string, buffer: ByteBuffer): void;
-        apply(): void;
-        updateState(): void;
-    }
-}
-declare namespace fgui {
-    class GearLook extends GearBase {
-        private _storage;
-        private _default;
-        constructor(owner: GObject);
-        protected init(): void;
-        protected addStatus(pageId: string, buffer: ByteBuffer): void;
-        apply(): void;
-        private __tweenUpdate;
-        private __tweenComplete;
-        updateState(): void;
-    }
-}
-declare namespace fgui {
-    class GearSize extends GearBase {
-        private _storage;
-        private _default;
-        constructor(owner: GObject);
-        protected init(): void;
-        protected addStatus(pageId: string, buffer: ByteBuffer): void;
-        apply(): void;
-        private __tweenUpdate;
-        private __tweenComplete;
-        updateState(): void;
-        updateFromRelations(dx: number, dy: number): void;
-    }
-}
-declare namespace fgui {
-    class GearText extends GearBase {
-        private _storage;
-        private _default;
-        constructor(owner: GObject);
-        protected init(): void;
-        protected addStatus(pageId: string, buffer: ByteBuffer): void;
-        apply(): void;
-        updateState(): void;
-    }
-}
-declare namespace fgui {
-    class GearXY extends GearBase {
-        positionsInPercent: boolean;
-        private _storage;
-        private _default;
-        constructor(owner: GObject);
-        protected init(): void;
-        protected addStatus(pageId: string, buffer: ByteBuffer): void;
-        addExtStatus(pageId: string, buffer: ByteBuffer): void;
-        apply(): void;
-        private __tweenUpdate;
-        private __tweenComplete;
-        updateState(): void;
-        updateFromRelations(dx: number, dy: number): void;
-    }
-}
-declare module fgui {
-    class EaseManager {
-        private static _PiOver2;
-        private static _TwoPi;
-        static evaluate(easeType: number, time: number, duration: number, overshootOrAmplitude: number, period: number): number;
-    }
-}
-declare module fgui {
-    class EaseType {
-        static Linear: number;
-        static SineIn: number;
-        static SineOut: number;
-        static SineInOut: number;
-        static QuadIn: number;
-        static QuadOut: number;
-        static QuadInOut: number;
-        static CubicIn: number;
-        static CubicOut: number;
-        static CubicInOut: number;
-        static QuartIn: number;
-        static QuartOut: number;
-        static QuartInOut: number;
-        static QuintIn: number;
-        static QuintOut: number;
-        static QuintInOut: number;
-        static ExpoIn: number;
-        static ExpoOut: number;
-        static ExpoInOut: number;
-        static CircIn: number;
-        static CircOut: number;
-        static CircInOut: number;
-        static ElasticIn: number;
-        static ElasticOut: number;
-        static ElasticInOut: number;
-        static BackIn: number;
-        static BackOut: number;
-        static BackInOut: number;
-        static BounceIn: number;
-        static BounceOut: number;
-        static BounceInOut: number;
-        static Custom: number;
-    }
-}
-declare namespace fgui {
-    class GPath {
-        private _segments;
-        private _points;
-        private _fullLength;
-        private static helperPoints;
-        constructor();
-        readonly length: number;
-        create2(pt1: GPathPoint, pt2: GPathPoint, pt3?: GPathPoint, pt4?: GPathPoint): void;
-        create(points: Array<GPathPoint>): void;
-        private createSplineSegment;
-        clear(): void;
-        getPointAt(t: number, result?: egret.Point): egret.Point;
-        readonly segmentCount: number;
-        getAnchorsInSegment(segmentIndex: number, points?: Array<egret.Point>): Array<egret.Point>;
-        getPointsInSegment(segmentIndex: number, t0: number, t1: number, points?: Array<egret.Point>, ts?: Array<number>, pointDensity?: number): Array<egret.Point>;
-        getAllPoints(points?: Array<egret.Point>, ts?: Array<number>, pointDensity?: number): Array<egret.Point>;
-        private onCRSplineCurve;
-        private onBezierCurve;
-    }
-}
-declare namespace fgui {
-    enum CurveType {
-        CRSpline = 0,
-        Bezier = 1,
-        CubicBezier = 2,
-        Straight = 3
-    }
-    class GPathPoint {
-        x: number;
-        y: number;
-        control1_x: number;
-        control1_y: number;
-        control2_x: number;
-        control2_y: number;
-        curveType: number;
-        constructor();
-        static newPoint(x?: number, y?: number, curveType?: number): GPathPoint;
-        static newBezierPoint(x?: number, y?: number, control1_x?: number, control1_y?: number): GPathPoint;
-        static newCubicBezierPoint(x?: number, y?: number, control1_x?: number, control1_y?: number, control2_x?: number, control2_y?: number): GPathPoint;
-        clone(): GPathPoint;
-    }
-}
-declare namespace fgui {
-    class GTween {
-        static catchCallbackExceptions: boolean;
-        static to(start: number, end: number, duration: number): GTweener;
-        static to2(start: number, start2: number, end: number, end2: number, duration: number): GTweener;
-        static to3(start: number, start2: number, start3: number, end: number, end2: number, end3: number, duration: number): GTweener;
-        static to4(start: number, start2: number, start3: number, start4: number, end: number, end2: number, end3: number, end4: number, duration: number): GTweener;
-        static toColor(start: number, end: number, duration: number): GTweener;
-        static delayedCall(delay: number): GTweener;
-        static shake(startX: number, startY: number, amplitude: number, duration: number): GTweener;
-        static isTweening(target: Object, propType?: any): Boolean;
-        static kill(target: Object, complete?: boolean, propType?: any): void;
-        static getTween(target: Object, propType?: any): GTweener;
-    }
-}
-declare module fgui {
-    class GTweener {
-        _target: any;
-        _propType: any;
-        _killed: boolean;
-        _paused: boolean;
-        private _delay;
-        private _duration;
-        private _breakpoint;
-        private _easeType;
-        private _easeOvershootOrAmplitude;
-        private _easePeriod;
-        private _repeat;
-        private _yoyo;
-        private _timeScale;
-        private _snapping;
-        private _userData;
-        private _path;
-        private _onUpdate;
-        private _onStart;
-        private _onComplete;
-        private _onUpdateCaller;
-        private _onStartCaller;
-        private _onCompleteCaller;
-        private _startValue;
-        private _endValue;
-        private _value;
-        private _deltaValue;
-        private _valueSize;
-        private _started;
-        private _ended;
-        private _elapsedTime;
-        private _normalizedTime;
-        private static helperPoint;
-        constructor();
-        setDelay(value: number): GTweener;
-        readonly delay: number;
-        setDuration(value: number): GTweener;
-        readonly duration: number;
-        setBreakpoint(value: number): GTweener;
-        setEase(value: number): GTweener;
-        setEasePeriod(value: number): GTweener;
-        setEaseOvershootOrAmplitude(value: number): GTweener;
-        setRepeat(repeat: number, yoyo?: boolean): GTweener;
-        readonly repeat: number;
-        setTimeScale(value: number): GTweener;
-        setSnapping(value: boolean): GTweener;
-        setTarget(value: Object, propType?: Object): GTweener;
-        readonly target: Object;
-        setUserData(value: any): GTweener;
-        readonly userData: any;
-        setPath(value: GPath): GTweener;
-        onUpdate(callback: Function, caller: any): GTweener;
-        onStart(callback: Function, caller: any): GTweener;
-        onComplete(callback: Function, caller: any): GTweener;
-        readonly startValue: TweenValue;
-        readonly endValue: TweenValue;
-        readonly value: TweenValue;
-        readonly deltaValue: TweenValue;
-        readonly normalizedTime: number;
-        readonly completed: boolean;
-        readonly allCompleted: boolean;
-        setPaused(paused: boolean): GTweener;
-        seek(time: number): void;
-        kill(complete?: boolean): void;
-        _to(start: number, end: number, duration: number): GTweener;
-        _to2(start: number, start2: number, end: number, end2: number, duration: number): GTweener;
-        _to3(start: number, start2: number, start3: number, end: number, end2: number, end3: number, duration: number): GTweener;
-        _to4(start: number, start2: number, start3: number, start4: number, end: number, end2: number, end3: number, end4: number, duration: number): GTweener;
-        _toColor(start: number, end: number, duration: number): GTweener;
-        _shake(startX: number, startY: number, amplitude: number, duration: number): GTweener;
-        _init(): void;
-        _reset(): void;
-        _update(dt: number): void;
-        private update;
-        private callStartCallback;
-        private callUpdateCallback;
-        private callCompleteCallback;
-    }
-}
-declare module fgui {
-    class TweenManager {
-        private static _activeTweens;
-        private static _tweenerPool;
-        private static _totalActiveTweens;
-        private static _lastTime;
-        private static _inited;
-        static createTween(): GTweener;
-        static isTweening(target: any, propType: any): boolean;
-        static killTweens(target: any, completed: boolean, propType: any): boolean;
-        static getTween(target: any, propType: any): GTweener;
-        private static update;
-    }
-}
-declare module fgui {
-    class TweenValue {
-        x: number;
-        y: number;
-        z: number;
-        w: number;
-        constructor();
-        color: number;
-        getField(index: number): number;
-        setField(index: number, value: number): void;
-        setZero(): void;
-    }
-}
-declare module fgui {
-    class ByteBuffer extends egret.ByteArray {
-        stringTable: Array<string>;
-        version: number;
-        constructor(buffer?: ArrayBuffer | Uint8Array, bufferExtSize?: number);
-        skip(count: number): void;
-        readBool(): boolean;
-        readS(): string;
-        readSArray(cnt: number): Array<string>;
-        writeS(value: string): void;
-        readColor(hasAlpha?: boolean): number;
-        readChar(): string;
-        readBuffer(): ByteBuffer;
-        seek(indexTablePos: number, blockIndex: number): boolean;
-    }
-}
-declare module fgui {
+declare namespace fgui.utils {
     class ColorMatrix {
-        matrix: Array<number>;
-        private static IDENTITY_MATRIX;
-        private static LENGTH;
-        private static LUMA_R;
-        private static LUMA_G;
-        private static LUMA_B;
-        private static helper;
-        static create(p_brightness: number, p_contrast: number, p_saturation: number, p_hue: number): ColorMatrix;
-        static getMatrix(p_brightness: number, p_contrast: number, p_saturation: number, p_hue: number, result?: number[]): number[];
-        constructor();
-        reset(): void;
-        invert(): void;
-        adjustColor(p_brightness: number, p_contrast: number, p_saturation: number, p_hue: number): void;
-        adjustBrightness(p_val: number): void;
-        adjustContrast(p_val: number): void;
-        adjustSaturation(p_val: number): void;
-        adjustHue(p_val: number): void;
-        concat(p_matrix: Array<number>): void;
+        protected _raw: number[];
+        protected h: number;
+        protected s: number;
+        protected c: number;
+        protected b: number;
+        constructor(brightness?: number, contrast?: number, saturation?: number, hue?: number);
+        static DELTA_INDEX: number[];
+        static IDENTITY_MATRIX: number[];
+        static LENGTH: number;
+        readonly hue: number;
+        readonly brightness: number;
+        readonly contrast: number;
+        readonly saturation: number;
+        setColor(brightness: number, contrast: number, saturation: number, hue: number): ColorMatrix;
+        reset(): ColorMatrix;
+        adjustColor(brightness: number, contrast: number, saturation: number, hue: number): ColorMatrix;
+        adjustBrightness(value: number): ColorMatrix;
+        adjustContrast(value: number): ColorMatrix;
+        adjustSaturation(value: number): ColorMatrix;
+        adjustHue(value: number): ColorMatrix;
+        concat(matrix: number[]): ColorMatrix;
         clone(): ColorMatrix;
-        protected copyMatrix(p_matrix: Array<number>): void;
-        protected multiplyMatrix(p_matrix: Array<number>): void;
-        protected cleanValue(p_val: number, p_limit: number): number;
+        toArray(): number[];
+        copy(matrix: number[]): ColorMatrix;
+        protected _multiplyMatrix(matrix: number[]): void;
+        private _cleanValue;
+        private _fixMatrix;
     }
 }
-declare module fgui {
-    class GTimers {
-        private _items;
-        private _itemPool;
-        private _enumI;
-        private _enumCount;
-        private _lastTime;
-        static deltaTime: number;
-        static time: number;
-        static inst: GTimers;
-        private static FPS24;
+declare namespace fgui.utils {
+    class DragIndicator {
+        protected $agent: GLoader;
+        protected $sourceData: any;
+        protected $sourceObject: GObject;
         constructor();
-        private getItem;
-        private findItem;
-        add(delayInMiniseconds: number, repeat: number, callback: Function, thisObj: any, callbackParam?: any): void;
-        callLater(callback: Function, thisObj: any, callbackParam?: any): void;
-        callDelay(delay: number, callback: Function, thisObj: any, callbackParam?: any): void;
-        callBy24Fps(callback: Function, thisObj: any, callbackParam?: any): void;
-        exists(callback: Function, thisObj: any): boolean;
-        remove(callback: Function, thisObj: any): void;
-        private __timer;
+        readonly dragAgent: GObject;
+        readonly isDragging: boolean;
+        readonly sourceObject: GObject;
+        startDrag(source: GObject, icon: string, sourceData: any, touchPointID?: number): void;
+        cancel(): void;
+        private $dragEnd;
     }
 }
-declare module fgui {
+declare namespace fgui.utils {
+    class Margin {
+        left: number;
+        right: number;
+        top: number;
+        bottom: number;
+        parse(str: string): void;
+        copy(source: Margin): void;
+    }
+}
+declare namespace fgui.utils {
+    class RawByte {
+        private static inRange;
+        static decodeUTF8(data: Uint8Array): string;
+    }
+}
+declare namespace fgui.utils {
+    type UBBParserHandlerMap = {
+        [key: string]: (tag: string, end: boolean, attr: string) => string;
+    };
     class UBBParser {
-        private _text;
-        private _readPos;
-        protected _handlers: any;
+        private $text;
+        private $readPos;
+        protected $handlers: UBBParserHandlerMap;
         smallFontSize: number;
         normalFontSize: number;
         largeFontSize: number;
@@ -2421,32 +2548,7 @@ declare module fgui {
         protected onTag_FONT(tagName: string, end: boolean, attr: string): string;
         protected onTag_SIZE(tagName: string, end: boolean, attr: string): string;
         protected getTagText(remove?: boolean): string;
-        parse(text: string, remove?: boolean): string;
-    }
-}
-declare module fgui {
-    class ToolSet {
-        constructor();
-        static getFileName(source: string): string;
-        static startsWith(source: string, str: string, ignoreCase?: boolean): boolean;
-        static endsWith(source: string, str: string, ignoreCase?: boolean): boolean;
-        static trim(targetString: string): string;
-        static trimLeft(targetString: string): string;
-        static trimRight(targetString: string): string;
-        static convertToHtmlColor(argb: number, hasAlpha?: boolean): string;
-        static convertFromHtmlColor(str: string, hasAlpha?: boolean): number;
-        static displayObjectToGObject(obj: egret.DisplayObject): GObject;
-        static encodeHTML(str: string): string;
-        static defaultUBBParser: UBBParser;
-        static parseUBB(text: string): string;
-        static clamp(value: number, min: number, max: number): number;
-        static clamp01(value: number): number;
-        static lerp(start: number, end: number, percent: number): number;
-        static repeat(t: number, length: number): number;
-        static distance(x1: number, y1: number, x2: number, y2: number): number;
-        static fillPath(ctx: egret.Graphics, points: number[], px: number, py: number): void;
-        private static grayScaleMatrix;
-        static setColorFilter(obj: egret.DisplayObject, color?: number | number[] | boolean): void;
+        parseStyle(text: string): TextBlock[];
     }
 }
 import fairygui = fgui;
