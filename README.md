@@ -1,5 +1,5 @@
-## FairyGUI 可用的 PIXI.js V5.3.8 GUI库
-## Fairygui available PIXI.js V5.3.8 GUI Library
+## PIXI.js V5.3.8 可用的FairyGUI库
+## PIXI.js V5.3.8 available PIXI.js V5.3.8 Fairygui Library
 该库是基于https://github.com/jcyuan/FairyGUI-PixiJS修改而来.
 The library is based on https://github.com/jcyuan/FairyGUI-PixiJS .
 
