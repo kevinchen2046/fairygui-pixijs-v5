@@ -1127,7 +1127,10 @@ window.__extends = (this && this.__extends) || (function () {
             return this;
         };
         GObject.prototype.hasListener = function (event, handler) {
-            return this.$displayObject.listeners(event).indexOf(handler) >= 0;
+            if (!handler)
+                return this.$displayObject.listenerCount(event) > 0;
+            else
+                return this.$displayObject.listeners(event).indexOf(handler) >= 0;
         };
         GObject.prototype.emit = function (event) {
             var args = [];
@@ -13013,6 +13016,129 @@ var PIXI;
 (function (PIXI) {
     var extras;
     (function (extras) {
+        var NTilingSprite = (function (_super) {
+            __extends(NTilingSprite, _super);
+            function NTilingSprite(frameId, tex) {
+                var _this = _super.call(this, tex) || this;
+                _this.$flipX = false;
+                _this.$flipY = false;
+                _this.$frameId = frameId;
+                return _this;
+            }
+            Object.defineProperty(NTilingSprite.prototype, "flipX", {
+                get: function () {
+                    return this.$flipX;
+                },
+                set: function (v) {
+                    if (this.$flipX != v) {
+                        this.$flipX = v;
+                        fgui.GTimer.inst.callLater(this.updateUvs, this);
+                    }
+                },
+                enumerable: true,
+                configurable: true
+            });
+            Object.defineProperty(NTilingSprite.prototype, "flipY", {
+                get: function () {
+                    return this.$flipY;
+                },
+                set: function (v) {
+                    if (this.$flipY != v) {
+                        this.$flipY = v;
+                        fgui.GTimer.inst.callLater(this.updateUvs, this);
+                    }
+                },
+                enumerable: true,
+                configurable: true
+            });
+            NTilingSprite.prototype.combineCacheId = function (flipx, flipy) {
+                if (!this.$frameId || this.$frameId == "")
+                    return null;
+                return "" + this.$frameId + (flipx ? '_fx' : '') + (flipy ? '_fy' : '');
+            };
+            NTilingSprite.prototype.getTextureFromCache = function (flipx, flipy) {
+                var cachedid = this.combineCacheId(flipx, flipy);
+                if (cachedid == null)
+                    return this.texture;
+                var ret = NTilingSprite.$cachedTexturePool[cachedid];
+                if (!ret) {
+                    ret = {
+                        refCount: 1,
+                        texture: this.createFlippedTexture(this.texture, flipx, flipy)
+                    };
+                    NTilingSprite.$cachedTexturePool[cachedid] = ret;
+                }
+                else
+                    ret.refCount++;
+                return ret.texture;
+            };
+            NTilingSprite.prototype.tryRemoveTextureCache = function (flipx, flipy) {
+                var cachedid = this.combineCacheId(flipx, flipy);
+                if (!cachedid)
+                    return false;
+                var ret = NTilingSprite.$cachedTexturePool[cachedid];
+                if (ret) {
+                    ret.refCount--;
+                    if (ret.refCount <= 0) {
+                        ret.texture.destroy();
+                        delete NTilingSprite.$cachedTexturePool[cachedid];
+                    }
+                    return true;
+                }
+                return false;
+            };
+            NTilingSprite.prototype.createFlippedTexture = function (origTexture, flipx, flipy) {
+                var newTex = origTexture.clone();
+                var uvs = newTex["_uvs"];
+                if (this.$flipX) {
+                    var tx0 = uvs.x0;
+                    var tx3 = uvs.x3;
+                    uvs.x0 = uvs.x1;
+                    uvs.x1 = tx0;
+                    uvs.x3 = uvs.x2;
+                    uvs.x2 = tx3;
+                }
+                if (this.$flipY) {
+                    var ty0 = uvs.y0;
+                    var ty1 = uvs.y1;
+                    uvs.y0 = uvs.y3;
+                    uvs.y3 = ty0;
+                    uvs.y1 = uvs.y2;
+                    uvs.y2 = ty1;
+                }
+                uvs.uvsFloat32[0] = uvs.x0;
+                uvs.uvsFloat32[1] = uvs.y0;
+                uvs.uvsFloat32[2] = uvs.x1;
+                uvs.uvsFloat32[3] = uvs.y1;
+                uvs.uvsFloat32[4] = uvs.x2;
+                uvs.uvsFloat32[5] = uvs.y2;
+                uvs.uvsFloat32[6] = uvs.x3;
+                uvs.uvsFloat32[7] = uvs.y3;
+                return newTex;
+            };
+            NTilingSprite.prototype.updateUvs = function () {
+                if (!this.texture)
+                    return;
+                if (this.$flipX || this.$flipY) {
+                    var cachedTex = this.getTextureFromCache(this.$flipX, this.$flipY);
+                    if (this.texture != cachedTex)
+                        this.texture = cachedTex;
+                }
+            };
+            NTilingSprite.prototype.destroy = function (options) {
+                this.tryRemoveTextureCache(this.$flipX, this.$flipY);
+                _super.prototype.destroy.call(this, options);
+            };
+            NTilingSprite.$cachedTexturePool = {};
+            return NTilingSprite;
+        }(PIXI.TilingSprite));
+        extras.NTilingSprite = NTilingSprite;
+    })(extras = PIXI.extras || (PIXI.extras = {}));
+})(PIXI || (PIXI = {}));
+var PIXI;
+(function (PIXI) {
+    var extras;
+    (function (extras) {
         var NineSlicePlane = (function (_super) {
             __extends(NineSlicePlane, _super);
             function NineSlicePlane() {
@@ -13222,10 +13348,14 @@ var PIXI;
                     uvs.y1 = uvs.y2;
                     uvs.y2 = ty1;
                 }
-                uvs.uvsFloat32[0] = (uvs.y0 * 65535 & 0xFFFF) << 16 | uvs.x0 * 65535 & 0xFFFF;
-                uvs.uvsFloat32[1] = (uvs.y1 * 65535 & 0xFFFF) << 16 | uvs.x1 * 65535 & 0xFFFF;
-                uvs.uvsFloat32[2] = (uvs.y2 * 65535 & 0xFFFF) << 16 | uvs.x2 * 65535 & 0xFFFF;
-                uvs.uvsFloat32[3] = (uvs.y3 * 65535 & 0xFFFF) << 16 | uvs.x3 * 65535 & 0xFFFF;
+                uvs.uvsFloat32[0] = uvs.x0;
+                uvs.uvsFloat32[1] = uvs.y0;
+                uvs.uvsFloat32[2] = uvs.x1;
+                uvs.uvsFloat32[3] = uvs.y1;
+                uvs.uvsFloat32[4] = uvs.x2;
+                uvs.uvsFloat32[5] = uvs.y2;
+                uvs.uvsFloat32[6] = uvs.x3;
+                uvs.uvsFloat32[7] = uvs.y3;
                 return newTex;
             };
             Sprite.prototype.updateUvs = function () {
@@ -13245,125 +13375,6 @@ var PIXI;
             return Sprite;
         }(PIXI.Sprite));
         extras.Sprite = Sprite;
-    })(extras = PIXI.extras || (PIXI.extras = {}));
-})(PIXI || (PIXI = {}));
-var PIXI;
-(function (PIXI) {
-    var extras;
-    (function (extras) {
-        var TilingSprite = (function (_super) {
-            __extends(TilingSprite, _super);
-            function TilingSprite(frameId, tex) {
-                var _this = _super.call(this, tex) || this;
-                _this.$flipX = false;
-                _this.$flipY = false;
-                _this.$frameId = frameId;
-                return _this;
-            }
-            Object.defineProperty(TilingSprite.prototype, "flipX", {
-                get: function () {
-                    return this.$flipX;
-                },
-                set: function (v) {
-                    if (this.$flipX != v) {
-                        this.$flipX = v;
-                        fgui.GTimer.inst.callLater(this.updateUvs, this);
-                    }
-                },
-                enumerable: true,
-                configurable: true
-            });
-            Object.defineProperty(TilingSprite.prototype, "flipY", {
-                get: function () {
-                    return this.$flipY;
-                },
-                set: function (v) {
-                    if (this.$flipY != v) {
-                        this.$flipY = v;
-                        fgui.GTimer.inst.callLater(this.updateUvs, this);
-                    }
-                },
-                enumerable: true,
-                configurable: true
-            });
-            TilingSprite.prototype.combineCacheId = function (flipx, flipy) {
-                if (!this.$frameId || this.$frameId == "")
-                    return null;
-                return "" + this.$frameId + (flipx ? '_fx' : '') + (flipy ? '_fy' : '');
-            };
-            TilingSprite.prototype.getTextureFromCache = function (flipx, flipy) {
-                var cachedid = this.combineCacheId(flipx, flipy);
-                if (cachedid == null)
-                    return this.texture;
-                var ret = TilingSprite.$cachedTexturePool[cachedid];
-                if (!ret) {
-                    ret = {
-                        refCount: 1,
-                        texture: this.createFlippedTexture(this.texture, flipx, flipy)
-                    };
-                    TilingSprite.$cachedTexturePool[cachedid] = ret;
-                }
-                else
-                    ret.refCount++;
-                return ret.texture;
-            };
-            TilingSprite.prototype.tryRemoveTextureCache = function (flipx, flipy) {
-                var cachedid = this.combineCacheId(flipx, flipy);
-                if (!cachedid)
-                    return false;
-                var ret = TilingSprite.$cachedTexturePool[cachedid];
-                if (ret) {
-                    ret.refCount--;
-                    if (ret.refCount <= 0) {
-                        ret.texture.destroy();
-                        delete TilingSprite.$cachedTexturePool[cachedid];
-                    }
-                    return true;
-                }
-                return false;
-            };
-            TilingSprite.prototype.createFlippedTexture = function (origTexture, flipx, flipy) {
-                var newTex = origTexture.clone();
-                var uvs = newTex["_uvs"];
-                if (this.$flipX) {
-                    var tx0 = uvs.x0;
-                    var tx3 = uvs.x3;
-                    uvs.x0 = uvs.x1;
-                    uvs.x1 = tx0;
-                    uvs.x3 = uvs.x2;
-                    uvs.x2 = tx3;
-                }
-                if (this.$flipY) {
-                    var ty0 = uvs.y0;
-                    var ty1 = uvs.y1;
-                    uvs.y0 = uvs.y3;
-                    uvs.y3 = ty0;
-                    uvs.y1 = uvs.y2;
-                    uvs.y2 = ty1;
-                }
-                uvs.uvsFloat32[0] = (uvs.y0 * 65535 & 0xFFFF) << 16 | uvs.x0 * 65535 & 0xFFFF;
-                uvs.uvsFloat32[1] = (uvs.y1 * 65535 & 0xFFFF) << 16 | uvs.x1 * 65535 & 0xFFFF;
-                uvs.uvsFloat32[2] = (uvs.y2 * 65535 & 0xFFFF) << 16 | uvs.x2 * 65535 & 0xFFFF;
-                uvs.uvsFloat32[3] = (uvs.y3 * 65535 & 0xFFFF) << 16 | uvs.x3 * 65535 & 0xFFFF;
-                return newTex;
-            };
-            TilingSprite.prototype.updateUvs = function () {
-                if (!this.texture)
-                    return;
-                if (this.$flipX || this.$flipY) {
-                    var cachedTex = this.getTextureFromCache(this.$flipX, this.$flipY);
-                    if (this.texture != cachedTex)
-                        this.texture = cachedTex;
-                }
-            };
-            TilingSprite.prototype.destroy = function (options) {
-                this.tryRemoveTextureCache(this.$flipX, this.$flipY);
-                _super.prototype.destroy.call(this, options);
-            };
-            TilingSprite.$cachedTexturePool = {};
-            return TilingSprite;
-        }(PIXI.TilingSprite));
-        extras.TilingSprite = TilingSprite;
     })(extras = PIXI.extras || (PIXI.extras = {}));
 })(PIXI || (PIXI = {}));
 
@@ -15067,7 +15078,7 @@ var PIXI;
             if (item) {
                 item.load();
                 if (item.scaleByTile) {
-                    var ts = new PIXI.extras.TilingSprite(item.id, item.texture);
+                    var ts = new PIXI.extras.NTilingSprite(item.id, item.texture);
                     this.$disp = ts;
                 }
                 else if (item.scale9Grid) {
@@ -16693,7 +16704,7 @@ var PIXI;
             }
             AssetLoader.prototype._onComplete = function () {
                 AssetLoader.addResources(this.resources);
-                this.onComplete.detach(this);
+                this.onComplete.dispatch();
             };
             ;
             Object.defineProperty(AssetLoader, "resourcesPool", {

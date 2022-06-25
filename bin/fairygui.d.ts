@@ -1732,18 +1732,7 @@ declare namespace PIXI.extras {
     }
 }
 declare namespace PIXI.extras {
-    class NineSlicePlane extends PIXI.NineSlicePlane {
-        protected $flipX: boolean;
-        protected $flipY: boolean;
-        updateHorizontalVertices(): void;
-        updateVerticalVertices(): void;
-        _refresh(): void;
-        flipX: boolean;
-        flipY: boolean;
-    }
-}
-declare namespace PIXI.extras {
-    class Sprite extends PIXI.Sprite {
+    class NTilingSprite extends PIXI.TilingSprite {
         protected $flipX: boolean;
         protected $flipY: boolean;
         protected $frameId: string;
@@ -1765,7 +1754,18 @@ declare namespace PIXI.extras {
     }
 }
 declare namespace PIXI.extras {
-    class TilingSprite extends PIXI.TilingSprite {
+    class NineSlicePlane extends PIXI.NineSlicePlane {
+        protected $flipX: boolean;
+        protected $flipY: boolean;
+        updateHorizontalVertices(): void;
+        updateVerticalVertices(): void;
+        _refresh(): void;
+        flipX: boolean;
+        flipY: boolean;
+    }
+}
+declare namespace PIXI.extras {
+    class Sprite extends PIXI.Sprite {
         protected $flipX: boolean;
         protected $flipY: boolean;
         protected $frameId: string;
@@ -2162,7 +2162,7 @@ declare namespace fgui {
 declare namespace fgui {
     class UIImage extends PIXI.Container implements IUIObject {
         UIOwner: GObject;
-        protected $disp: PIXI.extras.TilingSprite | PIXI.extras.NineSlicePlane | PIXI.extras.Sprite;
+        protected $disp: PIXI.extras.NTilingSprite | PIXI.extras.NineSlicePlane | PIXI.extras.Sprite;
         constructor(owner?: GObject);
         $initDisp(item?: PackageItem): void;
         tint: number;
