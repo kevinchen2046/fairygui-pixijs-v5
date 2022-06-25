@@ -1,7 +1,7 @@
 
 namespace PIXI.extras {
 
-    export class TilingSprite extends PIXI.TilingSprite {
+    export class NTilingSprite extends PIXI.TilingSprite {
 
         protected $flipX:boolean = false;
         protected $flipY:boolean = false;
@@ -45,13 +45,13 @@ namespace PIXI.extras {
             const cachedid = this.combineCacheId(flipx, flipy);
             if(cachedid == null) return this.texture;
 
-            let ret = TilingSprite.$cachedTexturePool[cachedid];
+            let ret = NTilingSprite.$cachedTexturePool[cachedid];
             if(!ret) {
                 ret = {
                     refCount: 1,
                     texture: this.createFlippedTexture(this.texture, flipx, flipy)
                 };
-                TilingSprite.$cachedTexturePool[cachedid] = ret;
+                NTilingSprite.$cachedTexturePool[cachedid] = ret;
             }
             else
                 ret.refCount++;
@@ -62,12 +62,12 @@ namespace PIXI.extras {
             const cachedid = this.combineCacheId(flipx, flipy);
             if(!cachedid) return false;
 
-            let ret = TilingSprite.$cachedTexturePool[cachedid];
+            let ret = NTilingSprite.$cachedTexturePool[cachedid];
             if(ret) {
                 ret.refCount--;
                 if(ret.refCount <= 0) {
                     ret.texture.destroy();
-                    delete TilingSprite.$cachedTexturePool[cachedid];
+                    delete NTilingSprite.$cachedTexturePool[cachedid];
                 }
                 return true;
             }
@@ -94,15 +94,15 @@ namespace PIXI.extras {
                 uvs.y1 = uvs.y2;
                 uvs.y2 = ty1;
             }
-            //uvs.
-            // uvs.uvsUint32[0] = (uvs.y0 * 65535 & 0xFFFF) << 16 | uvs.x0 * 65535 & 0xFFFF;
-            // uvs.uvsUint32[1] = (uvs.y1 * 65535 & 0xFFFF) << 16 | uvs.x1 * 65535 & 0xFFFF;
-            // uvs.uvsUint32[2] = (uvs.y2 * 65535 & 0xFFFF) << 16 | uvs.x2 * 65535 & 0xFFFF;
-            // uvs.uvsUint32[3] = (uvs.y3 * 65535 & 0xFFFF) << 16 | uvs.x3 * 65535 & 0xFFFF;
-            uvs.uvsFloat32[0] = (uvs.y0 * 65535 & 0xFFFF) << 16 | uvs.x0 * 65535 & 0xFFFF;
-            uvs.uvsFloat32[1] = (uvs.y1 * 65535 & 0xFFFF) << 16 | uvs.x1 * 65535 & 0xFFFF;
-            uvs.uvsFloat32[2] = (uvs.y2 * 65535 & 0xFFFF) << 16 | uvs.x2 * 65535 & 0xFFFF;
-            uvs.uvsFloat32[3] = (uvs.y3 * 65535 & 0xFFFF) << 16 | uvs.x3 * 65535 & 0xFFFF;
+            uvs.uvsFloat32[0] = uvs.x0;
+            uvs.uvsFloat32[1] = uvs.y0;
+            uvs.uvsFloat32[2] = uvs.x1;
+            uvs.uvsFloat32[3] = uvs.y1;
+            uvs.uvsFloat32[4] = uvs.x2;
+            uvs.uvsFloat32[5] = uvs.y2;
+            uvs.uvsFloat32[6] = uvs.x3;
+            uvs.uvsFloat32[7] = uvs.y3;
+            
             return newTex;
         }
 

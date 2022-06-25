@@ -769,9 +769,9 @@ namespace fgui {
         }
 
         public hasListener(event: string, handler?:Function): boolean {   //do we need to also check the context?
-            // if(!handler)
-            //     return this.$displayObject.listeners(event);
-            // else
+            if(!handler)
+                return this.$displayObject.listenerCount(event) > 0;
+            else
                 return this.$displayObject.listeners(event).indexOf(handler) >= 0;
         }
 

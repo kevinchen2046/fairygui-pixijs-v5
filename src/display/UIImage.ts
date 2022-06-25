@@ -1,7 +1,7 @@
 namespace fgui {
     export class UIImage extends PIXI.Container implements IUIObject {
         public UIOwner: GObject;
-        protected $disp: PIXI.extras.TilingSprite | PIXI.extras.NineSlicePlane | PIXI.extras.Sprite;
+        protected $disp: PIXI.extras.NTilingSprite | PIXI.extras.NineSlicePlane | PIXI.extras.Sprite;
 
         public constructor(owner?: GObject) {
             super();
@@ -17,7 +17,7 @@ namespace fgui {
                 item.load();
 
                 if (item.scaleByTile) {
-                    let ts = new PIXI.extras.TilingSprite(item.id,item.texture);
+                    let ts = new PIXI.extras.NTilingSprite(item.id,item.texture);
                     this.$disp = ts;
                 }
                 else if (item.scale9Grid) {
