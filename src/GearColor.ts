@@ -9,7 +9,11 @@ namespace fgui {
         }
 
         protected init(): void {
-            this.$default = this.$owner.color;
+            if ("color" in this.$owner) {
+                this.$default = this.$owner.color;
+            } else if ("titleColor" in this.$owner) {
+                this.$default = this.$owner["titleColor"];
+            }
             this.$storage = {};
         }
 
@@ -28,11 +32,12 @@ namespace fgui {
             this.$owner.$gearLocked = true;
 
             let data: number = this.$storage[this.$controller.selectedPageId];
-            if (data != undefined)
-                this.$owner.color = Math.floor(data);
-            else
-                this.$owner.color = Math.floor(this.$default);
-
+            let color = data != undefined ? Math.floor(data) : Math.floor(this.$default);
+            if ("color" in this.$owner) {
+                this.$owner.color = color
+            } else if ("titleColor" in this.$owner) {
+                (this.$owner as any)["titleColor"] = color;
+            }
             this.$owner.$gearLocked = false;
         }
 
@@ -40,7 +45,11 @@ namespace fgui {
             if (this.$controller == null || this.$owner.$gearLocked || this.$owner.$inProgressBuilding)
                 return;
 
-            this.$storage[this.$controller.selectedPageId] = this.$owner.color;
+            if ("color" in this.$owner) {
+                this.$storage[this.$controller.selectedPageId] = this.$owner.color;
+            } else if ("titleColor" in this.$owner) {
+                this.$storage[this.$controller.selectedPageId] = this.$owner["titleColor"];
+            }
         }
     }
 }

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1136,570">
+  <displayList>
+    <text id="n0" name="n0" xy="22,19" size="605,75" fontSize="20" autoSize="height" text="There are two ways to create movieclip in the editor:&#xA;1) import an GIF&#xA;2) create manually by Menu -> Res -> New MovieClip"/>
+    <text id="n1" name="n1" xy="22,131" size="583,27" fontSize="20" text="The imported GIF will be converted into proper format SDK needs"/>
+    <movieclip id="n8" name="n8" src="kbb89" xy="664,117"/>
+    <text id="n9" name="n9" xy="22,195" size="230,27" fontSize="20" text="Import sequenced frames"/>
+    <text id="n12" name="n12" xy="22,271" size="128,27" fontSize="20" text="Base features"/>
+    <movieclip id="n13" name="n13" src="kbb89" xy="38,323" color="#0066cc"/>
+    <movieclip id="n14" name="n14" src="kbb89" xy="619,339" frame="1" playing="false"/>
+    <movieclip id="n15" name="n15" src="kbb89" xy="268,315" pivot="0.5,0.5" size="155,144" alpha="0.33" rotation="-31" frame="1"/>
+    <text id="n17" name="n17" xy="610,271" size="426,51" fontSize="20" autoSize="height" text="The MC can be controlled to play/stop easily and can be placed anywhere you want"/>
+    <component id="n18" name="n18" src="kbb8a" xy="696,343" size="84,42">
+      <Button title="点我" icon="ui://x8x40spbkbb89"/>
+    </component>
+    <movieclip id="n19" name="n19" src="kbb8e" xy="305,173"/>
+    <movieclip id="n22" name="n22" src="kbb89" xy="140,321" grayed="true"/>
+  </displayList>
+</component>

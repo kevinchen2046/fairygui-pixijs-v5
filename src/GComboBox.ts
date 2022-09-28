@@ -169,7 +169,7 @@ namespace fgui {
         protected constructFromXML(xml: utils.XmlNode): void {
             super.constructFromXML(xml);
 
-            xml = utils.XmlParser.getChildNodes(xml, "ComboBox")[0];
+            xml = xml.getChildNodes("ComboBox")[0];
 
             let str: string;
 
@@ -223,7 +223,7 @@ namespace fgui {
         public setupAfterAdd(xml: utils.XmlNode): void {
             super.setupAfterAdd(xml);
 
-            xml = utils.XmlParser.getChildNodes(xml, "ComboBox")[0];
+            xml = xml.getChildNodes("ComboBox")[0];
             if (xml) {
                 let str: string;
                 str = xml.attributes.titleColor;

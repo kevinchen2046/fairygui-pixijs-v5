@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1136,570">
+  <displayList>
+    <text id="n2" name="n2" xy="10,16" size="614,51" fontSize="20" autoSize="height" text="ComboBox is an extension from GComponent, it provides a popup with an item list for user to select options"/>
+    <component id="n7_lr6v" name="n7" src="lr6v74" fileName="components/ComboBox(1).xml" xy="51,125">
+      <ComboBox visibleItemCount="10">
+        <item title="Item1"/>
+        <item title="Item2"/>
+        <item title="Item3"/>
+        <item title="Item4"/>
+        <item title="Item5"/>
+        <item title="Item6"/>
+        <item title="Item7"/>
+        <item title="Item8"/>
+      </ComboBox>
+    </component>
+    <component id="n8_lr6v" name="n8" src="lr6v7c" fileName="components/下拉框(1).xml" xy="226,198">
+      <ComboBox visibleItemCount="5">
+        <item title="Item1"/>
+        <item title="Item2"/>
+        <item title="Item3"/>
+        <item title="Item4"/>
+        <item title="Item5"/>
+        <item title="Item6"/>
+        <item title="Item7"/>
+      </ComboBox>
+    </component>
+    <component id="n9_lr6v" name="n9" src="lr6v7c" fileName="components/下拉框(1).xml" xy="48,202">
+      <ComboBox visibleItemCount="10">
+        <item title="Item1"/>
+        <item title="Item2"/>
+        <item title="Item3"/>
+        <item title="Item4"/>
+        <item title="Item5"/>
+        <item title="Item6"/>
+        <item title="Item7"/>
+      </ComboBox>
+    </component>
+    <component id="n10_lr6v" name="n10" src="lr6v74" fileName="components/ComboBox(1).xml" xy="224,127">
+      <ComboBox visibleItemCount="5">
+        <item title="Item1"/>
+        <item title="Item2"/>
+        <item title="Item3"/>
+        <item title="Item4"/>
+        <item title="Item5"/>
+        <item title="Item6"/>
+        <item title="Item7"/>
+        <item title="Item8"/>
+      </ComboBox>
+    </component>
+  </displayList>
+</component>

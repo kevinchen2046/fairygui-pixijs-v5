@@ -37,7 +37,7 @@ namespace fgui {
             }
         }
 
-        public get scrollPerc():number {
+        public get scrollPerc(): number {
             return this.$scrollPerc;
         }
 
@@ -59,7 +59,7 @@ namespace fgui {
         protected constructFromXML(xml: utils.XmlNode): void {
             super.constructFromXML(xml);
 
-            xml = utils.XmlParser.getChildNodes(xml, "ScrollBar")[0];
+            xml = xml.getChildNodes("ScrollBar")[0];
             if (xml != null)
                 this.$fixedGripSize = xml.attributes.fixedGripSize == "true";
 
@@ -91,9 +91,9 @@ namespace fgui {
         private $gripMouseDown(evt: PIXI.InteractionEvent): void {
             if (!this.$bar)
                 return;
-            
+
             evt.stopPropagation();
-            
+
             this.$dragOffset = evt.data.getLocalPosition(this.displayObject, this.$dragOffset);
             this.$dragOffset.x -= this.$grip.x;
             this.$dragOffset.y -= this.$grip.y;
@@ -133,7 +133,7 @@ namespace fgui {
 
         private $arrowButton2Click(evt: PIXI.InteractionEvent): void {
             evt.stopPropagation();
-            
+
             if (this.$vertical)
                 this.$target.scrollDown();
             else
@@ -156,7 +156,7 @@ namespace fgui {
             }
         }
 
-        public dispose():void {
+        public dispose(): void {
 
             this.off(InteractiveEvents.Down, this.$barMouseDown, this);
 
@@ -167,7 +167,7 @@ namespace fgui {
 
             this.$grip.off(InteractiveEvents.Down, this.$gripMouseDown, this);
             this.$gripDraggingEnd(null);
-            
+
             super.dispose();
         }
     }

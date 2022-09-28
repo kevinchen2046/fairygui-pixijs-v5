@@ -1050,6 +1050,7 @@ namespace fgui {
 
             GRoot.inst.nativeStage.on(InteractiveEvents.Move, this.$mouseMove, this);
             GRoot.inst.nativeStage.on(InteractiveEvents.Up, this.$mouseUp, this);
+            GRoot.inst.nativeStage.on(InteractiveEvents.UpOutside, this.$mouseUp, this);
             GRoot.inst.nativeStage.on(InteractiveEvents.Click, this.$click, this);
         }
 
@@ -1061,7 +1062,7 @@ namespace fgui {
                 return;
 
             let sensitivity: number = UIConfig.touchScrollSensitivity;
-
+            // console.log(Date.now(),GRoot.globalMouseStatus.mouseY)
             const globalMouse: PIXI.Point = this.$owner.globalToLocal(GRoot.globalMouseStatus.mouseX, GRoot.globalMouseStatus.mouseY, ScrollPane.sHelperPoint);
 
             let diff: number, diff2: number;
@@ -1073,13 +1074,18 @@ namespace fgui {
                     ScrollPane.$gestureFlag |= 1;
 
                     diff = Math.abs(this.$beginTouchPos.y - globalMouse.y);
-                    if (diff < sensitivity)
+                    if (diff < sensitivity){
+                        // console.log("diff < sensitivity")
                         return;
+                    }
+                        
 
                     if ((ScrollPane.$gestureFlag & 2) != 0) {
                         diff2 = Math.abs(this.$beginTouchPos.x - globalMouse.x);
-                        if (diff < diff2)
+                        if (diff < diff2){
+                            // console.log("diff < diff2")
                             return;
+                        }     
                     }
                 }
 
@@ -1162,8 +1168,8 @@ namespace fgui {
                     this.$container.x = newPosX;
             }
 
-            //update acceleration
-            const frameRate: number = GRoot.inst.applicationContext.ticker.FPS;
+            //更新速度
+            const frameRate: number = PIXI.Ticker.shared.FPS;
             const now: number = GTimer.inst.curTime / 1000;
             const deltaTime: number = Math.max(now - this.$lastMoveTime, 1 / frameRate);
             let deltaPositionX: number = globalMouse.x - this.$lastTouchPos.x;
@@ -1174,7 +1180,7 @@ namespace fgui {
                 deltaPositionY = 0;
             if (deltaTime != 0) {
                 const elapsed: number = deltaTime * frameRate - 1;
-                if (elapsed > 1) {
+                if (elapsed > 1) {//速度衰减
                     const factor: number = Math.pow(0.833, elapsed);
                     this.$velocity.x = this.$velocity.x * factor;
                     this.$velocity.y = this.$velocity.y * factor;
@@ -1183,7 +1189,7 @@ namespace fgui {
                 this.$velocity.y = utils.NumberUtil.lerp(this.$velocity.y, deltaPositionY * 60 / frameRate / deltaTime, deltaTime * 10);
             }
 
-            //in the inertia scrolling we need the offset value to screen space, so here we need to reocrd the offset ratio
+            //速度计算使用的是本地位移，但在后续的惯性滚动判断中需要用到屏幕位移，所以这里要记录一个位移的比例。
             const deltaGlobalPositionX: number = this.$lastTouchGlobalPos.x - globalMouse.x;
             const deltaGlobalPositionY: number = this.$lastTouchGlobalPos.y - globalMouse.y;
             if (deltaPositionX != 0)
@@ -1195,12 +1201,13 @@ namespace fgui {
             this.$lastTouchGlobalPos.copyFrom(globalMouse);
             this.$lastMoveTime = now;
 
-            //update position
+            //同步更新pos值
             if (this.$overlapSize.x > 0)
                 this.$xPos = utils.NumberUtil.clamp(-this.$container.x, 0, this.$overlapSize.x);
             if (this.$overlapSize.y > 0)
                 this.$yPos = utils.NumberUtil.clamp(-this.$container.y, 0, this.$overlapSize.y);
 
+            //循环滚动特别检查
             if (this.$loop != 0) {
                 newPosX = this.$container.x;
                 newPosY = this.$container.y;
@@ -1222,10 +1229,13 @@ namespace fgui {
 
             this.emit(ScrollEvent.SCROLL, this);
             //Events.dispatch(Events.SCROLL, this.$owner.displayObject);
+            // console.log("Move:",Date.now()/1000);
         }
 
         private $mouseUp(): void {
+            // console.log("Up:",Date.now()/1000);
             GRoot.inst.nativeStage.off(InteractiveEvents.Move, this.$mouseMove, this);
+            GRoot.inst.nativeStage.off(InteractiveEvents.UpOutside, this.$mouseUp, this);
             GRoot.inst.nativeStage.off(InteractiveEvents.Up, this.$mouseUp, this);
             GRoot.inst.nativeStage.off(InteractiveEvents.Click, this.$click, this);
 
@@ -1246,7 +1256,7 @@ namespace fgui {
             this.$tweenStart.set(this.$container.x, this.$container.y);
 
             ScrollPane.sEndPos.set(this.$tweenStart.x, this.$tweenStart.y);
-
+         
             let flag: boolean = false;
             if (this.$container.x > 0) {
                 ScrollPane.sEndPos.x = 0;
@@ -1299,14 +1309,16 @@ namespace fgui {
             }
             else {
                 if (!this.$inertiaDisabled) {
-                    const frameRate: number = GRoot.inst.applicationContext.ticker.FPS;
+                     //更新速度
+                    const frameRate: number = PIXI.Ticker.shared.FPS;
                     const elapsed: number = (GTimer.inst.curTime / 1000 - this.$lastMoveTime) * frameRate - 1;
+                    // console.log("elapsed:",elapsed);
                     if (elapsed > 1) {
                         const factor: number = Math.pow(0.833, elapsed);
                         this.$velocity.x = this.$velocity.x * factor;
                         this.$velocity.y = this.$velocity.y * factor;
                     }
-                    //calc dist & duration by speed
+                    //根据速度计算目标位置和需要时间
                     this.updateTargetAndDuration(this.$tweenStart, ScrollPane.sEndPos);
                 }
                 else
@@ -1314,25 +1326,29 @@ namespace fgui {
 
                 ScrollPane.sOldChange.set(ScrollPane.sEndPos.x - this.$tweenStart.x, ScrollPane.sEndPos.y - this.$tweenStart.y);
 
-                //adjust
+                //调整目标位置
                 this.loopCheckingTarget(ScrollPane.sEndPos);
+                // console.log("1changeY:",ScrollPane.sEndPos.y - this.$tweenStart.y);
                 if (this.$pageMode || this.$snapToItem)
                     this.alignPosition(ScrollPane.sEndPos, true);
+                    // console.log("2changeY:",ScrollPane.sEndPos.y - this.$tweenStart.y);
 
                 this.$tweenChange.x = ScrollPane.sEndPos.x - this.$tweenStart.x;
                 this.$tweenChange.y = ScrollPane.sEndPos.y - this.$tweenStart.y;
+                // console.log("3changeY:",ScrollPane.sEndPos.y - this.$tweenStart.y);
                 if (this.$tweenChange.x == 0 && this.$tweenChange.y == 0) {
                     if (this.$scrollBarDisplayAuto)
                         this.showScrollBar(false);
                     return;
                 }
 
+                //如果目标位置已调整，随之调整需要时间
                 if (this.$pageMode || this.$snapToItem) {
                     this.fixDuration("x", ScrollPane.sOldChange.x);
                     this.fixDuration("y", ScrollPane.sOldChange.y);
                 }
             }
-
+            // console.log("start:",this.$container.y,"end:",ScrollPane.sEndPos.y);
             this.$tweening = 2;
             this.$tweenTime.set(0, 0);
             GTimer.inst.addLoop(1, this.tweenUpdate, this);
@@ -1430,25 +1446,26 @@ namespace fgui {
         }
 
         private loopCheckingTarget2(endPos: PIXI.Point, axis: string): void {
-            let halfSize: number;
-            let tmp: number;
-            if ((<IndexedObject>endPos)[axis] > 0) {
+            var halfSize: number;
+            var tmp: number;
+            if (endPos[axis] > 0) {
                 halfSize = this.getLoopPartSize(2, axis);
-                tmp = (<IndexedObject>this.$tweenStart)[axis] - halfSize;
-                if (tmp <= 0 && tmp >= -(<IndexedObject>this.$overlapSize)[axis]) {
-                    (<IndexedObject>endPos)[axis] -= halfSize;
-                    (<IndexedObject>this.$tweenStart)[axis] = tmp;
+                tmp = this.$tweenStart[axis] - halfSize;
+                if (tmp <= 0 && tmp >= -this.$overlapSize[axis]) {
+                    endPos[axis] -= halfSize;
+                    this.$tweenStart[axis] = tmp;
                 }
             }
-            else if ((<IndexedObject>endPos)[axis] < -(<IndexedObject>this.$overlapSize)[axis]) {
+            else if (endPos[axis] < -this.$overlapSize[axis]) {
                 halfSize = this.getLoopPartSize(2, axis);
-                tmp = (<IndexedObject>this.$tweenStart)[axis] + halfSize;
-                if (tmp <= 0 && tmp >= -(<IndexedObject>this.$overlapSize)[axis]) {
-                    (<IndexedObject>endPos)[axis] += halfSize;
-                    (<IndexedObject>this.$tweenStart)[axis] = tmp;
+                tmp = this.$tweenStart[axis] + halfSize;
+                if (tmp <= 0 && tmp >= -this.$overlapSize[axis]) {
+                    endPos[axis] += halfSize;
+                    this.$tweenStart[axis] = tmp;
                 }
             }
         }
+
 
         private loopCheckingNewPos(value: number, axis: string): number {
             if ((<IndexedObject>this.$overlapSize)[axis] == 0)
@@ -1558,19 +1575,23 @@ namespace fgui {
         }
 
         private updateTargetAndDuration2(pos: number, axis: string): number {
-            let v: number = (<IndexedObject>this.$velocity)[axis];
+            let v: number = this.$velocity[axis];
             var duration: number = 0;
             if (pos > 0)
                 pos = 0;
-            else if (pos < -(<IndexedObject>this.$overlapSize)[axis])
-                pos = -(<IndexedObject>this.$overlapSize)[axis];
+            else if (pos < -this.$overlapSize[axis])
+                pos = -this.$overlapSize[axis];
             else {
+                 //以屏幕像素为基准
+                var isMobile: boolean = PIXI.utils.isMobile.any;
                 let v2: number = Math.abs(v) * this.$velocityScale;
-                if (PIXI.utils.isMobile.any)
+                 //在移动设备上，需要对不同分辨率做一个适配，我们的速度判断以1136分辨率为基准
+                if (isMobile)
                     v2 *= Math.max(GRoot.inst.stageWrapper.designWidth, GRoot.inst.stageWrapper.designHeight) / Math.max(GRoot.inst.stageWidth, GRoot.inst.stageHeight);
-                //threshold, if too slow, stop it
+                //这里有一些阈值的处理，因为在低速内，不希望产生较大的滚动（甚至不滚动）
                 let ratio: number = 0;
-                if (this.$pageMode || !PIXI.utils.isMobile.any) {
+                
+                if (this.$pageMode || !isMobile) {
                     if (v2 > 500)
                         ratio = Math.pow((v2 - 500) / 500, 2);
                 }
@@ -1584,7 +1605,7 @@ namespace fgui {
 
                     v2 *= ratio;
                     v *= ratio;
-                    (<IndexedObject>this.$velocity)[axis] = v;
+                    this.$velocity[axis] = v;
 
                     duration = Math.log(60 / v2) / Math.log(this.$decelerationRate) / 60;
 
@@ -1596,7 +1617,8 @@ namespace fgui {
 
             if (duration < ScrollPane.TWEEN_DEFAULT_DURATION)
                 duration = ScrollPane.TWEEN_DEFAULT_DURATION;
-            (<IndexedObject>this.$tweenDuration)[axis] = duration;
+
+            this.$tweenDuration[axis] = duration;
 
             return pos;
         }

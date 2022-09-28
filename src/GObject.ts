@@ -3,7 +3,7 @@
 namespace fgui {
 
     export class GObject {
-
+        public customData:any;
         public data: any;
 
         protected $x: number = 0;
@@ -737,38 +737,38 @@ namespace fgui {
             this.$displayObject.destroy();
         }
 
-        public click(listener: Function, thisObj?: any): this {
+        public click(listener: PIXI.utils.EventEmitter.ListenerFn, thisObj?: any): this {
             return this.on(InteractiveEvents.Click, listener, thisObj);
         }
 
-        public removeClick(listener: Function, thisObj?: any): this {
+        public removeClick(listener: PIXI.utils.EventEmitter.ListenerFn, thisObj?: any): this {
             return this.off(InteractiveEvents.Click, listener, thisObj);
         }
 
-        public hasClick(fn?:Function): boolean {
+        public hasClick(fn?:PIXI.utils.EventEmitter.ListenerFn): boolean {
             return this.hasListener(InteractiveEvents.Click, fn);
         }
 
-        public on(type: string, listener: Function, thisObject?: any): this {
+        public on(type: string, listener: PIXI.utils.EventEmitter.ListenerFn, thisObject?: any): this {
             if (type == null) return this;
             (this.$displayObject as PIXI.utils.EventEmitter).on(type, listener, thisObject);
             return this;
         }
 
-        public off(type: string, listener: Function, thisObject?: any): this {
+        public off(type: string, listener: PIXI.utils.EventEmitter.ListenerFn, thisObject?: any): this {
             if (type == null) return this;
             if (this.$displayObject.listeners(type))
                 (this.$displayObject as PIXI.utils.EventEmitter).off(type, listener, thisObject);
             return this;
         }
 
-        public once(type: string, listener: Function, thisObject?: any): this {
+        public once(type: string, listener: PIXI.utils.EventEmitter.ListenerFn, thisObject?: any): this {
             if (type == null) return this;
             (this.$displayObject as PIXI.utils.EventEmitter).once(type, listener, thisObject);
             return this;
         }
 
-        public hasListener(event: string, handler?:Function): boolean {   //do we need to also check the context?
+        public hasListener(event: string, handler?:PIXI.utils.EventEmitter.ListenerFn): boolean {   //do we need to also check the context?
             // if(!handler)
             //     return this.$displayObject.listeners(event);
             // else
@@ -1035,7 +1035,16 @@ namespace fgui {
             if (xml.attributes.grayed == "true")
                 this.grayed = true;
             this.tooltips = xml.attributes.tooltips;
-
+            ////////////////////kevin add...//////////////////////////
+            this.customData = xml.attributes.customData;
+            if(xml.children){
+                let properties=xml.children.filter(v=>v.nodeName=="property");
+                properties.forEach(v=>{
+                    let target=this[v.attributes.target];
+                    target.text=v.attributes.value;
+                });
+            }
+            //////////////////////////////////////////////////////////
             str = xml.attributes.blend;
             if (str)
                 this.blendMode = str;

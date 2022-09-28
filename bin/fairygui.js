@@ -10,6 +10,41 @@ window.__extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
 
 (function (fgui) {
     var win = window;
@@ -1349,6 +1384,7 @@ window.__extends = (this && this.__extends) || (function () {
         GObject.prototype.constructFromResource = function () {
         };
         GObject.prototype.setupBeforeAdd = function (xml) {
+            var _this = this;
             var str;
             var arr;
             this.$id = xml.attributes.id;
@@ -1393,6 +1429,14 @@ window.__extends = (this && this.__extends) || (function () {
             if (xml.attributes.grayed == "true")
                 this.grayed = true;
             this.tooltips = xml.attributes.tooltips;
+            this.customData = xml.attributes.customData;
+            if (xml.children) {
+                var properties = xml.children.filter(function (v) { return v.nodeName == "property"; });
+                properties.forEach(function (v) {
+                    var target = _this[v.attributes.target];
+                    target.text = v.attributes.value;
+                });
+            }
             str = xml.attributes.blend;
             if (str)
                 this.blendMode = str;
@@ -1947,8 +1991,6 @@ window.__extends = (this && this.__extends) || (function () {
                     return;
                 if (obj instanceof PIXI.Container)
                     obj.interactive = false;
-                if (obj instanceof PIXI.MaskData && obj.maskObject)
-                    obj.maskObject.interactive = false;
                 if (obj instanceof PIXI.Graphics)
                     obj.isMask = true;
                 this.$rootContainer.mask = obj;
@@ -2604,7 +2646,7 @@ window.__extends = (this && this.__extends) || (function () {
         };
         GButton.prototype.constructFromXML = function (xml) {
             _super.prototype.constructFromXML.call(this, xml);
-            xml = fgui.utils.XmlParser.getChildNodes(xml, "Button")[0];
+            xml = xml.getChildNodes("Button")[0];
             var str;
             str = xml.attributes.mode;
             if (str)
@@ -2633,7 +2675,7 @@ window.__extends = (this && this.__extends) || (function () {
         };
         GButton.prototype.setupAfterAdd = function (xml) {
             _super.prototype.setupAfterAdd.call(this, xml);
-            xml = fgui.utils.XmlParser.getChildNodes(xml, "Button")[0];
+            xml = xml.getChildNodes("Button")[0];
             if (xml) {
                 var str = void 0;
                 str = xml.attributes.title;
@@ -2659,6 +2701,11 @@ window.__extends = (this && this.__extends) || (function () {
                     this.$relatedController = this.$parent.getController(str);
                 else
                     this.$relatedController = null;
+                str = xml.attributes.sound;
+                if (str)
+                    this.$clicksound = str;
+                else
+                    this.$clicksound = null;
                 this.$pageOption.id = xml.attributes.page;
                 this.selected = xml.attributes.checked == "true";
             }
@@ -2722,6 +2769,32 @@ window.__extends = (this && this.__extends) || (function () {
                     this.emit(fgui.StateChangeEvent.CHANGED, this);
                 }
             }
+            if (this.$clicksound) {
+                var packname = this.packageItem.owner.name;
+                var item = fgui.UIPackage.getItemByURL(this.$clicksound);
+                if (item) {
+                    var resource = fgui.utils.AssetLoader.resourcesPool[packname + "@" + item.id];
+                    this.playSound(resource);
+                }
+            }
+        };
+        GButton.prototype.playSound = function (resource) {
+            return __awaiter(this, void 0, void 0, function () {
+                var Sound, sound;
+                return __generator(this, function (_a) {
+                    if (!!PIXI.sound) {
+                        Sound = PIXI.sound.Sound;
+                        if (resource.sound) {
+                            resource.sound.play();
+                        }
+                        else {
+                            sound = Sound.from(resource.data);
+                            sound.play(function (sound) { return sound.destroy(); });
+                        }
+                    }
+                    return [2];
+                });
+            });
         };
         GButton.prototype.dispose = function () {
             fgui.GTimer.inst.remove(this.setState, this);
@@ -2910,7 +2983,7 @@ window.__extends = (this && this.__extends) || (function () {
         };
         GComboBox.prototype.constructFromXML = function (xml) {
             _super.prototype.constructFromXML.call(this, xml);
-            xml = fgui.utils.XmlParser.getChildNodes(xml, "ComboBox")[0];
+            xml = xml.getChildNodes("ComboBox")[0];
             var str;
             this.$buttonController = this.getController("button");
             this.$titleObject = this.getChild("title");
@@ -2952,7 +3025,7 @@ window.__extends = (this && this.__extends) || (function () {
         GComboBox.prototype.setupAfterAdd = function (xml) {
             var _this = this;
             _super.prototype.setupAfterAdd.call(this, xml);
-            xml = fgui.utils.XmlParser.getChildNodes(xml, "ComboBox")[0];
+            xml = xml.getChildNodes("ComboBox")[0];
             if (xml) {
                 var str_1;
                 str_1 = xml.attributes.titleColor;
@@ -3528,7 +3601,7 @@ window.__extends = (this && this.__extends) || (function () {
         };
         GLabel.prototype.setupAfterAdd = function (xml) {
             _super.prototype.setupAfterAdd.call(this, xml);
-            var cs = fgui.utils.XmlParser.getChildNodes(xml, "Label");
+            var cs = xml.getChildNodes("Label");
             if (cs && cs.length > 0) {
                 xml = cs[0];
                 var str = void 0;
@@ -6075,6 +6148,13 @@ window.__extends = (this && this.__extends) || (function () {
             },
             set: function (value) {
                 this.url = null;
+                if (!this.$content) {
+                    this.$content = new fgui.UIImage(null);
+                    this.$content.$initDisp();
+                    this.$container.addChild(this.$content);
+                }
+                else
+                    this.$container.addChild(this.$content);
                 this.switchToMovieMode(false);
                 if (this.$content instanceof fgui.UIImage)
                     this.$content.texture = value;
@@ -6146,26 +6226,53 @@ window.__extends = (this && this.__extends) || (function () {
         };
         GLoader.prototype.loadExternal = function () {
             var _this = this;
-            var texture = PIXI.Texture.from(this.$url, true);
-            this.$loadingTexture = texture;
-            texture.once("update", function () {
-                if (!texture.width || !texture.height)
-                    _this.$loadResCompleted(null);
-                else
-                    _this.$loadResCompleted(texture);
+            this.$container.removeChildren();
+            if (!this.$content || !(this.$content instanceof fgui.UIImage)) {
+                this.$content = new fgui.UIImage(null);
+                this.$content.$initDisp();
+                this.$container.addChild(this.$content);
+            }
+            else
+                this.$container.addChild(this.$content);
+            this.$content.texture = PIXI.Texture.from(this.$url, { scaleMode: PIXI.SCALE_MODES.LINEAR });
+            this.$content.texture.once("update", function () {
+                if (_this.$content.texture) {
+                    _this.$content.texture.frame = new PIXI.Rectangle(0, 0, _this.$content.texture.baseTexture.width, _this.$content.texture.baseTexture.height);
+                    _this.$contentSourceWidth = _this.$content.texture.width;
+                    _this.$contentSourceHeight = _this.$content.texture.height;
+                    _this.updateLayout();
+                }
             });
+        };
+        GLoader.prototype.__loadExternal = function () {
+            var _this = this;
+            var texture = PIXI.Texture.from(this.$url, { scaleMode: PIXI.SCALE_MODES.LINEAR });
+            this.$loadingTexture = texture;
+            if (texture.width > 1 && texture.height > 1) {
+                this.$loadResCompleted(texture);
+            }
+            else {
+                texture.once("update", function () {
+                    if (!texture.width || !texture.height)
+                        _this.$loadResCompleted(null);
+                    else
+                        _this.$loadResCompleted(texture);
+                });
+            }
         };
         GLoader.prototype.freeExternal = function (texture) {
             PIXI.Texture.removeFromCache(texture);
             texture.destroy(texture.baseTexture != null);
         };
-        GLoader.prototype.$loadResCompleted = function (res) {
-            if (res)
-                this.onExternalLoadSuccess(res);
+        GLoader.prototype.$loadResCompleted = function (texture) {
+            if (texture)
+                this.onExternalLoadSuccess(texture);
             else {
                 this.onExternalLoadFailed();
-                this.$loadingTexture.removeAllListeners();
-                this.freeExternal(this.$loadingTexture);
+                if (this.$loadingTexture) {
+                    this.$loadingTexture.removeAllListeners();
+                    this.freeExternal(this.$loadingTexture);
+                }
                 this.$loadingTexture = null;
             }
             this.$loadingTexture = null;
@@ -6277,11 +6384,6 @@ window.__extends = (this && this.__extends) || (function () {
             this.clearErrorState();
             if (this.$content && this.$content.parent)
                 this.$container.removeChild(this.$content);
-            if (this.$loadingTexture) {
-                this.$loadingTexture.removeAllListeners();
-                this.freeExternal(this.$loadingTexture);
-                this.$loadingTexture = null;
-            }
             if (this.$contentItem == null && this.$content instanceof fgui.UIImage)
                 this.freeExternal(this.$content.texture);
             this.$content && this.$content.destroy();
@@ -6558,7 +6660,7 @@ window.__extends = (this && this.__extends) || (function () {
         };
         GProgressBar.prototype.constructFromXML = function (xml) {
             _super.prototype.constructFromXML.call(this, xml);
-            xml = fgui.utils.XmlParser.getChildNodes(xml, "ProgressBar")[0];
+            xml = xml.getChildNodes("ProgressBar")[0];
             var str;
             str = xml.attributes.titleType;
             if (str)
@@ -6590,7 +6692,7 @@ window.__extends = (this && this.__extends) || (function () {
         };
         GProgressBar.prototype.setupAfterAdd = function (xml) {
             _super.prototype.setupAfterAdd.call(this, xml);
-            xml = fgui.utils.XmlParser.getChildNodes(xml, "ProgressBar")[0];
+            xml = xml.getChildNodes("ProgressBar")[0];
             if (xml) {
                 this.$value = parseInt(xml.attributes.value) || 0;
                 this.$max = parseInt(xml.attributes.max) || 0;
@@ -6721,6 +6823,16 @@ window.__extends = (this && this.__extends) || (function () {
             return this.$text;
         };
         Object.defineProperty(GTextField.prototype, "color", {
+            get: function () {
+                return this.getColor();
+            },
+            set: function (value) {
+                this.setColor(value);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(GTextField.prototype, "colors", {
             get: function () {
                 return this.getColor();
             },
@@ -6982,6 +7094,14 @@ window.__extends = (this && this.__extends) || (function () {
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(GTextField.prototype, "cacheAsBitmap", {
+            get: function () { return this.$cacheAsBitmap; },
+            set: function (v) {
+                this.$cacheAsBitmap = v;
+            },
+            enumerable: true,
+            configurable: true
+        });
         GTextField.prototype.ensureSizeCorrect = function () {
             if (this.$sizeDirty && this.$requireRender)
                 this.renderNow();
@@ -7015,6 +7135,9 @@ window.__extends = (this && this.__extends) || (function () {
         };
         GTextField.prototype.renderNow = function (updateBounds) {
             if (updateBounds === void 0) { updateBounds = true; }
+            if (this.$cacheAsBitmap) {
+                this.$textField.cacheAsBitmap = false;
+            }
             this.$requireRender = false;
             this.$sizeDirty = false;
             if (this.$bitmapFont != null) {
@@ -7062,6 +7185,9 @@ window.__extends = (this && this.__extends) || (function () {
                 this.$updatingSize = false;
             }
             this.layoutAlign();
+            if (this.$cacheAsBitmap) {
+                this.$textField.cacheAsBitmap = true;
+            }
         };
         GTextField.prototype.renderWithBitmapFont = function (updateBounds) {
             var _this = this;
@@ -7458,7 +7584,9 @@ window.__extends = (this && this.__extends) || (function () {
         };
         Object.defineProperty(GRichTextField.prototype, "textFlow", {
             set: function (flow) {
+                Object.assign(this.$style, flow.style);
                 this.$textFlow = flow;
+                this.text = flow.text;
                 this.render();
             },
             enumerable: true,
@@ -7529,7 +7657,7 @@ window.__extends = (this && this.__extends) || (function () {
         });
         GRoot.prototype.attachTo = function (app, stageOptions) {
             createjs.Ticker = null;
-            fgui.GTimer.inst.setTicker(app.ticker);
+            fgui.GTimer.inst.setTicker(PIXI.Ticker.shared);
             if (this.$uiStage) {
                 this.$uiStage.off(fgui.DisplayObjectEvent.SIZE_CHANGED, this.$winResize, this);
                 this.$uiStage.nativeStage.off(fgui.InteractiveEvents.Down, this.$stageDown, this);
@@ -8002,7 +8130,7 @@ window.__extends = (this && this.__extends) || (function () {
         });
         GScrollBar.prototype.constructFromXML = function (xml) {
             _super.prototype.constructFromXML.call(this, xml);
-            xml = fgui.utils.XmlParser.getChildNodes(xml, "ScrollBar")[0];
+            xml = xml.getChildNodes("ScrollBar")[0];
             if (xml != null)
                 this.$fixedGripSize = xml.attributes.fixedGripSize == "true";
             this.$grip = this.getChild("grip");
@@ -8188,7 +8316,7 @@ window.__extends = (this && this.__extends) || (function () {
         };
         GSlider.prototype.setupAfterAdd = function (xml) {
             _super.prototype.setupAfterAdd.call(this, xml);
-            xml = fgui.utils.XmlParser.getChildNodes(xml, "Slider")[0];
+            xml = xml.getChildNodes("Slider")[0];
             if (xml) {
                 this.$value = parseInt(xml.attributes.value);
                 this.$max = parseInt(xml.attributes.max);
@@ -8197,7 +8325,7 @@ window.__extends = (this && this.__extends) || (function () {
         };
         GSlider.prototype.constructFromXML = function (xml) {
             _super.prototype.constructFromXML.call(this, xml);
-            xml = fgui.utils.XmlParser.getChildNodes(xml, "Slider")[0];
+            xml = xml.getChildNodes("Slider")[0];
             var str;
             if (xml) {
                 str = xml.attributes.titleType;
@@ -8958,7 +9086,12 @@ window.__extends = (this && this.__extends) || (function () {
             return _this;
         }
         GearColor.prototype.init = function () {
-            this.$default = this.$owner.color;
+            if ("color" in this.$owner) {
+                this.$default = this.$owner.color;
+            }
+            else if ("titleColor" in this.$owner) {
+                this.$default = this.$owner["titleColor"];
+            }
             this.$storage = {};
         };
         GearColor.prototype.addStatus = function (pageId, value) {
@@ -8973,16 +9106,24 @@ window.__extends = (this && this.__extends) || (function () {
         GearColor.prototype.apply = function () {
             this.$owner.$gearLocked = true;
             var data = this.$storage[this.$controller.selectedPageId];
-            if (data != undefined)
-                this.$owner.color = Math.floor(data);
-            else
-                this.$owner.color = Math.floor(this.$default);
+            var color = data != undefined ? Math.floor(data) : Math.floor(this.$default);
+            if ("color" in this.$owner) {
+                this.$owner.color = color;
+            }
+            else if ("titleColor" in this.$owner) {
+                this.$owner["titleColor"] = color;
+            }
             this.$owner.$gearLocked = false;
         };
         GearColor.prototype.updateState = function () {
             if (this.$controller == null || this.$owner.$gearLocked || this.$owner.$inProgressBuilding)
                 return;
-            this.$storage[this.$controller.selectedPageId] = this.$owner.color;
+            if ("color" in this.$owner) {
+                this.$storage[this.$controller.selectedPageId] = this.$owner.color;
+            }
+            else if ("titleColor" in this.$owner) {
+                this.$storage[this.$controller.selectedPageId] = this.$owner["titleColor"];
+            }
         };
         return GearColor;
     }(fgui.GearBase));
@@ -9447,7 +9588,7 @@ window.__extends = (this && this.__extends) || (function () {
 
 (function (fgui) {
     fgui.isColorGear = function (obj) {
-        return obj && "color" in obj;
+        return obj && ("color" in obj || "titleColor" in obj);
     };
 })(fgui || (fgui = {}));
 
@@ -11162,6 +11303,7 @@ window.__extends = (this && this.__extends) || (function () {
             this.$lastMoveTime = fgui.GTimer.inst.curTime / 1000;
             fgui.GRoot.inst.nativeStage.on(fgui.InteractiveEvents.Move, this.$mouseMove, this);
             fgui.GRoot.inst.nativeStage.on(fgui.InteractiveEvents.Up, this.$mouseUp, this);
+            fgui.GRoot.inst.nativeStage.on(fgui.InteractiveEvents.UpOutside, this.$mouseUp, this);
             fgui.GRoot.inst.nativeStage.on(fgui.InteractiveEvents.Click, this.$click, this);
         };
         ScrollPane.prototype.$mouseMove = function () {
@@ -11177,12 +11319,14 @@ window.__extends = (this && this.__extends) || (function () {
                 if (!this.$isHoldAreaDone) {
                     ScrollPane.$gestureFlag |= 1;
                     diff = Math.abs(this.$beginTouchPos.y - globalMouse.y);
-                    if (diff < sensitivity)
+                    if (diff < sensitivity) {
                         return;
+                    }
                     if ((ScrollPane.$gestureFlag & 2) != 0) {
                         diff2 = Math.abs(this.$beginTouchPos.x - globalMouse.x);
-                        if (diff < diff2)
+                        if (diff < diff2) {
                             return;
+                        }
                     }
                 }
                 sv = true;
@@ -11255,7 +11399,7 @@ window.__extends = (this && this.__extends) || (function () {
                 else
                     this.$container.x = newPosX;
             }
-            var frameRate = fgui.GRoot.inst.applicationContext.ticker.FPS;
+            var frameRate = PIXI.Ticker.shared.FPS;
             var now = fgui.GTimer.inst.curTime / 1000;
             var deltaTime = Math.max(now - this.$lastMoveTime, 1 / frameRate);
             var deltaPositionX = globalMouse.x - this.$lastTouchPos.x;
@@ -11307,6 +11451,7 @@ window.__extends = (this && this.__extends) || (function () {
         };
         ScrollPane.prototype.$mouseUp = function () {
             fgui.GRoot.inst.nativeStage.off(fgui.InteractiveEvents.Move, this.$mouseMove, this);
+            fgui.GRoot.inst.nativeStage.off(fgui.InteractiveEvents.UpOutside, this.$mouseUp, this);
             fgui.GRoot.inst.nativeStage.off(fgui.InteractiveEvents.Up, this.$mouseUp, this);
             fgui.GRoot.inst.nativeStage.off(fgui.InteractiveEvents.Click, this.$click, this);
             if (ScrollPane.draggingPane == this)
@@ -11369,7 +11514,7 @@ window.__extends = (this && this.__extends) || (function () {
             }
             else {
                 if (!this.$inertiaDisabled) {
-                    var frameRate = fgui.GRoot.inst.applicationContext.ticker.FPS;
+                    var frameRate = PIXI.Ticker.shared.FPS;
                     var elapsed = (fgui.GTimer.inst.curTime / 1000 - this.$lastMoveTime) * frameRate - 1;
                     if (elapsed > 1) {
                         var factor = Math.pow(0.833, elapsed);
@@ -11600,11 +11745,12 @@ window.__extends = (this && this.__extends) || (function () {
             else if (pos < -this.$overlapSize[axis])
                 pos = -this.$overlapSize[axis];
             else {
+                var isMobile = PIXI.utils.isMobile.any;
                 var v2 = Math.abs(v) * this.$velocityScale;
-                if (PIXI.utils.isMobile.any)
+                if (isMobile)
                     v2 *= Math.max(fgui.GRoot.inst.stageWrapper.designWidth, fgui.GRoot.inst.stageWrapper.designHeight) / Math.max(fgui.GRoot.inst.stageWidth, fgui.GRoot.inst.stageHeight);
                 var ratio = 0;
-                if (this.$pageMode || !PIXI.utils.isMobile.any) {
+                if (this.$pageMode || !isMobile) {
                     if (v2 > 500)
                         ratio = Math.pow((v2 - 500) / 500, 2);
                 }
@@ -13815,12 +13961,12 @@ var PIXI;
                 this.nodeName = ele.nodeName;
                 this.context = ele;
                 this.type = ele.nodeType;
-                this.text = (this.type == Node.COMMENT_NODE || this.type == Node.TEXT_NODE) ? this.context.textContent : null;
+                this.text = (this.type == Node.COMMENT_NODE || this.type == Node.TEXT_NODE || this.type == Node.ELEMENT_NODE) ? this.context.textContent : null;
             }
             Object.defineProperty(XmlNode.prototype, "children", {
                 get: function () {
                     if (!this.$children)
-                        this.$children = XmlParser.getChildNodes(this);
+                        this.$children = this.__parseChildNodes(this);
                     return this.$children;
                 },
                 enumerable: true,
@@ -13829,12 +13975,58 @@ var PIXI;
             Object.defineProperty(XmlNode.prototype, "attributes", {
                 get: function () {
                     if (!this.$attributes)
-                        this.$attributes = XmlParser.getNodeAttributes(this);
+                        this.$attributes = this.__parseNodeAttributes(this);
                     return this.$attributes;
                 },
                 enumerable: true,
                 configurable: true
             });
+            XmlNode.prototype.getChildNodes = function (matchName) {
+                if (matchName === void 0) { matchName = null; }
+                var nodes = this.children;
+                var ret = [];
+                if (!nodes || nodes.length <= 0)
+                    return ret;
+                var len = nodes.length;
+                for (var i = 0; i < len; i++) {
+                    var n = nodes[i];
+                    if (n.type == Node.TEXT_NODE) {
+                        continue;
+                    }
+                    if (!matchName || (matchName && matchName.length > 0 && n.nodeName.toLowerCase() == matchName.toLowerCase()))
+                        ret.push(n);
+                }
+                return ret;
+            };
+            XmlNode.prototype.__parseChildNodes = function (xml, matchName) {
+                if (matchName === void 0) { matchName = null; }
+                var nodes = xml.context.childNodes;
+                var ret = [];
+                if (!nodes || nodes.length <= 0)
+                    return ret;
+                var len = nodes.length;
+                for (var i = 0; i < len; i++) {
+                    var n = nodes.item(i);
+                    if (n.nodeType == Node.TEXT_NODE) {
+                        continue;
+                    }
+                    if (!matchName || (matchName && matchName.length > 0 && n.nodeName.toLowerCase() == matchName.toLowerCase()))
+                        ret.push(new XmlNode(n));
+                }
+                return ret;
+            };
+            XmlNode.prototype.__parseNodeAttributes = function (xml) {
+                var asList = xml.context.attributes;
+                var ret = {};
+                if (!asList || asList.length <= 0)
+                    return ret;
+                var len = asList.length;
+                for (var i = 0; i < len; i++) {
+                    var a = asList.item(i);
+                    ret[a.nodeName] = a.nodeValue;
+                }
+                return ret;
+            };
             return XmlNode;
         }());
         utils.XmlNode = XmlNode;
@@ -13842,7 +14034,7 @@ var PIXI;
             function XmlParser() {
             }
             XmlParser.tryParse = function (xmlstring, mimeType) {
-                if (mimeType === void 0) { mimeType = "application/xml"; }
+                if (mimeType === void 0) { mimeType = "text/xml"; }
                 var doc = XmlParser.$parser.parseFromString(xmlstring, mimeType);
                 if (doc && doc.childNodes && doc.childNodes.length >= 1)
                     return new XmlNode(doc.firstChild);
@@ -13855,34 +14047,6 @@ var PIXI;
                 while (p.parentNode != null)
                     p = p.parentNode;
                 return p == xml.context ? xml : new XmlNode(p);
-            };
-            XmlParser.getChildNodes = function (xml, matchName) {
-                if (matchName === void 0) { matchName = null; }
-                var nodes = xml.context.childNodes;
-                var ret = [];
-                if (!nodes || nodes.length <= 0)
-                    return ret;
-                var len = nodes.length;
-                for (var i = 0; i < len; i++) {
-                    var n = nodes.item(i);
-                    if (n.nodeType == Node.TEXT_NODE)
-                        continue;
-                    if (!matchName || (matchName && matchName.length > 0 && n.nodeName.toLowerCase() == matchName.toLowerCase()))
-                        ret.push(new XmlNode(n));
-                }
-                return ret;
-            };
-            XmlParser.getNodeAttributes = function (xml) {
-                var asList = xml.context.attributes;
-                var ret = {};
-                if (!asList || asList.length <= 0)
-                    return ret;
-                var len = asList.length;
-                for (var i = 0; i < len; i++) {
-                    var a = asList.item(i);
-                    ret[a.nodeName] = a.nodeValue;
-                }
-                return ret;
             };
             XmlParser.$parser = new DOMParser();
             return XmlParser;
@@ -14839,6 +15003,7 @@ var PIXI;
             _this.$playing = true;
             _this.interactive = _this.interactiveChildren = false;
             _this.$settings = new fgui.DefaultMovieClipSettings();
+            _this.visible;
             _this.on("added", _this.added, _this);
             _this.on("removed", _this.removed, _this);
             return _this;
@@ -15348,6 +15513,7 @@ var PIXI;
             this.alignH = 1;
             this.fallbackWidth = 0;
             this.fallbackHeight = 0;
+            this.initliazeHTMLInput = undefined;
         }
         return DefaultUIStageOptions;
     }());
@@ -15418,29 +15584,31 @@ var PIXI;
             if (!opt.designWidth || !opt.designHeight)
                 throw new Error("Invalid designWidth / designHeight in the parameter 'stageOptions'.");
             _this.$options = opt;
-            _this.$appContext.view.style.position = "absolute";
-            var container = _this.$appContext.view.parentElement;
-            var style = container.style;
-            if (container.tagName != "DIV") {
-                container = document.createElement("DIV");
-                style.position = "relative";
-                style.left = style.top = "0px";
-                style.width = style.height = "100%";
-                style.overflow = "hidden";
-                _this.$appContext.view.parentElement.appendChild(container);
-                container.appendChild(_this.$appContext.view);
+            if (opt.initliazeHTMLInput == undefined || opt.initliazeHTMLInput) {
+                _this.$appContext.view.style.position = "absolute";
+                var container = _this.$appContext.view.parentElement;
+                var style = container.style;
+                if (container.tagName != "DIV") {
+                    container = document.createElement("DIV");
+                    style.position = "relative";
+                    style.left = style.top = "0px";
+                    style.width = style.height = "100%";
+                    style.overflow = "hidden";
+                    _this.$appContext.view.parentElement.appendChild(container);
+                    container.appendChild(_this.$appContext.view);
+                }
+                var containerPosition = void 0;
+                if (document.defaultView && document.defaultView.getComputedStyle)
+                    containerPosition = document.defaultView.getComputedStyle(container).position;
+                else
+                    containerPosition = style.position;
+                if (containerPosition == "" || containerPosition == "static") {
+                    containerPosition = "relative";
+                    container.style.position = containerPosition;
+                }
+                fgui.HTMLInput.inst.initialize(container, _this.$appContext.view);
+                _this.updateScreenSize();
             }
-            var containerPosition;
-            if (document.defaultView && document.defaultView.getComputedStyle)
-                containerPosition = document.defaultView.getComputedStyle(container).position;
-            else
-                containerPosition = style.position;
-            if (containerPosition == "" || containerPosition == "static") {
-                containerPosition = "relative";
-                container.style.position = containerPosition;
-            }
-            fgui.HTMLInput.inst.initialize(container, _this.$appContext.view);
-            _this.updateScreenSize();
             return _this;
         }
         Object.defineProperty(UIStage.prototype, "orientation", {
@@ -15728,13 +15896,13 @@ var PIXI;
         function UITextField(owner) {
             var _this = _super.call(this, "") || this;
             _this.$minHeightID = -1;
-            _this._width = 0;
-            _this._height = 0;
+            _this.$width = 0;
+            _this.$height = 0;
             _this.UIOwner = owner;
             _this.interactive = _this.interactiveChildren = false;
             _this.texture.noFrame = false;
-            _this._width = _this.texture.frame.width;
-            _this._height = _this.texture.frame.height;
+            _this.$width = _this.texture.frame.width;
+            _this.$height = _this.texture.frame.height;
             _this.$minHeight = -1;
             _this.texture.on("update", _this.updateFrame, _this);
             return _this;
@@ -15758,8 +15926,8 @@ var PIXI;
         UITextField.prototype.internalUpdateFrame = function () {
             if (this.texture) {
                 var frm = this.texture.frame;
-                this._height = Math.max(this._height, this.$minHeight);
-                var w = frm.x + this._width, h = frm.y + this._height;
+                this.$height = Math.max(this.$height, this.$minHeight);
+                var w = frm.x + this.$width, h = frm.y + this.$height;
                 if (w > this.texture.baseTexture.width)
                     w = this.texture.baseTexture.width - frm.x;
                 if (h > this.texture.baseTexture.height)
@@ -15780,10 +15948,10 @@ var PIXI;
         };
         Object.defineProperty(UITextField.prototype, "width", {
             get: function () {
-                return this._width;
+                return this.$width;
             },
             set: function (v) {
-                this._width = v;
+                this.$width = v;
                 this.updateFrame();
             },
             enumerable: true,
@@ -15791,10 +15959,10 @@ var PIXI;
         });
         Object.defineProperty(UITextField.prototype, "height", {
             get: function () {
-                return this._height;
+                return this.$height;
             },
             set: function (v) {
-                this._height = v;
+                this.$height = v;
                 this.updateFrame();
             },
             enumerable: true,
@@ -15948,7 +16116,7 @@ var PIXI;
                 case 2:
                     return new fgui.GMovieClip();
                 case 4:
-                    var cls = UIObjectFactory.packageItemExtensions[pi.owner.id + pi.id];
+                    var cls = UIObjectFactory.packageItemExtensions[pi.owner.name + "/" + pi.name];
                     if (cls)
                         return new cls();
                     var xml = pi.owner.getItemAsset(pi);
@@ -16109,9 +16277,9 @@ var PIXI;
                     var i = key.indexOf("-");
                     if (i == -1)
                         return;
-                    var text = cxml.children.length > 0 ? cxml.children[0].text : "";
-                    var key2 = key.substr(0, i);
-                    var key3 = key.substr(i + 1);
+                    var text = cxml.text;
+                    var key2 = key.substring(0, i);
+                    var key3 = key.substring(i + 1);
                     var col = UIPackage.$stringsSource[key2];
                     if (!col) {
                         col = {};
@@ -16396,7 +16564,7 @@ var PIXI;
             }
         };
         UIPackage.prototype.loadComponentChildren = function (item) {
-            var listNode = fgui.utils.XmlParser.getChildNodes(item.componentData, "displayList");
+            var listNode = item.componentData.getChildNodes("displayList");
             if (listNode != null && listNode.length > 0) {
                 item.displayList = [];
                 listNode[0].children.forEach(function (cxml) {
@@ -16453,7 +16621,7 @@ var PIXI;
                     if (value != undefined)
                         cxml.attributes.tooltips = value;
                 }
-                var cs = fgui.utils.XmlParser.getChildNodes(cxml, "gearText");
+                var cs = cxml.getChildNodes("gearText");
                 dxml = cs && cs[0];
                 if (dxml) {
                     value = strings[elementId + "-texts"];
@@ -16481,7 +16649,7 @@ var PIXI;
                     });
                 }
                 else if (ename == "component") {
-                    cs = fgui.utils.XmlParser.getChildNodes(cxml, "Button");
+                    cs = cxml.getChildNodes("Button");
                     dxml = cs && cs[0];
                     if (dxml) {
                         value = strings[elementId];
@@ -16492,7 +16660,7 @@ var PIXI;
                             dxml.attributes.selectedTitle = value;
                         return;
                     }
-                    cs = fgui.utils.XmlParser.getChildNodes(cxml, "Label");
+                    cs = cxml.getChildNodes("Label");
                     dxml = cs && cs[0];
                     if (dxml) {
                         value = strings[elementId];
@@ -16500,7 +16668,7 @@ var PIXI;
                             dxml.attributes.title = value;
                         return;
                     }
-                    cs = fgui.utils.XmlParser.getChildNodes(cxml, "ComboBox");
+                    cs = cxml.getChildNodes("ComboBox");
                     dxml = cs && cs[0];
                     if (dxml) {
                         value = strings[elementId];
@@ -16693,7 +16861,7 @@ var PIXI;
             }
             AssetLoader.prototype._onComplete = function () {
                 AssetLoader.addResources(this.resources);
-                this.onComplete.detach(this);
+                _super.prototype._onComplete.call(this);
             };
             ;
             Object.defineProperty(AssetLoader, "resourcesPool", {

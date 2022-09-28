@@ -3,50 +3,50 @@ namespace PIXI.extras {
 
     export class TilingSprite extends PIXI.TilingSprite {
 
-        protected $flipX:boolean = false;
-        protected $flipY:boolean = false;
-        protected $frameId:string;
+        protected $flipX: boolean = false;
+        protected $flipY: boolean = false;
+        protected $frameId: string;
 
-        protected static $cachedTexturePool:{ [key:string]: { refCount:number, texture:PIXI.Texture } } = {};
-        
-        public constructor(frameId?:string, tex?:PIXI.Texture) {
+        protected static $cachedTexturePool: { [key: string]: { refCount: number, texture: PIXI.Texture } } = {};
+
+        public constructor(frameId?: string, tex?: PIXI.Texture) {
             super(tex);
             this.$frameId = frameId;
         }
-        
-        public get flipX():boolean {
+
+        public get flipX(): boolean {
             return this.$flipX;
         }
 
-        public get flipY():boolean {
+        public get flipY(): boolean {
             return this.$flipY;
         }
 
-        public set flipX(v:boolean) {
-            if(this.$flipX != v) {
+        public set flipX(v: boolean) {
+            if (this.$flipX != v) {
                 this.$flipX = v;
                 fgui.GTimer.inst.callLater(this.updateUvs, this);
             }
         }
 
-        public set flipY(v:boolean) {
-            if(this.$flipY != v) {
+        public set flipY(v: boolean) {
+            if (this.$flipY != v) {
                 this.$flipY = v;
                 fgui.GTimer.inst.callLater(this.updateUvs, this);
             }
         }
 
-        private combineCacheId(flipx:boolean, flipy:boolean):string {
-            if(!this.$frameId || this.$frameId == "") return null;
-            return `${this.$frameId}${ flipx ? '_fx' : '' }${ flipy ? '_fy' : '' }`;
+        private combineCacheId(flipx: boolean, flipy: boolean): string {
+            if (!this.$frameId || this.$frameId == "") return null;
+            return `${this.$frameId}${flipx ? '_fx' : ''}${flipy ? '_fy' : ''}`;
         }
 
-        private getTextureFromCache(flipx:boolean, flipy:boolean):PIXI.Texture {
+        private getTextureFromCache(flipx: boolean, flipy: boolean): PIXI.Texture {
             const cachedid = this.combineCacheId(flipx, flipy);
-            if(cachedid == null) return this.texture;
+            if (cachedid == null) return this.texture;
 
             let ret = TilingSprite.$cachedTexturePool[cachedid];
-            if(!ret) {
+            if (!ret) {
                 ret = {
                     refCount: 1,
                     texture: this.createFlippedTexture(this.texture, flipx, flipy)
@@ -58,14 +58,14 @@ namespace PIXI.extras {
             return ret.texture;
         }
 
-        private tryRemoveTextureCache(flipx:boolean, flipy:boolean):boolean {
+        private tryRemoveTextureCache(flipx: boolean, flipy: boolean): boolean {
             const cachedid = this.combineCacheId(flipx, flipy);
-            if(!cachedid) return false;
+            if (!cachedid) return false;
 
             let ret = TilingSprite.$cachedTexturePool[cachedid];
-            if(ret) {
+            if (ret) {
                 ret.refCount--;
-                if(ret.refCount <= 0) {
+                if (ret.refCount <= 0) {
                     ret.texture.destroy();
                     delete TilingSprite.$cachedTexturePool[cachedid];
                 }
@@ -74,11 +74,11 @@ namespace PIXI.extras {
             return false;
         }
 
-        private createFlippedTexture(origTexture:PIXI.Texture, flipx:boolean, flipy:boolean):PIXI.Texture {
+        private createFlippedTexture(origTexture: PIXI.Texture, flipx: boolean, flipy: boolean): PIXI.Texture {
             let newTex = origTexture.clone();
-            
+
             let uvs = newTex["_uvs"] as PIXI.TextureUvs;
-            if(this.$flipX) {
+            if (this.$flipX) {
                 const tx0 = uvs.x0;
                 const tx3 = uvs.x3;
                 uvs.x0 = uvs.x1;
@@ -86,7 +86,7 @@ namespace PIXI.extras {
                 uvs.x3 = uvs.x2;
                 uvs.x2 = tx3;
             }
-            if(this.$flipY) {
+            if (this.$flipY) {
                 const ty0 = uvs.y0;
                 const ty1 = uvs.y1;
                 uvs.y0 = uvs.y3;
@@ -106,17 +106,17 @@ namespace PIXI.extras {
             return newTex;
         }
 
-        private updateUvs():void {
-            if(!this.texture) return;
+        private updateUvs(): void {
+            if (!this.texture) return;
 
-            if(this.$flipX || this.$flipY) {
+            if (this.$flipX || this.$flipY) {
                 let cachedTex = this.getTextureFromCache(this.$flipX, this.$flipY);
-                if(this.texture != cachedTex)
+                if (this.texture != cachedTex)
                     this.texture = cachedTex;
             }
         }
 
-        public destroy(options?:PIXI.destoryOptions):void {
+        public destroy(options?: PIXI.IDestroyOptions | boolean): void {
             this.tryRemoveTextureCache(this.$flipX, this.$flipY);
             super.destroy(options);
         }

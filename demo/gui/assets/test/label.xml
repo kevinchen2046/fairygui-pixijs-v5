@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="640,890">
+  <displayList>
+    <text id="n1" name="n1" xy="13,22" size="614,51" fontSize="20" autoSize="height" text="Label is an extension from GComponent, it makes the component's title and icon feature available"/>
+    <component id="n3" name="frame" src="ie5t27" fileName="components/win/WindowFrame.xml" xy="25,102" size="223,226">
+      <Label title="Bag"/>
+    </component>
+    <component id="n4" name="n4" src="ie5t2d" fileName="components/win/组件3.xml" xy="271,129">
+      <Label title="Title Title" icon="ui://x8x40spbie5t2e"/>
+    </component>
+    <component id="n5" name="n5" src="ie5t2d" fileName="components/win/组件3.xml" xy="272,224">
+      <Label title="Title Title" titleColor="#ffcc33" icon="ui://x8x40spbie5t2f"/>
+    </component>
+  </displayList>
+</component>

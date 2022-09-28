@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1136,569" overflow="scroll" scrollBar="visible" scrollBarRes="ui://x8x40spbhxib3q,">
+  <displayList>
+    <component id="n21_o1v1" name="n21" src="o1v17r" fileName="Component15.xml" xy="0,0">
+      <relation target="" sidePair="width-width,height-height"/>
+    </component>
+    <text id="n0" name="n0" xy="15,11" size="581,27" fontSize="20" text="It won't stretch the content while a GComponent's size is changed"/>
+    <component id="n12" name="n12" src="hxib30" fileName="components/组件5.xml" xy="17,91"/>
+    <component id="n13" name="n13" src="hxib30" fileName="components/组件5.xml" xy="352,95" size="327,322"/>
+    <text id="n14" name="n14" xy="106,63" size="72,27" fontSize="20" text="Original"/>
+    <text id="n15" name="n15" xy="289,63" size="388,27" fontSize="20" text="After size changing: content is still the same"/>
+    <text id="n16" name="n16" xy="16,411" size="655,27" fontSize="20" text="Use Relation System to auto-adjust content size while parent size changes"/>
+    <component id="n17" name="n17" src="hxib31" fileName="components/组件6.xml" xy="22,491"/>
+    <text id="n18" name="n18" xy="111,460" size="72,27" fontSize="20" text="Original"/>
+    <text id="n19" name="n19" xy="442,460" size="126,27" fontSize="20" text="Auto-adjusted"/>
+    <component id="n20" name="n20" src="hxib31" fileName="components/组件6.xml" xy="339,490" size="330,324"/>
+  </displayList>
+</component>

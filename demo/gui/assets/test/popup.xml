@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1136,570">
+  <displayList>
+    <component id="n3" name="n3" src="idqr11" xy="55,148" size="124,45">
+      <Button title="Pop Menu" titleFontSize="16"/>
+    </component>
+    <text id="n4" name="n4" xy="54,32" size="602,51" fontSize="20" autoSize="height" text="&quot;Popup&quot; is actually a 'tip stuff' which means if you click on the blank area of the stage it will be closed immediately."/>
+    <component id="n5" name="n5" src="idqr11" xy="381,148" size="272,45">
+      <Button title="Pop customized component" titleFontSize="16"/>
+    </component>
+  </displayList>
+</component>

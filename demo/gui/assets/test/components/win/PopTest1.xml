@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="400,297">
+  <displayList>
+    <image id="n9" name="n9" src="cdsi6j" xy="0,0" size="400,297">
+      <relation target="" sidePair="width-width,height-height"/>
+    </image>
+    <image id="n10" name="n10" src="cdsi6k" xy="67,117"/>
+    <image id="n11" name="n11" src="cdsi6k" xy="188,117"/>
+    <image id="n12" name="n12" src="cdsi6k" xy="300,117"/>
+  </displayList>
+</component>

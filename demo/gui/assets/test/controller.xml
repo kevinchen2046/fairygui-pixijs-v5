@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="895,890">
+  <controller name="c1" pages="0,,1," selected="0"/>
+  <controller name="c2" pages="0,,1," selected="0"/>
+  <displayList>
+    <graph id="n3" name="n3" xy="178,192" size="100,100" type="rect" fillColor="#ff666699">
+      <gearXY controller="c1" pages="0,1" values="178,192|60,328" tween="true"/>
+      <gearSize controller="c1" pages="1" values="196,174,1,1" default="100,100,1,1" tween="true"/>
+    </graph>
+    <text id="n0" name="n0" xy="18,16" size="817,80" fontSize="20" autoSize="none" text="Controller System is one of the core features of FGUI, a controller contains a few of page which represents a state of your component, you can set different state (e.g. xy, opacity...) in differnt pages. Click below button to see effects"/>
+    <graph id="n5" name="n5" xy="62,192" size="100,100" type="rect">
+      <gearXY controller="c1" pages="0,1" values="62,192|169,192" tween="true"/>
+    </graph>
+    <text id="n6" name="n6" xy="188,262" size="66,22" fontSize="16" color="#ffffff" text="FairyGUI">
+      <gearColor controller="c1" pages="1" values="#000000,#000000" default="#ffffff,#000000"/>
+    </text>
+    <image id="n7" name="n7" src="pj7e2h" xy="130,314" pivot="0.5,0.5" size="90,90" aspect="true">
+      <gearXY controller="c1" pages="0,1" values="130,314|314,349" tween="true"/>
+      <gearSize controller="c1" pages="1" values="132,132,1,1" default="90,90,1,1" tween="true"/>
+      <gearLook controller="c1" pages="1" values="0.54,180,0,1" default="1,0,0,1" tween="true"/>
+    </image>
+    <image id="n8" name="n8" src="pj7e2i" xy="296,197">
+      <gearDisplay controller="c1" pages="1"/>
+    </image>
+    <image id="n9" name="n9" src="pj7e2j" xy="62,197">
+      <gearColor controller="c1" pages="1" values="#66ff99" default="#ffffff"/>
+    </image>
+    <movieclip id="n10" name="n10" src="ie5t2f" xy="419,206">
+      <gearAni controller="c1" pages="1" values="0,s" default="0,p"/>
+    </movieclip>
+    <component id="n11" name="n11" src="pj7e2k" xy="86,116">
+      <Button controller="c1" page="1"/>
+    </component>
+    <component id="n12" name="switchBtn" src="pj7e2p" xy="774,776">
+      <relation target="" sidePair="right-right,bottom-bottom"/>
+      <Button controller="c2" page="1"/>
+    </component>
+    <image id="n13" name="n13" src="pj7e2h" xy="1134,781" group="n16"/>
+    <image id="n14" name="n14" src="pj7e2h" xy="1016,781" group="n16"/>
+    <image id="n15" name="n15" src="pj7e2h" xy="905,781" group="n16"/>
+    <group id="n16" name="n16" xy="905,781" size="319,90" advanced="true">
+      <gearXY controller="c2" pages="0,1" values="905,781|440,781" tween="true"/>
+      <relation target="" sidePair="bottom-bottom,right-right"/>
+    </group>
+  </displayList>
+</component>

@@ -107,7 +107,7 @@ namespace fgui {
         public setupAfterAdd(xml: utils.XmlNode): void {
             super.setupAfterAdd(xml);
 
-            xml = utils.XmlParser.getChildNodes(xml, "Slider")[0];
+            xml = xml.getChildNodes("Slider")[0];
             if (xml) {
                 this.$value = parseInt(xml.attributes.value);
                 this.$max = parseInt(xml.attributes.max);
@@ -119,7 +119,7 @@ namespace fgui {
         protected constructFromXML(xml: utils.XmlNode): void {
             super.constructFromXML(xml);
 
-            xml = utils.XmlParser.getChildNodes(xml, "Slider")[0];
+            xml = xml.getChildNodes("Slider")[0];
 
             let str: string;
             if (xml) {

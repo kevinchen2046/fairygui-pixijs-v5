@@ -115,7 +115,7 @@ namespace PIXI.extras {
             }
         }
 
-        public destroy(options?: PIXI.destoryOptions):void {
+        public destroy(options?: PIXI.IDestroyOptions | boolean):void {
             this.tryRemoveTextureCache(this.$flipX, this.$flipY);
             super.destroy(options);
         }

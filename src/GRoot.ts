@@ -50,7 +50,7 @@ namespace fgui {
         public attachTo(app: PIXI.Application, stageOptions?: UIStageOptions): void {
 
             createjs.Ticker = null;   //no need this one
-            GTimer.inst.setTicker(app.ticker);
+            GTimer.inst.setTicker(PIXI.Ticker.shared);
             
             if (this.$uiStage) {
                 this.$uiStage.off(DisplayObjectEvent.SIZE_CHANGED, this.$winResize, this);

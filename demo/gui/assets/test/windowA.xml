@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="400,400">
+  <displayList>
+    <component id="n0" name="frame" src="hxib66" xy="0,0" size="400,400">
+      <relation target="" sidePair="width-width,height-height"/>
+      <Label title="WindowA"/>
+    </component>
+    <component id="n2" name="n2" src="lr6v7c" xy="33,47">
+      <ComboBox visibleItemCount="10">
+        <item title="Option1"/>
+        <item title="Option2"/>
+        <item title="Option3"/>
+        <item title="Option4"/>
+        <item title="Option5"/>
+        <item title="Option7"/>
+      </ComboBox>
+    </component>
+    <component id="n5" name="n5" src="idqr1m" xy="108,320">
+      <Button icon="ui://x8x40spbidqr1o"/>
+    </component>
+    <list id="n6" name="n6" xy="39,98" size="335,215" layout="flow_hz" overflow="scroll" clipSoftness="0,20" lineGap="6" colGap="6" defaultItem="ui://x8x40spbhxib5s"/>
+  </displayList>
+</component>

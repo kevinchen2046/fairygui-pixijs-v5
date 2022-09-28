@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1136,570">
+  <displayList>
+    <text id="n5" name="n5" xy="28,21" size="480,27" fontSize="20" text="Color adjustment / Flip / Rotation / Opacity / and more"/>
+    <image id="n6" name="n6" src="o4ky4" fileName="imgs/pic.png" xy="16,86"/>
+    <image id="n7" name="n7" src="o4ky4" fileName="imgs/pic.png" xy="194,86" color="#33ff00" flip="hz"/>
+    <image id="n8" name="n8" src="o4ky4" fileName="imgs/pic.png" xy="406,239" size="179,223" alpha="0.62" color="#707070" flip="vt"/>
+    <image id="n9" name="n9" src="o4ky4" fileName="imgs/pic.png" xy="392,140" size="130,142" rotation="-39" color="#5e5e5e"/>
+    <image id="n12" name="n12" src="o4ky5" fileName="imgs/6_png.png" xy="592,76" size="294,173"/>
+    <text id="n14" name="n14" xy="664,28" size="143,27" fontSize="20" text="Nice-slice-plane"/>
+    <image id="n15" name="n15" src="o4ky6" fileName="imgs/long_dead2_png.png" xy="904,79" size="209,165"/>
+    <text id="n16" name="n16" xy="989,28" size="54,27" fontSize="20" text="Tilling"/>
+    <image id="n17" name="n17" src="o4ky6" fileName="imgs/long_dead2_png.png" xy="904,257" size="209,165" grayed="true" flip="both"/>
+    <image id="n18" name="n18" src="o4ky5" fileName="imgs/6_png.png" xy="592,256" size="294,173" grayed="true" flip="vt"/>
+  </displayList>
+</component>

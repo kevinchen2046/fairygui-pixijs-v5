@@ -36,7 +36,7 @@ namespace fgui {
             this.$playing = true;
             this.interactive = this.interactiveChildren = false;
             this.$settings = new DefaultMovieClipSettings();
-
+            this.visible
             this.on("added", this.added, this);
             this.on("removed", this.removed, this);
         }

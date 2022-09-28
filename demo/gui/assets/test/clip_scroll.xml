@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1136,570">
+  <displayList>
+    <component id="n29_hxib" name="n29" src="hxib33" xy="819,55"/>
+    <component id="n0" name="n0" src="hxib35" xy="43,42" group="n8"/>
+    <text id="n7" name="n7" xy="86,17" size="148,25" group="n8" fontSize="18" text="Overflow：hidden"/>
+    <group id="n8" name="n8" xy="43,17" size="224,335"/>
+    <graph id="n4" name="n4" xy="19,387" size="341,151" group="n12" type="rect" fillColor="#ff000000"/>
+    <component id="n3" name="n3" src="hxib37" xy="19,387" group="n12"/>
+    <text id="n10" name="n10" xy="114,361" size="150,25" group="n12" fontSize="18" text="Text with scrollbar"/>
+    <group id="n12" name="n12" xy="19,361" size="341,177"/>
+    <component id="n2" name="n2" src="hxib38" xy="321,38" group="n13"/>
+    <text id="n9" name="n9" xy="371,13" size="136,25" group="n13" fontSize="18" text="Overflow：scroll"/>
+    <group id="n13" name="n13" xy="321,13" size="225,335"/>
+    <graph id="n17" name="n17" xy="572,37" size="225,308" group="n16" type="rect" fillColor="#ff000000"/>
+    <component id="n14" name="n14" src="hxib39" xy="572,37" size="225,308" group="n16"/>
+    <text id="n15" name="n15" xy="580,12" size="211,25" group="n16" fontSize="18" text="Overflow：scroll + margin"/>
+    <group id="n16" name="n16" xy="572,12" size="225,333"/>
+    <graph id="n19" name="n19" xy="386,405" size="341,151" group="n21" type="rect" fillColor="#ff000000"/>
+    <component id="n18" name="n18" src="hxib3a" xy="386,405" group="n21"/>
+    <text id="n20" name="n20" xy="427,380" size="256,25" group="n21" fontSize="18" text="Pos the scrollbar to the left side"/>
+    <group id="n21" name="n21" xy="386,380" size="341,176"/>
+    <graph id="n24" name="n24" xy="744,425" size="377,120" group="n26" type="rect" fillColor="#ff000000"/>
+    <component id="n22" name="n22" src="hxib3b" xy="744,426" size="377,120" group="n26"/>
+    <text id="n23" name="n23" xy="821,401" size="228,25" group="n26" fontSize="18" text="Customize scrollbar position"/>
+    <group id="n26" name="n26" xy="744,401" size="377,145"/>
+    <text id="n28_t5r5" name="n28" xy="947,51" size="48,25" fontSize="18" text="Mask"/>
+  </displayList>
+</component>

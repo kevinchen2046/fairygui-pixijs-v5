@@ -1,50 +1,35 @@
-## PIXI.js V5.3.8 可用的FairyGUI库
-## PIXI.js V5.3.8 available PIXI.js V5.3.8 Fairygui Library
-该库是基于https://github.com/jcyuan/FairyGUI-PixiJS修改而来.
-The library is based on https://github.com/jcyuan/FairyGUI-PixiJS .
+## FairyGUI for PIXI.js
+<figure class="half">
+    <img title="Logo" width="200" src="https://pixijs.com/images/logo.svg"/>
+    <img title="Logo" width="200" src="https://www.fairygui.com/img/brand-logo-full.3e1cebcf.svg"/>
+</figure>
 
-# What is this?
+- 适用于 PIXI.js v6.x
+> 该库是基于 **https://github.com/jcyuan/FairyGUI-PixiJS** 修改而来.
 
-* This is an UILib based on PixiJS to build game GUI.
-* Download editor here: [http://en.fairygui.com/product/](http://en.fairygui.com/product)
-* Editor supports a few of game engines include Unity3D, PixiJS, ActionScript, Starling etc. [Learn more.](http://en.fairygui.com/)
+# 关于FairyGUI
 
-# How to use
-`npm run build` or please view bin folder.
+* FairyGUI是一个横跨几乎所有游戏引擎的GUI库,并拥有强大的编辑器
+* 编辑器下载: [http://en.fairygui.com/product/](http://en.fairygui.com/product)
+* [了解更多...](http://en.fairygui.com/)
 
-# About Lib
+# 构建
+- 运行`npm install` 安装依赖 
+- 运行`npm run build` 开始构建
+- 你将会在bin目录下找到发行版版本
 
-## Dependencies
+# 关于当前库
+
+## 依赖
 * PixiJS [https://github.com/pixijs/pixi.js/releases](https://github.com/pixijs/pixi.js/releases)
 * TweenJS [https://github.com/CreateJS/TweenJS/releases](https://github.com/CreateJS/TweenJS/releases)
 * ZLib [https://github.com/imaya/zlib.js (rawinflate.js)](https://github.com/imaya/zlib.js)
 * TypeScript
 
-## Demo
-* Demo repo on Github: [https://github.com/jcyuan/FairyGUI-PixiJS-Example](https://github.com/jcyuan/FairyGUI-PixiJS-Example)
-* Or check online demo for PixiJS version (Chrome / MobilePhone): [http://jc-space.com/pixigui/](http://jc-space.com/pixigui/)
-  ![PixiJS GUI Demo](http://jc-space.com/demo.png)
-* Demo project can be downloaded [here.](https://github.com/jcyuan/FairyGUI-PixiJS-Example/releases)
+## 演示
+*  [在线演示](https://kevinchen2046.github.io/pixi.v6.fairygui.demo)
 
-# About Editor
-
-![Editor](http://www.fairygui.com/images/software.png)
-
-## Features
-* WYSWYG
-* Build complex UI components easily without writing any code even no programming knowledge needed.
-* No complex skin configuration. All UI elements are seperated alone and can be mixed up to build more complex components.
-* Timeline tool provided for creating transitions at the design time.
-* Support sequenced frame animation creating.
-* Support using of bitmap fonts which created by BMFont technology, and support to create bitmap font using pictures.
-* Project files are stored separately in order to suit the version controlling, and for project collaboration.
-* Instant preview.
-* Flexible publish strategy, support packing atlas automatically, or define many separated atlases as you want.
-* Image compression with options for image quality etc, you can adjust options to reduce the size of the final package.
-
-# How to use the Lib?
-
-### Here is a snippet of basic usage example from the demo code: (typescript)
+# 如何使用
 
 ```typescript
 class Main extends PIXI.Application {
@@ -111,4 +96,3 @@ class Main extends PIXI.Application {
 ## License
 This content is released under the [MIT License.](http://opensource.org/licenses/MIT)
 
-[![Analytics](https://ga-beacon.appspot.com/UA-46868962-2/jcyuan/FairyGUI-PIXI)](https://github.com/igrigorik/ga-beacon)

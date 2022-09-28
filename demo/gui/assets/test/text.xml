@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1136,570">
+  <displayList>
+    <graph id="n16" name="n16" xy="604,159" size="488,169" type="rect" fillColor="#ff000000"/>
+    <graph id="n15" name="n15" xy="29,100" size="337,50" type="rect"/>
+    <text id="n2" name="n2" xy="29,100" size="337,50" fontSize="22" color="#cc3300" align="center" vAlign="middle" autoSize="none" text="H&amp;V align"/>
+    <graph id="n14" name="n14" xy="29,158" size="459,160" type="rect" fillColor="#ff000000"/>
+    <text id="n0" name="n0" xy="29,59" size="169,29" fontSize="22" text="Auto-size feature"/>
+    <text id="n3" name="n3" xy="224,59" size="62,33" fontSize="24" color="#993300" align="center" vAlign="middle" underline="true" bold="true" italic="true" text="Style"/>
+    <text id="n4" name="n4" xy="313,59" size="68,29" fontSize="22" color="#ffffff" align="center" vAlign="middle" strokeColor="#000000" text="Stroke"/>
+    <text id="n5" name="n5" xy="29,158" size="459,160" fontSize="22" color="#ffffff" leading="12" ubb="true" autoSize="none" text="UBB syntax:&#xA;temporarily not available, developing..."/>
+    <text id="n7" name="n7" xy="150,345" size="345,54" font="ui://x8x40spbidqrg" fontSize="16" color="#009999" leading="12" autoSize="height" text="1234567890"/>
+    <text id="n8" name="n8" xy="27,362" size="122,29" fontSize="22" text="BitmapFont:"/>
+    <text id="n10" name="n10" xy="29,419" size="244,29" fontSize="22" text="Font created by BMFont:"/>
+    <text id="n11" name="n11" xy="289,415" size="225,36" font="ui://x8x40spbidqrr" fontSize="16" color="#993300" text="如何使用UI编辑器"/>
+    <richtext id="n12" name="n12" xy="604,159" size="489,169" fontSize="22" color="#ccff00" ubb="true" autoSize="none" text="RichTextField has UBB / inline click / image (emoji) features:&#xA;temporarily not available, developing..."/>
+    <text id="n17" name="n17" xy="29,22" size="430,29" fontSize="22" color="#ccff00" text="Normal text field does not have touch events"/>
+    <graph id="n18" name="n18" xy="716,346" size="348,35" type="rect"/>
+    <text id="n19" name="inputbox" xy="720,348" size="341,29" input="true" maxLength="20" keyboardType="1" fontSize="22" vAlign="middle" autoSize="none" singleLine="true" text="Input something"/>
+    <text id="n20" name="n20" xy="605,351" size="57,29" fontSize="22" text="Input:"/>
+    <text id="n21" name="resulttxt" xy="718,387" size="352,29" fontSize="22" color="#ff3300" autoSize="height" text=""/>
+    <component id="n22" name="n22" src="idqrt" xy="802,430" size="171,36">
+      <Button title="Get inputted content" titleFontSize="16"/>
+    </component>
+    <graph id="n23_dcqg" name="n23" xy="604,85" size="337,50" type="rect"/>
+    <text id="n24_dcqg" name="n24" xy="604,85" size="337,50" fontSize="22" color="#cc3300" align="center" vAlign="middle" autoSize="shrink" text="Shrink to fit blahblah"/>
+    <text id="n25_dcqg" name="n25" xy="604,53" size="150,27" fontSize="20" text="Text Auto-Shrink"/>
+  </displayList>
+</component>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1136,570">
+  <controller name="单选组" pages="0,,1,,2," selected="0"/>
+  <controller name="tab" pages="0,,1,,2," selected="0"/>
+  <displayList>
+    <graph id="n26" name="n26" xy="430,277" size="246,116" type="rect" fillColor="#ff333333"/>
+    <component id="n3" name="n3" src="idqr11" xy="32,73">
+      <Button title="Normal"/>
+    </component>
+    <component id="n4" name="n4" src="idqr12" xy="41,211" size="60,19">
+      <Button title="Simple"/>
+    </component>
+    <component id="n5" name="n5" src="idqr17" xy="122,211" size="114,19">
+      <Button title="Simple"/>
+    </component>
+    <component id="n6" name="n6" src="kbb8a" xy="138,68" size="103,40">
+      <Button title="Click Me" icon="ui://x8x40spbidqr1c"/>
+    </component>
+    <component id="n7" name="n7" src="idqr1d" xy="46,493"/>
+    <text id="n8" name="n8" xy="28,453" size="266,27" fontSize="20" text="Complex case: Use transition:"/>
+    <text id="n9" name="n9" xy="28,13" size="694,27" fontSize="20" text="Fully customized button, you can set its icon, text, appearance etc as you want"/>
+    <text id="n10" name="n10" xy="28,155" size="167,27" fontSize="20" text="Radio &amp; Checkbox"/>
+    <component id="n11" name="n11" src="idqr1i" xy="253,69" size="108,40">
+      <Button title="Click Me" icon="ui://x8x40spbidqr1c"/>
+    </component>
+    <component id="n12" name="n12" src="idqr1j" xy="234,199">
+      <Button checked="true"/>
+    </component>
+    <component id="n13" name="n13" src="idqr1m" xy="376,62" pivot="0.5,0.5">
+      <Button icon="ui://x8x40spbidqr1o"/>
+    </component>
+    <component id="n15" name="n15" src="idqr1p" xy="614,71"/>
+    <component id="n16" name="n16" src="idqr1s" xy="241,495">
+      <Button title="On" selectedTitle="Off"/>
+    </component>
+    <component id="n17" name="n17" src="idqr1v" xy="395,484">
+      <Button title="淡入淡出"/>
+    </component>
+    <component id="n18" name="n18" src="idqr17" xy="32,326" size="125,19">
+      <Button checked="true" title="Option1" selectedTitle="Option1 Checked" controller="单选组" page="0"/>
+    </component>
+    <component id="n19" name="n19" src="idqr17" xy="32,355" size="125,19">
+      <Button title="Option2" selectedTitle="Option2 Checked" controller="单选组" page="1"/>
+    </component>
+    <component id="n20" name="n20" src="idqr17" xy="32,383" size="125,19">
+      <Button title="Option3" selectedTitle="Option3 Checked" controller="单选组" page="2"/>
+    </component>
+    <text id="n21" name="n21" xy="28,295" size="104,27" fontSize="20" text="RadioGoup"/>
+    <text id="n22" name="n22" xy="427,244" size="39,27" fontSize="20" text="Tab"/>
+    <component id="n23" name="n23" src="idqr1z" xy="450,284">
+      <Button checked="true" title="Tab1" controller="tab" page="0"/>
+    </component>
+    <component id="n24" name="n24" src="idqr1z" xy="519,284">
+      <Button title="Tab2" controller="tab" page="1"/>
+    </component>
+    <component id="n25" name="n25" src="idqr1z" xy="588,284">
+      <Button title="Tab3" controller="tab" page="2"/>
+    </component>
+    <image id="n29" name="n29" src="idqr1c" xy="540,344">
+      <gearDisplay controller="tab" pages="0"/>
+    </image>
+    <image id="n30" name="n30" src="idqr24" xy="540,344">
+      <gearDisplay controller="tab" pages="1"/>
+    </image>
+    <image id="n31" name="n31" src="idqr25" xy="540,344">
+      <gearDisplay controller="tab" pages="2"/>
+    </image>
+    <component id="n32" name="n32" src="idqr1m" xy="752,462" pivot="0.5,0.5" grayed="true">
+      <Button icon="ui://x8x40spbidqr1o"/>
+    </component>
+    <text id="n33" name="n33" xy="758,431" size="71,27" fontSize="20" text="Grayed"/>
+    <component id="n34" name="n34" src="idqrt" xy="734,74">
+      <Button title="Simple"/>
+    </component>
+  </displayList>
+</component>

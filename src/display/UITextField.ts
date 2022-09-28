@@ -69,15 +69,15 @@ namespace fgui {
 
         protected $minHeight:number;
         protected $minHeightID:number = -1;
-        protected _width:number=0;
-        protected _height:number=0;
+        protected $width:number=0;
+        protected $height:number=0;
         public constructor(owner?:GObject) {
             super("");
             this.UIOwner = owner;
             this.interactive = this.interactiveChildren = false;
             this.texture.noFrame = false;
-            this._width = this.texture.frame.width;
-            this._height = this.texture.frame.height;
+            this.$width = this.texture.frame.width;
+            this.$height = this.texture.frame.height;
             this.$minHeight = -1;
             this.texture.on("update", this.updateFrame, this);
         }
@@ -88,9 +88,9 @@ namespace fgui {
 
         /**@internal */
         $updateMinHeight():void {
-            if(this.style.styleID != this.$minHeightID || this.$minHeight <= 0) {
-                this.$minHeight = PIXI.TextMetrics.measureText("", this.style, false).lineHeight;  //no way to get the cached auto-lineheight (when style.lineHeight=0);
-                this.$minHeightID = this.style.styleID;
+            if((this.style as PIXI.TextStyle).styleID != this.$minHeightID || this.$minHeight <= 0) {
+                this.$minHeight = PIXI.TextMetrics.measureText("", (this.style as PIXI.TextStyle), false).lineHeight;  //no way to get the cached auto-lineheight (when style.lineHeight=0);
+                this.$minHeightID = (this.style as PIXI.TextStyle).styleID;
             }
         }
         
@@ -101,8 +101,8 @@ namespace fgui {
         private internalUpdateFrame():void {
             if(this.texture) {
                 let frm = this.texture.frame;
-                this._height = Math.max(this._height, this.$minHeight);
-                let w = frm.x + this._width, h = frm.y + this._height;
+                this.$height = Math.max(this.$height, this.$minHeight);
+                let w = frm.x + this.$width, h = frm.y + this.$height;
                 if(w > this.texture.baseTexture.width)
                     w = this.texture.baseTexture.width - frm.x;
                 if(h > this.texture.baseTexture.height)
@@ -129,20 +129,20 @@ namespace fgui {
         }
 
         public get width():number {
-            return this._width;
+            return this.$width;
         }
 
         public set width(v:number) {
-            this._width = v;
+            this.$width = v;
             this.updateFrame();
         }
 
         public get height():number {
-            return this._height;
+            return this.$height;
         }
 
         public set height(v:number) {
-            this._height = v;
+            this.$height = v;
             this.updateFrame();
         }
 

@@ -26,7 +26,7 @@ namespace fgui {
                     return new GMovieClip();
 
                 case PackageItemType.Component:
-                    let cls: { new(): GObject; } = UIObjectFactory.packageItemExtensions[pi.owner.id + pi.id];
+                    let cls: { new(): GObject; } = UIObjectFactory.packageItemExtensions[pi.owner.name +"/"+ pi.name];//UIObjectFactory.packageItemExtensions[pi.owner.id + pi.id];
                     if (cls)
                         return new cls();
 

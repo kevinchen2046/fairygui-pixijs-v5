@@ -28,7 +28,7 @@ namespace fgui {
         private $updatingLayout: boolean;
 
         private static $errorSignPool: utils.GObjectRecycler = new utils.GObjectRecycler();
-        
+
         public constructor() {
             super();
             this.$playing = true;
@@ -59,7 +59,7 @@ namespace fgui {
         public set url(value: string) {
             if (this.$url == value)
                 return;
-
+            // this.clearContent();
             this.$url = value;
             this.loadContent();
             this.updateGear(GearType.Icon);
@@ -181,9 +181,18 @@ namespace fgui {
 
         public set texture(value: PIXI.Texture) {
             this.url = null;
+            ///kevin add
+            if (!this.$content) {
+                this.$content = new UIImage(null);
+                this.$content.$initDisp();
+                this.$container.addChild(this.$content);
+            }
+            else
+                this.$container.addChild(this.$content);
+            ///////////
             this.switchToMovieMode(false);
 
-            if(this.$content instanceof UIImage)
+            if (this.$content instanceof UIImage)
                 this.$content.texture = value;
 
             if (value) {
@@ -207,7 +216,7 @@ namespace fgui {
             else
                 this.loadExternal();
         }
-        
+
         protected loadFromPackage(itemURL: string): void {
             this.$contentItem = UIPackage.getItemByURL(itemURL);
             if (this.$contentItem) {
@@ -257,19 +266,43 @@ namespace fgui {
             this.$container.addChild(this.$content);
         }
 
-        private $loadingTexture:PIXI.Texture = null;
-
+        private $loadingTexture: PIXI.Texture = null;
+        protected loadExternal(){
+            this.$container.removeChildren();
+            if (!this.$content || !(this.$content instanceof UIImage)) {
+                this.$content = new UIImage(null);
+                this.$content.$initDisp();
+                this.$container.addChild(this.$content);
+            }
+            else
+                this.$container.addChild(this.$content);
+            //baseTexture loaded, so update frame info
+            
+            this.$content.texture = PIXI.Texture.from(this.$url, { scaleMode: PIXI.SCALE_MODES.LINEAR });
+            this.$content.texture.once("update", () => {
+                if(this.$content.texture){
+                    this.$content.texture.frame = new PIXI.Rectangle(0, 0, this.$content.texture.baseTexture.width, this.$content.texture.baseTexture.height);
+                    this.$contentSourceWidth = this.$content.texture.width;
+                    this.$contentSourceHeight = this.$content.texture.height;
+                    this.updateLayout();
+                }
+            });
+        }
         /**overwrite this method if you need to load resources by your own way*/
-        protected loadExternal(): void {
-            let texture = PIXI.Texture.from(this.$url, true);
+        protected __loadExternal(): void {
+            let texture = PIXI.Texture.from(this.$url, { scaleMode: PIXI.SCALE_MODES.LINEAR });
             this.$loadingTexture = texture;
             //TODO: Texture does not have error event... monitor error event on baseTexture will casue cross-error-event problem.
-            texture.once("update", () => {
-                if (!texture.width || !texture.height)
-                    this.$loadResCompleted(null);
-                else
-                    this.$loadResCompleted(texture);
-            });
+            if (texture.width > 1 && texture.height > 1) {
+                this.$loadResCompleted(texture);
+            } else {
+                texture.once("update", () => {
+                    if (!texture.width || !texture.height)
+                        this.$loadResCompleted(null);
+                    else
+                        this.$loadResCompleted(texture);
+                });
+            }
         }
 
         /**free the resource you loaded */
@@ -278,18 +311,20 @@ namespace fgui {
             texture.destroy(texture.baseTexture != null);
         }
 
-        private $loadResCompleted(res: PIXI.Texture): void {
-            if (res)
-                this.onExternalLoadSuccess(res);
+        private $loadResCompleted(texture: PIXI.Texture): void {
+            if (texture)
+                this.onExternalLoadSuccess(texture);
             else {
                 this.onExternalLoadFailed();
-                this.$loadingTexture.removeAllListeners();
-                this.freeExternal(this.$loadingTexture);
+                if (this.$loadingTexture) {
+                    this.$loadingTexture.removeAllListeners();
+                    this.freeExternal(this.$loadingTexture);
+                }
                 this.$loadingTexture = null;
             }
             this.$loadingTexture = null;
         }
-        
+
         /**content loaded */
         protected onExternalLoadSuccess(texture: PIXI.Texture): void {
             this.$container.removeChildren();
@@ -413,18 +448,18 @@ namespace fgui {
             if (this.$content && this.$content.parent)
                 this.$container.removeChild(this.$content);
 
-            if(this.$loadingTexture) {
-                this.$loadingTexture.removeAllListeners();
-                this.freeExternal(this.$loadingTexture);
-                this.$loadingTexture = null;
-            }
+            // if (this.$loadingTexture) {
+            //     this.$loadingTexture.removeAllListeners();
+            //     this.freeExternal(this.$loadingTexture);
+            //     this.$loadingTexture = null;
+            // }
 
             if (this.$contentItem == null && this.$content instanceof UIImage)
-               this.freeExternal(this.$content.texture);
-            
+                this.freeExternal(this.$content.texture);
+
             this.$content && this.$content.destroy();
             this.$content = null;
-            
+
             this.$contentItem = null;
         }
 

@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<packageDescription id="x8x40spb" jpegQuality="80" compressPNG="true" hasFavorites="true">
+  <resources>
+    <component id="r9tl1" name="graph.xml" path="/" exported="true"/>
+    <component id="o4ky3" name="image.xml" path="/" exported="true"/>
+    <image id="o4ky4" name="pic.png" path="/imgs/"/>
+    <image id="o4ky5" name="6_png.png" path="/imgs/" exported="true" scale="9grid" scale9grid="40,40,80,142"/>
+    <image id="o4ky6" name="long_dead2_png.png" path="/imgs/" scale="tile" scale9grid="0,0,32,32"/>
+    <component id="kbb88" name="movieclip.xml" path="/" exported="true"/>
+    <movieclip id="kbb89" name="nlge1k.jta" path="/imgs/"/>
+    <component id="kbb8a" name="Button2.xml" path="/components/"/>
+    <image id="kbb8b" name="b7_png.png" path="/imgs/" scale="9grid" scale9grid="8,7,66,14"/>
+    <image id="kbb8c" name="b5_png.png" path="/imgs/" scale="9grid" scale9grid="12,7,61,14"/>
+    <image id="kbb8d" name="b6_png.png" path="/imgs/" scale="9grid" scale9grid="9,5,66,16"/>
+    <movieclip id="kbb8e" name="加载小宠物_jta.jta" path="/imgs/"/>
+    <font id="idqrg" name="连击数字.fnt" path="/font/" exported="true"/>
+    <image id="idqrh" name="打击数字_0_png.png" path="/imgs/"/>
+    <image id="idqri" name="打击数字_1_png.png" path="/imgs/"/>
+    <image id="idqrj" name="打击数字_2_png.png" path="/imgs/"/>
+    <image id="idqrk" name="打击数字_3_png.png" path="/imgs/"/>
+    <image id="idqrl" name="打击数字_4_png.png" path="/imgs/"/>
+    <image id="idqrm" name="打击数字_5_png.png" path="/imgs/"/>
+    <image id="idqrn" name="打击数字_6_png.png" path="/imgs/"/>
+    <image id="idqro" name="打击数字_7_png.png" path="/imgs/"/>
+    <image id="idqrp" name="打击数字_8_png.png" path="/imgs/"/>
+    <image id="idqrq" name="打击数字_9_png.png" path="/imgs/"/>
+    <font id="idqrr" name="BMFont示例.fnt" path="/font/" exported="true" texture="idqrs"/>
+    <image id="idqrs" name="BMFont示例_atlas.png" path="/font/"/>
+    <component id="idqrt" name="按钮1.xml" path="/components/"/>
+    <component id="idqru" name="text.xml" path="/" exported="true"/>
+    <image id="idqrw" name="r3.png" path="/imgs/" exported="true"/>
+    <image id="idqrx" name="r4.png" path="/imgs/" exported="true"/>
+    <component id="idqrz" name="loader.xml" path="/" exported="true"/>
+    <component id="idqr10" name="button.xml" path="/" exported="true"/>
+    <component id="idqr11" name="Button.xml" path="/components/"/>
+    <component id="idqr12" name="Checkbox.xml" path="/components/"/>
+    <image id="idqr13" name="b4.png.jpg" path="/imgs/"/>
+    <image id="idqr14" name="b1.png.jpg" path="/imgs/"/>
+    <image id="idqr15" name="b3.png.jpg" path="/imgs/"/>
+    <image id="idqr16" name="b2.png.jpg" path="/imgs/"/>
+    <component id="idqr17" name="RadioButton.xml" path="/components/"/>
+    <image id="idqr18" name="a1_png.png" path="/imgs/"/>
+    <image id="idqr19" name="a3_png.png" path="/imgs/"/>
+    <image id="idqr1a" name="a2_png.png" path="/imgs/"/>
+    <image id="idqr1b" name="a4_png.png" path="/imgs/"/>
+    <image id="idqr1c" name="angry_smile_png.png" path="/imgs/"/>
+    <component id="idqr1d" name="Button4.xml" path="/components/"/>
+    <image id="idqr1e" name="切换货币_背景_png.png" path="/imgs/"/>
+    <image id="idqr1f" name="图标_元宝_png.png" path="/imgs/"/>
+    <image id="idqr1g" name="图标_银两_png.png" path="/imgs/"/>
+    <image id="idqr1h" name="按钮_货币切换_常态_png.png" path="/imgs/"/>
+    <component id="idqr1i" name="Button3.xml" path="/components/"/>
+    <component id="idqr1j" name="Button8.xml" path="/components/"/>
+    <image id="idqr1k" name="勾选框_png.png" path="/imgs/"/>
+    <image id="idqr1l" name="勾选_png.png" path="/imgs/"/>
+    <component id="idqr1m" name="Button5.xml" path="/components/" favorite="true"/>
+    <image id="idqr1n" name="VIP按钮_png.png" path="/imgs/"/>
+    <image id="idqr1o" name="领取奖励_png.png" path="/imgs/"/>
+    <component id="idqr1p" name="Button7.xml" path="/components/"/>
+    <image id="idqr1q" name="更换按钮_up_png.png" path="/imgs/"/>
+    <image id="idqr1r" name="更换按钮_down_png.png" path="/imgs/"/>
+    <component id="idqr1s" name="OnOffButton.xml" path="/components/"/>
+    <image id="idqr1t" name="b12_png.png" path="/imgs/"/>
+    <image id="idqr1u" name="b13_png.png" path="/imgs/"/>
+    <component id="idqr1v" name="Button9.xml" path="/components/" exported="true" favorite="true"/>
+    <image id="idqr1w" name="购买按钮_普通_png.png" path="/imgs/" scale="9grid" scale9grid="28,16,102,24"/>
+    <image id="idqr1x" name="购买按钮_按下_png.png" path="/imgs/" scale="9grid" scale9grid="40,19,80,18"/>
+    <image id="idqr1y" name="购买按钮_选中_png.png" path="/imgs/" scale="9grid" scale9grid="40,13,80,26"/>
+    <component id="idqr1z" name="Button6.xml" path="/components/"/>
+    <image id="idqr20" name="二级按钮_普通_png.png" path="/imgs/"/>
+    <image id="idqr21" name="二级按钮_按下_png.png" path="/imgs/" scale="9grid" scale9grid="16,9,32,6"/>
+    <image id="idqr22" name="二级按钮_选中_png.png" path="/imgs/" scale="9grid" scale9grid="16,11,32,7"/>
+    <image id="idqr23" name="二级按钮_不可用_png.png" path="/imgs/"/>
+    <image id="idqr24" name="long_dead_png.png" path="/imgs/"/>
+    <image id="idqr25" name="plus_smile_png.png" path="/imgs/"/>
+    <component id="ie5t26" name="label.xml" path="/" exported="true"/>
+    <component id="ie5t27" name="WindowFrame.xml" path="/components/win/"/>
+    <image id="ie5t28" name="6_png.png" path="/imgs/mtl/" scale="9grid" scale9grid="40,40,80,142"/>
+    <component id="ie5t29" name="WindowCloseButton.xml" path="/components/win/"/>
+    <image id="ie5t2a" name="10_png.png" path="/imgs/mtl/"/>
+    <image id="ie5t2b" name="9_png.png" path="/imgs/mtl/"/>
+    <image id="ie5t2c" name="8_png.png" path="/imgs/mtl/"/>
+    <component id="ie5t2d" name="组件3.xml" path="/components/win/"/>
+    <image id="ie5t2e" name="long_dead_png.png" path="/imgs/mtl/"/>
+    <movieclip id="ie5t2f" name="nlge1k.jta" path="/imgs/mtl/"/>
+    <component id="pj7e2g" name="controller.xml" path="/" exported="true"/>
+    <image id="pj7e2h" name="i256.png" path="/imgs/mtl/"/>
+    <image id="pj7e2i" name="r3.png" path="/imgs/mtl/" exported="true"/>
+    <image id="pj7e2j" name="r4.png" path="/imgs/mtl/" exported="true"/>
+    <component id="pj7e2k" name="Button4.xml" path="/components/win/"/>
+    <image id="pj7e2l" name="切换货币_背景_png.png" path="/imgs/mtl/"/>
+    <image id="pj7e2m" name="图标_元宝_png.png" path="/imgs/mtl/"/>
+    <image id="pj7e2n" name="图标_银两_png.png" path="/imgs/mtl/"/>
+    <image id="pj7e2o" name="按钮_货币切换_常态_png.png" path="/imgs/mtl/"/>
+    <component id="pj7e2p" name="Button16.xml" path="/components/win/"/>
+    <image id="pj7e2q" name="22.png" path="/imgs/mtl/"/>
+    <component id="g9r72t" name="relation.xml" path="/" exported="true"/>
+    <component id="g9r72u" name="depth.xml" path="/" exported="true"/>
+    <component id="g9r72v" name="Component13.xml" path="/components/"/>
+    <component id="g9r72w" name="Button1.xml" path="/components/"/>
+    <component id="hxib2z" name="component.xml" path="/" exported="true"/>
+    <component id="hxib30" name="组件5.xml" path="/components/"/>
+    <component id="hxib31" name="组件6.xml" path="/components/"/>
+    <component id="hxib33" name="Component14.xml" path="/components/win/"/>
+    <component id="hxib35" name="组件1.xml" path="/components/"/>
+    <image id="hxib36" name="嫦娥.png" path="/imgs/"/>
+    <component id="hxib37" name="组件2.xml" path="/components/"/>
+    <component id="hxib38" name="组件12.xml" path="/components/"/>
+    <component id="hxib39" name="组件13.xml" path="/components/"/>
+    <component id="hxib3a" name="组件22.xml" path="/components/"/>
+    <component id="hxib3b" name="组件222.xml" path="/components/"/>
+    <component id="hxib3c" name="ScrollBar_HZ.xml" path="/scrollbar/" exported="true"/>
+    <image id="hxib3d" name="s10.png.jpg" path="/imgs/"/>
+    <component id="hxib3e" name="ScrollUpButton.xml" path="/scrollbar/"/>
+    <image id="hxib3f" name="s6.png.jpg" path="/imgs/"/>
+    <image id="hxib3g" name="s4.png.jpg" path="/imgs/"/>
+    <image id="hxib3h" name="s5.png.jpg" path="/imgs/"/>
+    <component id="hxib3i" name="ScrollDownButton.xml" path="/scrollbar/"/>
+    <image id="hxib3j" name="s9.png.jpg" path="/imgs/"/>
+    <image id="hxib3k" name="s7.png.jpg" path="/imgs/"/>
+    <image id="hxib3l" name="s8.png.jpg" path="/imgs/"/>
+    <component id="hxib3m" name="GripButton_HZ.xml" path="/scrollbar/"/>
+    <image id="hxib3n" name="s1.png.jpg" path="/imgs/"/>
+    <image id="hxib3o" name="s2.png.jpg" path="/imgs/"/>
+    <image id="hxib3p" name="s3.png.jpg" path="/imgs/"/>
+    <component id="hxib3q" name="ScrollBar_VT.xml" path="/scrollbar/" exported="true"/>
+    <component id="hxib3r" name="GripButton_VT.xml" path="/scrollbar/"/>
+    <component id="hxib3s" name="PopupMenu.xml" path="/popupmenu/" exported="true"/>
+    <image id="hxib3t" name="p16_png.png" path="/imgs/" scale="9grid" scale9grid="7,4,144,49"/>
+    <component id="hxib3u" name="PopupMenuItem.xml" path="/popupmenu/"/>
+    <image id="hxib3v" name="a8_png.png" path="/imgs/" scale="9grid" scale9grid="8,5,70,10"/>
+    <image id="hxib3w" name="VtSeperator.jpg" path="/imgs/"/>
+    <image id="hxib3x" name="a18_png.png" path="/imgs/"/>
+    <component id="hxib41" name="clip_scroll.xml" path="/" exported="true"/>
+    <component id="hxib44" name="progressbar.xml" path="/" exported="true"/>
+    <component id="hxib45" name="ProgressBar.xml" path="/components/"/>
+    <image id="hxib46" name="p2_png.png" path="/imgs/" scale="9grid" scale9grid="10,4,121,4"/>
+    <image id="hxib47" name="p3_png.png" path="/imgs/"/>
+    <component id="hxib48" name="绿色进度条.xml" path="/components/"/>
+    <image id="hxib49" name="进度条底板缩短版_png.png" path="/imgs/" scale="9grid" scale9grid="27,9,54,2"/>
+    <image id="hxib4a" name="进度条.png.jpg" path="/imgs/" scale="9grid" scale9grid="8,5,16,2"/>
+    <image id="hxib4b" name="高光_png.png" path="/imgs/"/>
+    <component id="hxib4c" name="采集进度条.xml" path="/components/"/>
+    <image id="hxib4d" name="采集条_png.png" path="/imgs/"/>
+    <component id="hxib4e" name="采集进度bar.xml" path="/components/"/>
+    <image id="hxib4f" name="采集条进度_png.png" path="/imgs/"/>
+    <component id="hxib4g" name="加载进度条.xml" path="/components/"/>
+    <image id="hxib4h" name="loading条亮.png.jpg" path="/imgs/"/>
+    <image id="hxib4i" name="huawen1_png.png" path="/imgs/"/>
+    <image id="hxib4j" name="huawen2_png.png" path="/imgs/"/>
+    <component id="hxib4k" name="采集进度条2.xml" path="/components/"/>
+    <component id="hxib4l" name="采集进度bar2.xml" path="/components/"/>
+    <component id="hxib4m" name="slider.xml" path="/" exported="true"/>
+    <component id="hxib4n" name="Slider_HZ.xml" path="/components/"/>
+    <image id="hxib4o" name="p10_png.png" path="/imgs/"/>
+    <image id="hxib4p" name="p11_png.png" path="/imgs/"/>
+    <component id="hxib4q" name="SliderArrow_HZ.xml" path="/components/"/>
+    <image id="hxib4r" name="p14_png.png" path="/imgs/"/>
+    <image id="hxib4s" name="p15_png.png" path="/imgs/"/>
+    <component id="hxib4t" name="Slider_VT.xml" path="/components/"/>
+    <image id="hxib4u" name="p13_png.png" path="/imgs/"/>
+    <image id="hxib4v" name="p12_png.png" path="/imgs/"/>
+    <component id="hxib4w" name="SliderArrow_VT.xml" path="/components/"/>
+    <image id="hxib4x" name="p8_png.png" path="/imgs/"/>
+    <image id="hxib4y" name="p9_png.png" path="/imgs/"/>
+    <component id="hxib4z" name="音量设置.xml" path="/components/"/>
+    <image id="hxib50" name="音量_背景条_png.png" path="/imgs/" scale="9grid" scale9grid="120,7,240,14"/>
+    <image id="hxib51" name="音量_进度条_png.png" path="/imgs/" scale="9grid" scale9grid="14,4,392,5"/>
+    <component id="hxib52" name="指示按钮.xml" path="/components/"/>
+    <image id="hxib53" name="按钮_指示_常态_png.png" path="/imgs/"/>
+    <image id="hxib54" name="按钮_指示_按下_png.png" path="/imgs/"/>
+    <component id="hxib55" name="combobox.xml" path="/" exported="true"/>
+    <image id="hxib57" name="c1_png.png" path="/imgs/" scale="9grid" scale9grid="7,5,73,10"/>
+    <image id="hxib58" name="c3_png.png" path="/imgs/" scale="9grid" scale9grid="11,5,71,10"/>
+    <image id="hxib59" name="c2_png.png" path="/imgs/" scale="9grid" scale9grid="8,5,73,10"/>
+    <image id="hxib5a" name="b7(2)_png.png" path="/imgs/"/>
+    <image id="hxib5c" name="p1_png.png" path="/imgs/" scale="9grid" scale9grid="7,4,144,49"/>
+    <image id="hxib5g" name="下拉框_普通_png.png" path="/imgs/" scale="9grid" scale9grid="33,10,57,20"/>
+    <image id="hxib5h" name="下拉框_按下_png.png" path="/imgs/" scale="9grid" scale9grid="33,10,55,20"/>
+    <image id="hxib5i" name="下拉框_选中_png.png" path="/imgs/" scale="9grid" scale9grid="33,10,55,20"/>
+    <image id="hxib5j" name="下拉框_不可用_png.png" path="/imgs/" scale="9grid" scale9grid="33,10,53,20"/>
+    <image id="hxib5l" name="显示框_png.png" path="/imgs/" scale="9grid" scale9grid="26,11,52,22"/>
+    <image id="hxib5n" name="输入框_普通_png.png" path="/imgs/" scale="9grid" scale9grid="26,10,52,20"/>
+    <image id="hxib5o" name="输入框_按下_png.png" path="/imgs/" scale="9grid" scale9grid="11,7,82,26"/>
+    <image id="hxib5p" name="输入框_选中_png.png" path="/imgs/" scale="9grid" scale9grid="26,10,52,20"/>
+    <image id="hxib5q" name="输入框_不可用_png.png" path="/imgs/" scale="9grid" scale9grid="26,10,52,20"/>
+    <component id="hxib5r" name="list.xml" path="/" exported="true"/>
+    <component id="hxib5s" name="BagGridSub.xml" path="/components/"/>
+    <image id="hxib5t" name="道具框底_png.png" path="/imgs/"/>
+    <image id="hxib5u" name="道具图标外框_png.png" path="/imgs/"/>
+    <image id="hxib5v" name="道具框点击_png.png" path="/imgs/" scale="9grid" scale9grid="17,16,74,73"/>
+    <image id="hxib5w" name="破冰诀书.png" path="/imgs/"/>
+    <component id="hxib5x" name="grid.xml" path="/" exported="true"/>
+    <image id="hxib5y" name="grid_header_png.png" path="/imgs/" scale="9grid" scale9grid="50,5,100,10"/>
+    <component id="hxib5z" name="GridItem.xml" path="/components/"/>
+    <component id="hxib60" name="Component11.xml" path="/components/"/>
+    <image id="hxib61" name="start.png" path="/imgs/" scale="tile"/>
+    <component id="hxib62" name="GridItem2.xml" path="/components/"/>
+    <component id="hxib63" name="window.xml" path="/" exported="true"/>
+    <component id="hxib64" name="popup.xml" path="/" exported="true"/>
+    <component id="hxib65" name="windowA.xml" path="/" exported="true"/>
+    <component id="hxib66" name="WindowFrame.xml" path="/components/"/>
+    <component id="hxib67" name="WindowCloseButton.xml" path="/components/"/>
+    <image id="hxib68" name="10_png.png" path="/imgs/"/>
+    <image id="hxib69" name="9_png.png" path="/imgs/"/>
+    <image id="hxib6a" name="8_png.png" path="/imgs/"/>
+    <component id="hxib6b" name="windowB.xml" path="/" exported="true"/>
+    <component id="hxib6c" name="WindowFrameB.xml" path="/components/"/>
+    <component id="hxib6d" name="关闭按钮.xml" path="/components/"/>
+    <image id="hxib6e" name="close_png.png" path="/imgs/"/>
+    <component id="cdsi6i" name="PopTest1.xml" path="/components/win/" exported="true"/>
+    <image id="cdsi6j" name="p1_png.png" path="/components/win/" scale="9grid" scale9grid="7,4,144,49"/>
+    <image id="cdsi6k" name="plus_smile_png.png" path="/components/win/"/>
+    <component id="ye7a6n" name="GlobalModalWaiting.xml" path="/components/win/" exported="true"/>
+    <image id="ye7a6o" name="1.png" path="/components/win/"/>
+    <image id="ye7a6p" name="0.png" path="/components/win/"/>
+    <component id="ye7a6q" name="WindowModalWaiting.xml" path="/components/win/" exported="true"/>
+    <image id="ye7a6r" name="2.png" path="/components/win/" scale="9grid" scale9grid="18,18,36,36"/>
+    <movieclip id="ye7a6s" name="qtm011.jta" path="/components/win/"/>
+    <component id="ntk66t" name="main.xml" path="/" exported="true"/>
+    <component id="ntk66u" name="empty.xml" path="/components/"/>
+    <component id="ntk66v" name="Button10.xml" path="/components/"/>
+    <image id="ntk66w" name="按钮样式1_OFF_png.png" path="/imgs/" scale="9grid" scale9grid="40,17,80,34"/>
+    <image id="ntk66x" name="按钮样式1_ON_png.png" path="/imgs/" scale="9grid" scale9grid="40,17,80,34"/>
+    <component id="j1fz6y" name="drag_drop.xml" path="/" exported="true"/>
+    <component id="j1fz6z" name="BagGridSub2.xml" path="/components/"/>
+    <image id="j1fz70" name="道具框底_png(1).png" path="/imgs/"/>
+    <image id="j1fz71" name="道具图标外框_png(1).png" path="/imgs/"/>
+    <image id="j1fz72" name="r3(1).png" path="/imgs/" exported="true"/>
+    <component id="lr6v74" name="ComboBox(1).xml" path="/components/"/>
+    <image id="lr6v75" name="c1_png.png" path="/imags/" scale="9grid" scale9grid="7,5,73,10"/>
+    <image id="lr6v76" name="c3_png.png" path="/imags/" scale="9grid" scale9grid="11,5,71,10"/>
+    <image id="lr6v77" name="c2_png.png" path="/imags/" scale="9grid" scale9grid="8,5,73,10"/>
+    <image id="lr6v78" name="b7(2)_png.png" path="/imags/"/>
+    <component id="lr6v79" name="ComboBoxPopup(1).xml" path="/components/"/>
+    <image id="lr6v7a" name="p1_png.png" path="/imags/" scale="9grid" scale9grid="7,4,144,49"/>
+    <component id="lr6v7b" name="ComboBoxItem(1).xml" path="/components/"/>
+    <component id="lr6v7c" name="下拉框(1).xml" path="/components/"/>
+    <component id="lr6v7d" name="下拉框按钮(1).xml" path="/components/"/>
+    <image id="lr6v7e" name="下拉框_普通_png.png" path="/imags/" scale="9grid" scale9grid="33,10,57,20"/>
+    <image id="lr6v7f" name="下拉框_按下_png.png" path="/imags/" scale="9grid" scale9grid="33,10,55,20"/>
+    <image id="lr6v7g" name="下拉框_选中_png.png" path="/imags/" scale="9grid" scale9grid="33,10,55,20"/>
+    <image id="lr6v7h" name="下拉框_不可用_png.png" path="/imags/" scale="9grid" scale9grid="33,10,53,20"/>
+    <component id="lr6v7i" name="下拉列表(1).xml" path="/components/"/>
+    <image id="lr6v7j" name="显示框_png.png" path="/imags/" scale="9grid" scale9grid="26,11,52,22"/>
+    <component id="lr6v7k" name="下拉列表子按钮(1).xml" path="/components/"/>
+    <image id="lr6v7l" name="输入框_普通_png.png" path="/imags/" scale="9grid" scale9grid="26,10,52,20"/>
+    <image id="lr6v7m" name="输入框_按下_png.png" path="/imags/" scale="9grid" scale9grid="11,7,82,26"/>
+    <image id="lr6v7n" name="输入框_选中_png.png" path="/imags/" scale="9grid" scale9grid="26,10,52,20"/>
+    <image id="lr6v7o" name="输入框_不可用_png.png" path="/imags/" scale="9grid" scale9grid="26,10,52,20"/>
+    <component id="o1v17r" name="Component15.xml" path="/components/"/>
+  </resources>
+  <publish name="test" maxAtlasSize="512" npot="true" rotation="true">
+    <atlas name="默认" index="0"/>
+  </publish>
+</packageDescription>

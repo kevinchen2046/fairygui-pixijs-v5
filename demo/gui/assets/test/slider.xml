@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1136,570">
+  <displayList>
+    <text id="n0" name="n0" xy="15,19" size="614,51" fontSize="20" autoSize="height" text="Slider is often used for volume / color  etc adjusting, here is the example for vertical slider and horizontal slider."/>
+    <component id="n1" name="n1" src="hxib4n" xy="69,123">
+      <Slider value="50" max="100"/>
+    </component>
+    <component id="n2" name="n2" src="hxib4t" xy="293,102">
+      <Slider value="50" max="100"/>
+    </component>
+    <component id="n3" name="n3" src="hxib4z" xy="41,273">
+      <Slider value="100" max="100"/>
+    </component>
+  </displayList>
+</component>

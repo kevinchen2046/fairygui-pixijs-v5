@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1136,570">
+  <displayList>
+    <component id="n0" name="n0" src="idqr11" xy="62,58" size="151,47">
+      <Button title="Normal Window" titleFontSize="16"/>
+    </component>
+    <component id="n1" name="n1" src="idqr11" xy="246,57" size="159,47">
+      <Button title="Animated Window" titleFontSize="16"/>
+    </component>
+    <component id="n2_i0hx" name="n2" src="idqr11" xy="435,57" size="147,47">
+      <Button title="Modal Window" titleFontSize="16"/>
+    </component>
+    <component id="n3_j2dd" name="n3" src="idqr11" xy="617,57" size="174,47">
+      <Button title="Global Modal Waiting" titleFontSize="16"/>
+    </component>
+    <component id="n4_j2dd" name="n4" src="idqr11" xy="831,57" size="198,47">
+      <Button title="Modal Content Waiting" titleFontSize="16"/>
+    </component>
+    <text id="n5_zjne" name="n5" xy="827,109" size="208,42" fontSize="16" align="center" autoSize="height" text="Click the bottom button from the popped window"/>
+  </displayList>
+</component>

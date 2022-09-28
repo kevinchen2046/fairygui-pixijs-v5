@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1136,570">
+  <displayList>
+    <text id="n0" name="n0" xy="25,20" size="614,27" fontSize="20" autoSize="height" text="Progress indicator"/>
+    <component id="n1" name="n1" src="hxib45" xy="38,75">
+      <ProgressBar value="50" max="100"/>
+    </component>
+    <component id="n2" name="n2" src="hxib48" xy="211,70">
+      <ProgressBar value="78" max="100"/>
+    </component>
+    <component id="n3" name="n3" src="hxib4c" xy="21,196">
+      <ProgressBar value="80" max="100"/>
+    </component>
+    <component id="n4" name="n4" src="hxib4g" xy="27,355">
+      <ProgressBar value="75" max="100"/>
+    </component>
+    <component id="n6" name="n6" src="hxib4k" xy="327,194">
+      <ProgressBar value="80" max="100"/>
+    </component>
+    <text id="n7" name="n7" xy="25,152" size="614,27" fontSize="20" autoSize="height" text="Normal bar and reversed version"/>
+    <text id="n8" name="n8" xy="25,294" size="614,27" fontSize="20" autoSize="height" text="Use Relation System to make your bar more lively"/>
+  </displayList>
+</component>

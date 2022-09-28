@@ -6,11 +6,7 @@ namespace PIXI.extras {
         public stageScaleX: number = 1;
         public stageScaleY: number = 1;
 
-        public constructor(renderer: PIXI.Renderer, options?: {
-            autoPreventDefault?: boolean;
-            interactionFrequency?: number;
-            useSystemTicker?: number;
-        }) {
+        public constructor(renderer: PIXI.Renderer, options?: InteractionManagerOptions) {
             super(renderer, options);
         }
 

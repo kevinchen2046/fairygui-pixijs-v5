@@ -7,7 +7,7 @@
         "removeComments": true,
         "outFile": "./fairygui.js",
         "lib": [
-            "es5",
+            "es6",
             "dom",
             "es2015.promise"
         ],
@@ -20,6 +20,7 @@
         "typings"
     ],
     "exclude": [
-        "node_modules"
+        "node_modules",
+        "demo"
     ]
 }

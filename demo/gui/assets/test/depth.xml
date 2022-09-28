@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1136,570">
+  <displayList>
+    <text id="n20" name="n20" xy="18,20" size="1077,83" fontSize="22" autoSize="height" text="Normally, new child will be added with depth depends on the adding sequence, but we can set sortingOrder to force its depth. This feature is useful when you want to manage a couple of different modules in the same container."/>
+    <component id="n22" name="n22" src="g9r72v" xy="38,144"/>
+    <component id="n24" name="btn0" src="g9r72w" xy="563,162" size="167,45">
+      <Button title="Add a child"/>
+    </component>
+    <component id="n25" name="btn1" src="g9r72w" xy="563,252" size="456,53">
+      <Button title="Add a child with bigger sortingOrder"/>
+    </component>
+  </displayList>
+</component>

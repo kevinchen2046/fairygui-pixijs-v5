@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="250,250">
+  <displayList>
+    <image id="n1" name="n1" src="o4ky5" fileName="imgs/6_png.png" xy="0,0" size="250,250"/>
+    <text id="n2" name="n2" xy="56,110" size="138,35" fontSize="26" color="#ffffff" strokeColor="#000000" text="Center Text"/>
+    <image id="n4" name="n4" src="idqr1f" fileName="imgs/图标_元宝_png.png" xy="199,213"/>
+  </displayList>
+</component>

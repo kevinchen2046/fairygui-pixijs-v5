@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="480,76" extention="Slider">
+  <displayList>
+    <image id="n0" name="n0" src="hxib50" xy="0,32"/>
+    <image id="n1" name="bar" src="hxib51" xy="30,35" size="420,15"/>
+    <component id="n2" name="grip" src="hxib52" xy="425,0">
+      <relation target="n1" sidePair="right-right"/>
+    </component>
+    <text id="n3" name="title" xy="220,57" size="40,19" fontSize="12" color="#ff9900" align="center" strokeColor="#000000" text=""/>
+  </displayList>
+  <Slider/>
+</component>

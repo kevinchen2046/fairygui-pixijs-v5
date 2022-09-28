@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1188,617">
+  <displayList>
+    <component id="n0" name="a" src="j1fz6z" xy="33,59">
+      <Button title="A" icon="ui://x8x40spbj1fz72"/>
+    </component>
+    <component id="n1" name="b" src="j1fz6z" xy="33,236">
+      <Button title="B" icon="ui://x8x40spbj1fz72"/>
+    </component>
+    <component id="n2" name="c" src="j1fz6z" xy="425,236">
+      <Button title="C"/>
+    </component>
+    <text id="n3" name="n3" xy="36,18" size="138,29" fontSize="22" text="Free dragging"/>
+    <text id="n4" name="n4" xy="36,194" size="310,29" fontSize="22" text="Drag B's content and 'drop' to C"/>
+    <text id="n5" name="n5" xy="650,35" size="187,29" fontSize="22" text="Drag within bounds"/>
+    <graph id="n6" name="bounds" xy="652,80" size="440,413" type="rect" lineSize="3" fillColor="#00ffffff"/>
+    <component id="n7" name="d" src="j1fz6z" xy="826,231">
+      <Button title="D" icon="ui://x8x40spbj1fz72"/>
+    </component>
+  </displayList>
+</component>

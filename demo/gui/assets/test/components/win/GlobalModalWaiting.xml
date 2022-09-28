@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="300,300" extention="Label">
+  <displayList>
+    <image id="n3" name="n3" src="ye7a6o" xy="55,56" group="n4"/>
+    <image id="n1" name="n1" src="ye7a6p" xy="76,77" pivot="0.5,0.5" group="n4"/>
+    <group id="n4" name="n4" xy="55,56" size="189,188" advanced="true">
+      <relation target="" sidePair="center-center,middle-middle"/>
+    </group>
+    <text id="n5_ye7a" name="title" xy="-44,246" size="389,25" fontSize="14" color="#333333" align="center" vAlign="middle" autoSize="none" text="">
+      <relation target="" sidePair="center-center"/>
+      <relation target="n4" sidePair="bottom-top"/>
+    </text>
+  </displayList>
+</component>

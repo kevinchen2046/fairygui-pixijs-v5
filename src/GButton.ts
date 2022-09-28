@@ -23,6 +23,8 @@ namespace fgui {
         private $down: boolean;
         private $over: boolean;
 
+        private $clicksound: string;
+
         public static UP: string = "up";
         public static DOWN: string = "down";
         public static OVER: string = "over";
@@ -42,7 +44,7 @@ namespace fgui {
             this.$downEffectValue = 0.8;
         }
 
-        protected setDisplayObject(value:PIXI.DisplayObject):void {
+        protected setDisplayObject(value: PIXI.DisplayObject): void {
             super.setDisplayObject(value);
             this.$displayObject.buttonMode = true;
         }
@@ -100,28 +102,26 @@ namespace fgui {
         }
 
         public get titleColor(): number {
-            if(fgui.isColorableTitle(this.$titleObject))
+            if (fgui.isColorableTitle(this.$titleObject))
                 return this.$titleObject.titleColor;
             return 0;
         }
 
         public set titleColor(value: number) {
-            if(fgui.isColorableTitle(this.$titleObject))
+            if (fgui.isColorableTitle(this.$titleObject))
                 this.$titleObject.titleColor = value;
         }
 
-        public get fontSize():number
-		{
-            if(fgui.isColorableTitle(this.$titleObject))
+        public get fontSize(): number {
+            if (fgui.isColorableTitle(this.$titleObject))
                 return this.$titleObject.fontSize;
             return 0;
-		}
-		
-		public set fontSize(value:number)
-		{
-            if(fgui.isColorableTitle(this.$titleObject))
+        }
+
+        public set fontSize(value: number) {
+            if (fgui.isColorableTitle(this.$titleObject))
                 this.$titleObject.fontSize = value;
-		}
+        }
 
         public set selected(val: boolean) {
             if (this.$mode == ButtonMode.Common)
@@ -210,11 +210,11 @@ namespace fgui {
             this.$linkedPopup = value;
         }
 
-        public addStateListener(listener: Function, thisObj?: any): void {
+        public addStateListener(listener: PIXI.utils.EventEmitter.ListenerFn, thisObj?: any): void {
             this.on(StateChangeEvent.CHANGED, listener, thisObj);
         }
 
-        public removeStateListener(listener: Function, thisObj?: any): void {
+        public removeStateListener(listener: PIXI.utils.EventEmitter.ListenerFn, thisObj?: any): void {
             this.off(StateChangeEvent.CHANGED, listener, thisObj);
         }
 
@@ -282,8 +282,7 @@ namespace fgui {
         protected constructFromXML(xml: utils.XmlNode): void {
             super.constructFromXML(xml);
 
-            xml = utils.XmlParser.getChildNodes(xml, "Button")[0];
-
+            xml = xml.getChildNodes("Button")[0];
             let str: string;
             str = xml.attributes.mode;
             if (str)
@@ -294,7 +293,7 @@ namespace fgui {
                 this.$downEffect = str == "dark" ? 1 : (str == "scale" ? 2 : 0);
                 str = xml.attributes.downEffectValue;
                 this.$downEffectValue = parseFloat(str);
-                if(this.$downEffect == 2)
+                if (this.$downEffect == 2)
                     this.setPivot(0.5, 0.5);
             }
 
@@ -318,7 +317,7 @@ namespace fgui {
         public setupAfterAdd(xml: utils.XmlNode): void {
             super.setupAfterAdd(xml);
 
-            xml = utils.XmlParser.getChildNodes(xml, "Button")[0];
+            xml = xml.getChildNodes("Button")[0];
             if (xml) {
                 let str: string;
                 str = xml.attributes.title;
@@ -337,13 +336,18 @@ namespace fgui {
                 if (str)
                     this.titleColor = utils.StringUtil.convertFromHtmlColor(str);
                 str = xml.attributes.titleFontSize;
-				if(str)
-					this.fontSize = parseInt(str);
+                if (str)
+                    this.fontSize = parseInt(str);
                 str = xml.attributes.controller;
                 if (str)
                     this.$relatedController = this.$parent.getController(str);
                 else
                     this.$relatedController = null;
+                str = xml.attributes.sound;
+                if (str)
+                    this.$clicksound = str;
+                else
+                    this.$clicksound = null;
                 this.$pageOption.id = xml.attributes.page;
                 this.selected = xml.attributes.checked == "true";
             }
@@ -420,9 +424,34 @@ namespace fgui {
                     this.emit(StateChangeEvent.CHANGED, this);
                 }
             }
+            if (this.$clicksound) {
+                var packname = this.packageItem.owner.name;
+                var item = fgui.UIPackage.getItemByURL(this.$clicksound);
+                if (item) {
+                    var resource = fgui.utils.AssetLoader.resourcesPool[`${packname}@${item.id}`];
+                    this.playSound(resource)
+                }
+            }
         }
 
-        public dispose():void {
+        private async playSound(resource: PIXI.LoaderResource) {
+            //buff.data:ArrayBuffer 
+            //!!!ArrayBuffer长度为0的原因:
+            //注意:
+            //当加载了pixi-sound库时,音频文件将自动解析成resource.sound属性;
+            //从而将ArrayBuffer读取并置空
+            if (!!(PIXI as any).sound) {
+                let Sound: { from: (...args) => any } = (PIXI as any).sound.Sound;
+                if ((resource as any).sound) {
+                    (resource as any).sound.play();
+                } else {
+                    let sound = Sound.from(resource.data);
+                    sound.play((sound) => sound.destroy());
+                }
+            }
+        }
+
+        public dispose(): void {
             GTimer.inst.remove(this.setState, this);
             GTimer.inst.remove(this.setState, this);
             GRoot.inst.off(InteractiveEvents.Up, this.$mouseup, this);

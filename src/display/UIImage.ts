@@ -17,7 +17,7 @@ namespace fgui {
                 item.load();
 
                 if (item.scaleByTile) {
-                    let ts = new PIXI.extras.TilingSprite(item.id,item.texture);
+                    let ts = new PIXI.extras.TilingSprite(item.id, item.texture);
                     this.$disp = ts;
                 }
                 else if (item.scale9Grid) {
@@ -138,7 +138,7 @@ namespace fgui {
             this.$disp.flipY = v;
         }
 
-        public destroy(options?:PIXI.destoryOptions): void {
+        public destroy(options?: PIXI.IDestroyOptions | boolean): void {
             if (this.$disp) {
                 this.$disp.destroy(options);
                 this.$disp = null;

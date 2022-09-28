@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component size="1136,600">
+  <controller name="c1" pages="0,,1," selected="1"/>
+  <displayList>
+    <text id="n0" name="n0" xy="20,30" size="1090,75" fontSize="20" autoSize="height" text="Relation System is one of the core features of FGUI, it controls the relations between each components in order to change component's feature such as position/size etc, try to click on the below button to see the effect (it actually switches the controller page)"/>
+    <text id="n4" name="n4" xy="20,204" size="242,27" fontSize="20" text="Example1: Position relation"/>
+    <graph id="n1" name="n1" xy="278,242" size="100,100" type="rect">
+      <gearXY controller="c1" pages="0,1" values="40,242|278,242" tween="true"/>
+    </graph>
+    <component id="n5" name="n5" src="idqr1d" fileName="components/Button4.xml" xy="30,119">
+      <Button checked="true" controller="c1" page="1"/>
+    </component>
+    <text id="n6" name="n6" xy="20,360" size="398,27" fontSize="20" autoSize="none" text="Example2: Size relation"/>
+    <graph id="n7" name="n7" xy="279,404" size="188,165" type="rect" fillColor="#ff009900">
+      <relation target="n8" sidePair="width-width,height-height"/>
+    </graph>
+    <graph id="n8" name="n8" xy="49,404" size="188,165" type="rect">
+      <gearSize controller="c1" pages="1" values="188,165,1,1" default="100,100,1,1" tween="true"/>
+    </graph>
+    <graph id="n9" name="n9" xy="668,409" size="357,100" type="rect" fillColor="#ff009900">
+      <relation target="n10" sidePair="leftext-right"/>
+    </graph>
+    <graph id="n10" name="n10" xy="539,409" size="100,100" type="rect">
+      <gearXY controller="c1" pages="0,1" values="798,409|539,409" tween="true"/>
+    </graph>
+    <text id="n11" name="n11" xy="667,356" size="388,27" fontSize="20" text="Example2: Size relation with different option"/>
+  </displayList>
+</component>

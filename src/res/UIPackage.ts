@@ -174,10 +174,10 @@ namespace fgui {
                     let i: number = key.indexOf("-");
                     if (i == -1) return;
 
-                    let text: string = cxml.children.length > 0 ? cxml.children[0].text : "";
-
-                    let key2: string = key.substr(0, i);
-                    let key3: string = key.substr(i + 1);
+                    // let text: string = cxml.children.length > 0 ? cxml.children[0].text : "";
+                    let text: string = cxml.text;
+                    let key2: string = key.substring(0, i);
+                    let key3: string = key.substring(i + 1);
                     let col: StringSource = UIPackage.$stringsSource[key2];
                     if (!col) {
                         col = {};
@@ -505,7 +505,7 @@ namespace fgui {
         }
 
         private loadComponentChildren(item: PackageItem): void {
-            let listNode: utils.XmlNode[] = utils.XmlParser.getChildNodes(item.componentData, "displayList");
+            let listNode: utils.XmlNode[] = item.componentData.getChildNodes("displayList");
             if (listNode != null && listNode.length > 0) {
                 item.displayList = [];
                 listNode[0].children.forEach(cxml => {
@@ -572,7 +572,7 @@ namespace fgui {
                         cxml.attributes.tooltips = value;
                 }
 
-                let cs: utils.XmlNode[] = utils.XmlParser.getChildNodes(cxml, "gearText");
+                let cs: utils.XmlNode[] = cxml.getChildNodes("gearText");
                 dxml = cs && cs[0];
                 if (dxml) {
                     value = strings[`${elementId}-texts`];
@@ -602,7 +602,7 @@ namespace fgui {
                     });
                 }
                 else if (ename == "component") {
-                    cs = utils.XmlParser.getChildNodes(cxml, "Button");
+                    cs = cxml.getChildNodes("Button");
                     dxml = cs && cs[0];
                     if (dxml) {
                         value = strings[elementId];
@@ -614,7 +614,7 @@ namespace fgui {
                         return;
                     }
 
-                    cs = utils.XmlParser.getChildNodes(cxml, "Label");
+                    cs = cxml.getChildNodes("Label");
                     dxml = cs && cs[0];
                     if (dxml) {
                         value = strings[elementId];
@@ -623,7 +623,7 @@ namespace fgui {
                         return;
                     }
 
-                    cs = utils.XmlParser.getChildNodes(cxml, "ComboBox");
+                    cs = cxml.getChildNodes("ComboBox");
                     dxml = cs && cs[0];
                     if (dxml) {
                         value = strings[elementId];
