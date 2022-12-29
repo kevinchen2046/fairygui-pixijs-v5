@@ -27,7 +27,7 @@
 * TypeScript
 
 ## 演示
-*  [在线演示](https://kevinchen2046.github.io/fgui-v6)
+*  [在线演示](https://kevinchen2046.github.io/demo/fgui-v6)
 
 # 如何使用
 
